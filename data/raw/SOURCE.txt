@@ -1,0 +1,6 @@
+repo        : https://github.com/TheMITTech/shakespeare
+mirror of   : http://shakespeare.mit.edu/
+commit      : 6b82db852c7322dd33e95db347f0ddfc812c6409
+commit info : 6b82db8 2019-01-20 Fix typo in Hamlet
+fetched on  : 2026-10-10
+html files  : 1211

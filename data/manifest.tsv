@@ -1,0 +1,196 @@
+docid	kind	category	title	text	source	url
+1	play	Comedy	All's Well That Ends Well	data/text/0001_all_s_well_that_ends_well.txt	data/raw/allswell/full.html	http://shakespeare.mit.edu/allswell/full.html
+2	play	Comedy	As You Like It	data/text/0002_as_you_like_it.txt	data/raw/asyoulikeit/full.html	http://shakespeare.mit.edu/asyoulikeit/full.html
+3	play	Comedy	The Comedy of Errors	data/text/0003_the_comedy_of_errors.txt	data/raw/comedy_errors/full.html	http://shakespeare.mit.edu/comedy_errors/full.html
+4	play	Comedy	Cymbeline	data/text/0004_cymbeline.txt	data/raw/cymbeline/full.html	http://shakespeare.mit.edu/cymbeline/full.html
+5	play	Comedy	Love's Labours Lost	data/text/0005_love_s_labours_lost.txt	data/raw/lll/full.html	http://shakespeare.mit.edu/lll/full.html
+6	play	Comedy	Measure for Measure	data/text/0006_measure_for_measure.txt	data/raw/measure/full.html	http://shakespeare.mit.edu/measure/full.html
+7	play	Comedy	The Merry Wives of Windsor	data/text/0007_the_merry_wives_of_windsor.txt	data/raw/merry_wives/full.html	http://shakespeare.mit.edu/merry_wives/full.html
+8	play	Comedy	The Merchant of Venice	data/text/0008_the_merchant_of_venice.txt	data/raw/merchant/full.html	http://shakespeare.mit.edu/merchant/full.html
+9	play	Comedy	A Midsummer Night's Dream	data/text/0009_a_midsummer_night_s_dream.txt	data/raw/midsummer/full.html	http://shakespeare.mit.edu/midsummer/full.html
+10	play	Comedy	Much Ado About Nothing	data/text/0010_much_ado_about_nothing.txt	data/raw/much_ado/full.html	http://shakespeare.mit.edu/much_ado/full.html
+11	play	Comedy	Pericles, Prince of Tyre	data/text/0011_pericles_prince_of_tyre.txt	data/raw/pericles/full.html	http://shakespeare.mit.edu/pericles/full.html
+12	play	Comedy	Taming of the Shrew	data/text/0012_taming_of_the_shrew.txt	data/raw/taming_shrew/full.html	http://shakespeare.mit.edu/taming_shrew/full.html
+13	play	Comedy	The Tempest	data/text/0013_the_tempest.txt	data/raw/tempest/full.html	http://shakespeare.mit.edu/tempest/full.html
+14	play	Comedy	Troilus and Cressida	data/text/0014_troilus_and_cressida.txt	data/raw/troilus_cressida/full.html	http://shakespeare.mit.edu/troilus_cressida/full.html
+15	play	Comedy	Twelfth Night	data/text/0015_twelfth_night.txt	data/raw/twelfth_night/full.html	http://shakespeare.mit.edu/twelfth_night/full.html
+16	play	Comedy	Two Gentlemen of Verona	data/text/0016_two_gentlemen_of_verona.txt	data/raw/two_gentlemen/full.html	http://shakespeare.mit.edu/two_gentlemen/full.html
+17	play	Comedy	Winter's Tale	data/text/0017_winter_s_tale.txt	data/raw/winters_tale/full.html	http://shakespeare.mit.edu/winters_tale/full.html
+18	play	History	Henry IV, part 1	data/text/0018_henry_iv_part_1.txt	data/raw/1henryiv/full.html	http://shakespeare.mit.edu/1henryiv/full.html
+19	play	History	Henry IV, part 2	data/text/0019_henry_iv_part_2.txt	data/raw/2henryiv/full.html	http://shakespeare.mit.edu/2henryiv/full.html
+20	play	History	Henry V	data/text/0020_henry_v.txt	data/raw/henryv/full.html	http://shakespeare.mit.edu/henryv/full.html
+21	play	History	Henry VI, part 1	data/text/0021_henry_vi_part_1.txt	data/raw/1henryvi/full.html	http://shakespeare.mit.edu/1henryvi/full.html
+22	play	History	Henry VI, part 2	data/text/0022_henry_vi_part_2.txt	data/raw/2henryvi/full.html	http://shakespeare.mit.edu/2henryvi/full.html
+23	play	History	Henry VI, part 3	data/text/0023_henry_vi_part_3.txt	data/raw/3henryvi/full.html	http://shakespeare.mit.edu/3henryvi/full.html
+24	play	History	Henry VIII	data/text/0024_henry_viii.txt	data/raw/henryviii/full.html	http://shakespeare.mit.edu/henryviii/full.html
+25	play	History	King John	data/text/0025_king_john.txt	data/raw/john/full.html	http://shakespeare.mit.edu/john/full.html
+26	play	History	Richard II	data/text/0026_richard_ii.txt	data/raw/richardii/full.html	http://shakespeare.mit.edu/richardii/full.html
+27	play	History	Richard III	data/text/0027_richard_iii.txt	data/raw/richardiii/full.html	http://shakespeare.mit.edu/richardiii/full.html
+28	play	Tragedy	Antony and Cleopatra	data/text/0028_antony_and_cleopatra.txt	data/raw/cleopatra/full.html	http://shakespeare.mit.edu/cleopatra/full.html
+29	play	Tragedy	Coriolanus	data/text/0029_coriolanus.txt	data/raw/coriolanus/full.html	http://shakespeare.mit.edu/coriolanus/full.html
+30	play	Tragedy	Hamlet	data/text/0030_hamlet.txt	data/raw/hamlet/full.html	http://shakespeare.mit.edu/hamlet/full.html
+31	play	Tragedy	Julius Caesar	data/text/0031_julius_caesar.txt	data/raw/julius_caesar/full.html	http://shakespeare.mit.edu/julius_caesar/full.html
+32	play	Tragedy	King Lear	data/text/0032_king_lear.txt	data/raw/lear/full.html	http://shakespeare.mit.edu/lear/full.html
+33	play	Tragedy	Macbeth	data/text/0033_macbeth.txt	data/raw/macbeth/full.html	http://shakespeare.mit.edu/macbeth/full.html
+34	play	Tragedy	Othello	data/text/0034_othello.txt	data/raw/othello/full.html	http://shakespeare.mit.edu/othello/full.html
+35	play	Tragedy	Romeo and Juliet	data/text/0035_romeo_and_juliet.txt	data/raw/romeo_juliet/full.html	http://shakespeare.mit.edu/romeo_juliet/full.html
+36	play	Tragedy	Timon of Athens	data/text/0036_timon_of_athens.txt	data/raw/timon/full.html	http://shakespeare.mit.edu/timon/full.html
+37	play	Tragedy	Titus Andronicus	data/text/0037_titus_andronicus.txt	data/raw/titus/full.html	http://shakespeare.mit.edu/titus/full.html
+38	sonnet	Poetry	Sonnet I	data/text/0038_sonnet_i.txt	data/raw/Poetry/sonnet.I.html	http://shakespeare.mit.edu/Poetry/sonnet.I.html
+39	sonnet	Poetry	Sonnet II	data/text/0039_sonnet_ii.txt	data/raw/Poetry/sonnet.II.html	http://shakespeare.mit.edu/Poetry/sonnet.II.html
+40	sonnet	Poetry	Sonnet III	data/text/0040_sonnet_iii.txt	data/raw/Poetry/sonnet.III.html	http://shakespeare.mit.edu/Poetry/sonnet.III.html
+41	sonnet	Poetry	Sonnet IV	data/text/0041_sonnet_iv.txt	data/raw/Poetry/sonnet.IV.html	http://shakespeare.mit.edu/Poetry/sonnet.IV.html
+42	sonnet	Poetry	Sonnet V	data/text/0042_sonnet_v.txt	data/raw/Poetry/sonnet.V.html	http://shakespeare.mit.edu/Poetry/sonnet.V.html
+43	sonnet	Poetry	Sonnet VI	data/text/0043_sonnet_vi.txt	data/raw/Poetry/sonnet.VI.html	http://shakespeare.mit.edu/Poetry/sonnet.VI.html
+44	sonnet	Poetry	Sonnet VII	data/text/0044_sonnet_vii.txt	data/raw/Poetry/sonnet.VII.html	http://shakespeare.mit.edu/Poetry/sonnet.VII.html
+45	sonnet	Poetry	Sonnet VIII	data/text/0045_sonnet_viii.txt	data/raw/Poetry/sonnet.VIII.html	http://shakespeare.mit.edu/Poetry/sonnet.VIII.html
+46	sonnet	Poetry	Sonnet IX	data/text/0046_sonnet_ix.txt	data/raw/Poetry/sonnet.IX.html	http://shakespeare.mit.edu/Poetry/sonnet.IX.html
+47	sonnet	Poetry	Sonnet X	data/text/0047_sonnet_x.txt	data/raw/Poetry/sonnet.X.html	http://shakespeare.mit.edu/Poetry/sonnet.X.html
+48	sonnet	Poetry	Sonnet XI	data/text/0048_sonnet_xi.txt	data/raw/Poetry/sonnet.XI.html	http://shakespeare.mit.edu/Poetry/sonnet.XI.html
+49	sonnet	Poetry	Sonnet XII	data/text/0049_sonnet_xii.txt	data/raw/Poetry/sonnet.XII.html	http://shakespeare.mit.edu/Poetry/sonnet.XII.html
+50	sonnet	Poetry	Sonnet XIII	data/text/0050_sonnet_xiii.txt	data/raw/Poetry/sonnet.XIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XIII.html
+51	sonnet	Poetry	Sonnet XIV	data/text/0051_sonnet_xiv.txt	data/raw/Poetry/sonnet.XIV.html	http://shakespeare.mit.edu/Poetry/sonnet.XIV.html
+52	sonnet	Poetry	Sonnet XV	data/text/0052_sonnet_xv.txt	data/raw/Poetry/sonnet.XV.html	http://shakespeare.mit.edu/Poetry/sonnet.XV.html
+53	sonnet	Poetry	Sonnet XVI	data/text/0053_sonnet_xvi.txt	data/raw/Poetry/sonnet.XVI.html	http://shakespeare.mit.edu/Poetry/sonnet.XVI.html
+54	sonnet	Poetry	Sonnet XVII	data/text/0054_sonnet_xvii.txt	data/raw/Poetry/sonnet.XVII.html	http://shakespeare.mit.edu/Poetry/sonnet.XVII.html
+55	sonnet	Poetry	Sonnet XVIII	data/text/0055_sonnet_xviii.txt	data/raw/Poetry/sonnet.XVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XVIII.html
+56	sonnet	Poetry	Sonnet XIX	data/text/0056_sonnet_xix.txt	data/raw/Poetry/sonnet.XIX.html	http://shakespeare.mit.edu/Poetry/sonnet.XIX.html
+57	sonnet	Poetry	Sonnet XX	data/text/0057_sonnet_xx.txt	data/raw/Poetry/sonnet.XX.html	http://shakespeare.mit.edu/Poetry/sonnet.XX.html
+58	sonnet	Poetry	Sonnet XXI	data/text/0058_sonnet_xxi.txt	data/raw/Poetry/sonnet.XXI.html	http://shakespeare.mit.edu/Poetry/sonnet.XXI.html
+59	sonnet	Poetry	Sonnet XXII	data/text/0059_sonnet_xxii.txt	data/raw/Poetry/sonnet.XXII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXII.html
+60	sonnet	Poetry	Sonnet XXIII	data/text/0060_sonnet_xxiii.txt	data/raw/Poetry/sonnet.XXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXIII.html
+61	sonnet	Poetry	Sonnet XXIV	data/text/0061_sonnet_xxiv.txt	data/raw/Poetry/sonnet.XXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.XXIV.html
+62	sonnet	Poetry	Sonnet XXV	data/text/0062_sonnet_xxv.txt	data/raw/Poetry/sonnet.XXV.html	http://shakespeare.mit.edu/Poetry/sonnet.XXV.html
+63	sonnet	Poetry	Sonnet XXVI	data/text/0063_sonnet_xxvi.txt	data/raw/Poetry/sonnet.XXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.XXVI.html
+64	sonnet	Poetry	Sonnet XXVII	data/text/0064_sonnet_xxvii.txt	data/raw/Poetry/sonnet.XXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXVII.html
+65	sonnet	Poetry	Sonnet XXVIII	data/text/0065_sonnet_xxviii.txt	data/raw/Poetry/sonnet.XXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXVIII.html
+66	sonnet	Poetry	Sonnet XXIX	data/text/0066_sonnet_xxix.txt	data/raw/Poetry/sonnet.XXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.XXIX.html
+67	sonnet	Poetry	Sonnet XXX	data/text/0067_sonnet_xxx.txt	data/raw/Poetry/sonnet.XXX.html	http://shakespeare.mit.edu/Poetry/sonnet.XXX.html
+68	sonnet	Poetry	Sonnet XXXI	data/text/0068_sonnet_xxxi.txt	data/raw/Poetry/sonnet.XXXI.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXI.html
+69	sonnet	Poetry	Sonnet XXXII	data/text/0069_sonnet_xxxii.txt	data/raw/Poetry/sonnet.XXXII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXII.html
+70	sonnet	Poetry	Sonnet XXXIII	data/text/0070_sonnet_xxxiii.txt	data/raw/Poetry/sonnet.XXXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXIII.html
+71	sonnet	Poetry	Sonnet XXXIV	data/text/0071_sonnet_xxxiv.txt	data/raw/Poetry/sonnet.XXXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXIV.html
+72	sonnet	Poetry	Sonnet XXXV	data/text/0072_sonnet_xxxv.txt	data/raw/Poetry/sonnet.XXXV.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXV.html
+73	sonnet	Poetry	Sonnet XXXVI	data/text/0073_sonnet_xxxvi.txt	data/raw/Poetry/sonnet.XXXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXVI.html
+74	sonnet	Poetry	Sonnet XXXVII	data/text/0074_sonnet_xxxvii.txt	data/raw/Poetry/sonnet.XXXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXVII.html
+75	sonnet	Poetry	Sonnet XXXVIII	data/text/0075_sonnet_xxxviii.txt	data/raw/Poetry/sonnet.XXXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXVIII.html
+76	sonnet	Poetry	Sonnet XXXIX	data/text/0076_sonnet_xxxix.txt	data/raw/Poetry/sonnet.XXXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.XXXIX.html
+77	sonnet	Poetry	Sonnet XL	data/text/0077_sonnet_xl.txt	data/raw/Poetry/sonnet.XL.html	http://shakespeare.mit.edu/Poetry/sonnet.XL.html
+78	sonnet	Poetry	Sonnet XLI	data/text/0078_sonnet_xli.txt	data/raw/Poetry/sonnet.XLI.html	http://shakespeare.mit.edu/Poetry/sonnet.XLI.html
+79	sonnet	Poetry	Sonnet XLII	data/text/0079_sonnet_xlii.txt	data/raw/Poetry/sonnet.XLII.html	http://shakespeare.mit.edu/Poetry/sonnet.XLII.html
+80	sonnet	Poetry	Sonnet XLIII	data/text/0080_sonnet_xliii.txt	data/raw/Poetry/sonnet.XLIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XLIII.html
+81	sonnet	Poetry	Sonnet XLIV	data/text/0081_sonnet_xliv.txt	data/raw/Poetry/sonnet.XLIV.html	http://shakespeare.mit.edu/Poetry/sonnet.XLIV.html
+82	sonnet	Poetry	Sonnet XLV	data/text/0082_sonnet_xlv.txt	data/raw/Poetry/sonnet.XLV.html	http://shakespeare.mit.edu/Poetry/sonnet.XLV.html
+83	sonnet	Poetry	Sonnet XLVI	data/text/0083_sonnet_xlvi.txt	data/raw/Poetry/sonnet.XLVI.html	http://shakespeare.mit.edu/Poetry/sonnet.XLVI.html
+84	sonnet	Poetry	Sonnet XLVII	data/text/0084_sonnet_xlvii.txt	data/raw/Poetry/sonnet.XLVII.html	http://shakespeare.mit.edu/Poetry/sonnet.XLVII.html
+85	sonnet	Poetry	Sonnet XLVIII	data/text/0085_sonnet_xlviii.txt	data/raw/Poetry/sonnet.XLVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XLVIII.html
+86	sonnet	Poetry	Sonnet XLIX	data/text/0086_sonnet_xlix.txt	data/raw/Poetry/sonnet.XLIX.html	http://shakespeare.mit.edu/Poetry/sonnet.XLIX.html
+87	sonnet	Poetry	Sonnet L	data/text/0087_sonnet_l.txt	data/raw/Poetry/sonnet.L.html	http://shakespeare.mit.edu/Poetry/sonnet.L.html
+88	sonnet	Poetry	Sonnet LI	data/text/0088_sonnet_li.txt	data/raw/Poetry/sonnet.LI.html	http://shakespeare.mit.edu/Poetry/sonnet.LI.html
+89	sonnet	Poetry	Sonnet LII	data/text/0089_sonnet_lii.txt	data/raw/Poetry/sonnet.LII.html	http://shakespeare.mit.edu/Poetry/sonnet.LII.html
+90	sonnet	Poetry	Sonnet LIII	data/text/0090_sonnet_liii.txt	data/raw/Poetry/sonnet.LIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LIII.html
+91	sonnet	Poetry	Sonnet LIV	data/text/0091_sonnet_liv.txt	data/raw/Poetry/sonnet.LIV.html	http://shakespeare.mit.edu/Poetry/sonnet.LIV.html
+92	sonnet	Poetry	Sonnet LV	data/text/0092_sonnet_lv.txt	data/raw/Poetry/sonnet.LV.html	http://shakespeare.mit.edu/Poetry/sonnet.LV.html
+93	sonnet	Poetry	Sonnet LVI	data/text/0093_sonnet_lvi.txt	data/raw/Poetry/sonnet.LVI.html	http://shakespeare.mit.edu/Poetry/sonnet.LVI.html
+94	sonnet	Poetry	Sonnet LVII	data/text/0094_sonnet_lvii.txt	data/raw/Poetry/sonnet.LVII.html	http://shakespeare.mit.edu/Poetry/sonnet.LVII.html
+95	sonnet	Poetry	Sonnet LVIII	data/text/0095_sonnet_lviii.txt	data/raw/Poetry/sonnet.LVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LVIII.html
+96	sonnet	Poetry	Sonnet LIX	data/text/0096_sonnet_lix.txt	data/raw/Poetry/sonnet.LIX.html	http://shakespeare.mit.edu/Poetry/sonnet.LIX.html
+97	sonnet	Poetry	Sonnet LX	data/text/0097_sonnet_lx.txt	data/raw/Poetry/sonnet.LX.html	http://shakespeare.mit.edu/Poetry/sonnet.LX.html
+98	sonnet	Poetry	Sonnet LXI	data/text/0098_sonnet_lxi.txt	data/raw/Poetry/sonnet.LXI.html	http://shakespeare.mit.edu/Poetry/sonnet.LXI.html
+99	sonnet	Poetry	Sonnet LXII	data/text/0099_sonnet_lxii.txt	data/raw/Poetry/sonnet.LXII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXII.html
+100	sonnet	Poetry	Sonnet LXIII	data/text/0100_sonnet_lxiii.txt	data/raw/Poetry/sonnet.LXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXIII.html
+101	sonnet	Poetry	Sonnet LXIV	data/text/0101_sonnet_lxiv.txt	data/raw/Poetry/sonnet.LXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.LXIV.html
+102	sonnet	Poetry	Sonnet LXV	data/text/0102_sonnet_lxv.txt	data/raw/Poetry/sonnet.LXV.html	http://shakespeare.mit.edu/Poetry/sonnet.LXV.html
+103	sonnet	Poetry	Sonnet LXVI	data/text/0103_sonnet_lxvi.txt	data/raw/Poetry/sonnet.LXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.LXVI.html
+104	sonnet	Poetry	Sonnet LXVII	data/text/0104_sonnet_lxvii.txt	data/raw/Poetry/sonnet.LXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXVII.html
+105	sonnet	Poetry	Sonnet LXVIII	data/text/0105_sonnet_lxviii.txt	data/raw/Poetry/sonnet.LXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXVIII.html
+106	sonnet	Poetry	Sonnet LXIX	data/text/0106_sonnet_lxix.txt	data/raw/Poetry/sonnet.LXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.LXIX.html
+107	sonnet	Poetry	Sonnet LXX	data/text/0107_sonnet_lxx.txt	data/raw/Poetry/sonnet.LXX.html	http://shakespeare.mit.edu/Poetry/sonnet.LXX.html
+108	sonnet	Poetry	Sonnet LXXI	data/text/0108_sonnet_lxxi.txt	data/raw/Poetry/sonnet.LXXI.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXI.html
+109	sonnet	Poetry	Sonnet LXXII	data/text/0109_sonnet_lxxii.txt	data/raw/Poetry/sonnet.LXXII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXII.html
+110	sonnet	Poetry	Sonnet LXXIII	data/text/0110_sonnet_lxxiii.txt	data/raw/Poetry/sonnet.LXXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXIII.html
+111	sonnet	Poetry	Sonnet LXXIV	data/text/0111_sonnet_lxxiv.txt	data/raw/Poetry/sonnet.LXXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXIV.html
+112	sonnet	Poetry	Sonnet LXXV	data/text/0112_sonnet_lxxv.txt	data/raw/Poetry/sonnet.LXXV.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXV.html
+113	sonnet	Poetry	Sonnet LXXVI	data/text/0113_sonnet_lxxvi.txt	data/raw/Poetry/sonnet.LXXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXVI.html
+114	sonnet	Poetry	Sonnet LXXVII	data/text/0114_sonnet_lxxvii.txt	data/raw/Poetry/sonnet.LXXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXVII.html
+115	sonnet	Poetry	Sonnet LXXVIII	data/text/0115_sonnet_lxxviii.txt	data/raw/Poetry/sonnet.LXXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXVIII.html
+116	sonnet	Poetry	Sonnet LXXIX	data/text/0116_sonnet_lxxix.txt	data/raw/Poetry/sonnet.LXXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXIX.html
+117	sonnet	Poetry	Sonnet LXXX	data/text/0117_sonnet_lxxx.txt	data/raw/Poetry/sonnet.LXXX.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXX.html
+118	sonnet	Poetry	Sonnet LXXXI	data/text/0118_sonnet_lxxxi.txt	data/raw/Poetry/sonnet.LXXXI.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXI.html
+119	sonnet	Poetry	Sonnet LXXXII	data/text/0119_sonnet_lxxxii.txt	data/raw/Poetry/sonnet.LXXXII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXII.html
+120	sonnet	Poetry	Sonnet LXXXIII	data/text/0120_sonnet_lxxxiii.txt	data/raw/Poetry/sonnet.LXXXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXIII.html
+121	sonnet	Poetry	Sonnet LXXXIV	data/text/0121_sonnet_lxxxiv.txt	data/raw/Poetry/sonnet.LXXXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXIV.html
+122	sonnet	Poetry	Sonnet LXXXV	data/text/0122_sonnet_lxxxv.txt	data/raw/Poetry/sonnet.LXXXV.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXV.html
+123	sonnet	Poetry	Sonnet LXXXVI	data/text/0123_sonnet_lxxxvi.txt	data/raw/Poetry/sonnet.LXXXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXVI.html
+124	sonnet	Poetry	Sonnet LXXXVII	data/text/0124_sonnet_lxxxvii.txt	data/raw/Poetry/sonnet.LXXXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXVII.html
+125	sonnet	Poetry	Sonnet LXXXVIII	data/text/0125_sonnet_lxxxviii.txt	data/raw/Poetry/sonnet.LXXXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXVIII.html
+126	sonnet	Poetry	Sonnet LXXXIX	data/text/0126_sonnet_lxxxix.txt	data/raw/Poetry/sonnet.LXXXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.LXXXIX.html
+127	sonnet	Poetry	Sonnet XC	data/text/0127_sonnet_xc.txt	data/raw/Poetry/sonnet.XC.html	http://shakespeare.mit.edu/Poetry/sonnet.XC.html
+128	sonnet	Poetry	Sonnet XCI	data/text/0128_sonnet_xci.txt	data/raw/Poetry/sonnet.XCI.html	http://shakespeare.mit.edu/Poetry/sonnet.XCI.html
+129	sonnet	Poetry	Sonnet XCII	data/text/0129_sonnet_xcii.txt	data/raw/Poetry/sonnet.XCII.html	http://shakespeare.mit.edu/Poetry/sonnet.XCII.html
+130	sonnet	Poetry	Sonnet XCIII	data/text/0130_sonnet_xciii.txt	data/raw/Poetry/sonnet.XCIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XCIII.html
+131	sonnet	Poetry	Sonnet XCIV	data/text/0131_sonnet_xciv.txt	data/raw/Poetry/sonnet.XCIV.html	http://shakespeare.mit.edu/Poetry/sonnet.XCIV.html
+132	sonnet	Poetry	Sonnet XCV	data/text/0132_sonnet_xcv.txt	data/raw/Poetry/sonnet.XCV.html	http://shakespeare.mit.edu/Poetry/sonnet.XCV.html
+133	sonnet	Poetry	Sonnet XCVI	data/text/0133_sonnet_xcvi.txt	data/raw/Poetry/sonnet.XCVI.html	http://shakespeare.mit.edu/Poetry/sonnet.XCVI.html
+134	sonnet	Poetry	Sonnet XCVII	data/text/0134_sonnet_xcvii.txt	data/raw/Poetry/sonnet.XCVII.html	http://shakespeare.mit.edu/Poetry/sonnet.XCVII.html
+135	sonnet	Poetry	Sonnet XCVIII	data/text/0135_sonnet_xcviii.txt	data/raw/Poetry/sonnet.XCVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.XCVIII.html
+136	sonnet	Poetry	Sonnet XCIX	data/text/0136_sonnet_xcix.txt	data/raw/Poetry/sonnet.XCIX.html	http://shakespeare.mit.edu/Poetry/sonnet.XCIX.html
+137	sonnet	Poetry	Sonnet C	data/text/0137_sonnet_c.txt	data/raw/Poetry/sonnet.C.html	http://shakespeare.mit.edu/Poetry/sonnet.C.html
+138	sonnet	Poetry	Sonnet CI	data/text/0138_sonnet_ci.txt	data/raw/Poetry/sonnet.CI.html	http://shakespeare.mit.edu/Poetry/sonnet.CI.html
+139	sonnet	Poetry	Sonnet CII	data/text/0139_sonnet_cii.txt	data/raw/Poetry/sonnet.CII.html	http://shakespeare.mit.edu/Poetry/sonnet.CII.html
+140	sonnet	Poetry	Sonnet CIII	data/text/0140_sonnet_ciii.txt	data/raw/Poetry/sonnet.CIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CIII.html
+141	sonnet	Poetry	Sonnet CIV	data/text/0141_sonnet_civ.txt	data/raw/Poetry/sonnet.CIV.html	http://shakespeare.mit.edu/Poetry/sonnet.CIV.html
+142	sonnet	Poetry	Sonnet CV	data/text/0142_sonnet_cv.txt	data/raw/Poetry/sonnet.CV.html	http://shakespeare.mit.edu/Poetry/sonnet.CV.html
+143	sonnet	Poetry	Sonnet CVI	data/text/0143_sonnet_cvi.txt	data/raw/Poetry/sonnet.CVI.html	http://shakespeare.mit.edu/Poetry/sonnet.CVI.html
+144	sonnet	Poetry	Sonnet CVII	data/text/0144_sonnet_cvii.txt	data/raw/Poetry/sonnet.CVII.html	http://shakespeare.mit.edu/Poetry/sonnet.CVII.html
+145	sonnet	Poetry	Sonnet CVIII	data/text/0145_sonnet_cviii.txt	data/raw/Poetry/sonnet.CVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CVIII.html
+146	sonnet	Poetry	Sonnet CIX	data/text/0146_sonnet_cix.txt	data/raw/Poetry/sonnet.CIX.html	http://shakespeare.mit.edu/Poetry/sonnet.CIX.html
+147	sonnet	Poetry	Sonnet CX	data/text/0147_sonnet_cx.txt	data/raw/Poetry/sonnet.CX.html	http://shakespeare.mit.edu/Poetry/sonnet.CX.html
+148	sonnet	Poetry	Sonnet CXI	data/text/0148_sonnet_cxi.txt	data/raw/Poetry/sonnet.CXI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXI.html
+149	sonnet	Poetry	Sonnet CXII	data/text/0149_sonnet_cxii.txt	data/raw/Poetry/sonnet.CXII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXII.html
+150	sonnet	Poetry	Sonnet CXIII	data/text/0150_sonnet_cxiii.txt	data/raw/Poetry/sonnet.CXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXIII.html
+151	sonnet	Poetry	Sonnet CXIV	data/text/0151_sonnet_cxiv.txt	data/raw/Poetry/sonnet.CXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXIV.html
+152	sonnet	Poetry	Sonnet CXV	data/text/0152_sonnet_cxv.txt	data/raw/Poetry/sonnet.CXV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXV.html
+153	sonnet	Poetry	Sonnet CXVI	data/text/0153_sonnet_cxvi.txt	data/raw/Poetry/sonnet.CXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXVI.html
+154	sonnet	Poetry	Sonnet CXVII	data/text/0154_sonnet_cxvii.txt	data/raw/Poetry/sonnet.CXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXVII.html
+155	sonnet	Poetry	Sonnet CXVIII	data/text/0155_sonnet_cxviii.txt	data/raw/Poetry/sonnet.CXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXVIII.html
+156	sonnet	Poetry	Sonnet CXIX	data/text/0156_sonnet_cxix.txt	data/raw/Poetry/sonnet.CXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.CXIX.html
+157	sonnet	Poetry	Sonnet CXX	data/text/0157_sonnet_cxx.txt	data/raw/Poetry/sonnet.CXX.html	http://shakespeare.mit.edu/Poetry/sonnet.CXX.html
+158	sonnet	Poetry	Sonnet CXXI	data/text/0158_sonnet_cxxi.txt	data/raw/Poetry/sonnet.CXXI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXI.html
+159	sonnet	Poetry	Sonnet CXXII	data/text/0159_sonnet_cxxii.txt	data/raw/Poetry/sonnet.CXXII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXII.html
+160	sonnet	Poetry	Sonnet CXXIII	data/text/0160_sonnet_cxxiii.txt	data/raw/Poetry/sonnet.CXXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXIII.html
+161	sonnet	Poetry	Sonnet CXXIV	data/text/0161_sonnet_cxxiv.txt	data/raw/Poetry/sonnet.CXXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXIV.html
+162	sonnet	Poetry	Sonnet CXXV	data/text/0162_sonnet_cxxv.txt	data/raw/Poetry/sonnet.CXXV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXV.html
+163	sonnet	Poetry	Sonnet CXXVI	data/text/0163_sonnet_cxxvi.txt	data/raw/Poetry/sonnet.CXXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXVI.html
+164	sonnet	Poetry	Sonnet CXXVII	data/text/0164_sonnet_cxxvii.txt	data/raw/Poetry/sonnet.CXXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXVII.html
+165	sonnet	Poetry	Sonnet CXXVIII	data/text/0165_sonnet_cxxviii.txt	data/raw/Poetry/sonnet.CXXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXVIII.html
+166	sonnet	Poetry	Sonnet CXXIX	data/text/0166_sonnet_cxxix.txt	data/raw/Poetry/sonnet.CXXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXIX.html
+167	sonnet	Poetry	Sonnet CXXX	data/text/0167_sonnet_cxxx.txt	data/raw/Poetry/sonnet.CXXX.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXX.html
+168	sonnet	Poetry	Sonnet CXXXI	data/text/0168_sonnet_cxxxi.txt	data/raw/Poetry/sonnet.CXXXI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXI.html
+169	sonnet	Poetry	Sonnet CXXXII	data/text/0169_sonnet_cxxxii.txt	data/raw/Poetry/sonnet.CXXXII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXII.html
+170	sonnet	Poetry	Sonnet CXXXIII	data/text/0170_sonnet_cxxxiii.txt	data/raw/Poetry/sonnet.CXXXIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXIII.html
+171	sonnet	Poetry	Sonnet CXXXIV	data/text/0171_sonnet_cxxxiv.txt	data/raw/Poetry/sonnet.CXXXIV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXIV.html
+172	sonnet	Poetry	Sonnet CXXXV	data/text/0172_sonnet_cxxxv.txt	data/raw/Poetry/sonnet.CXXXV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXV.html
+173	sonnet	Poetry	Sonnet CXXXVI	data/text/0173_sonnet_cxxxvi.txt	data/raw/Poetry/sonnet.CXXXVI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXVI.html
+174	sonnet	Poetry	Sonnet CXXXVII	data/text/0174_sonnet_cxxxvii.txt	data/raw/Poetry/sonnet.CXXXVII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXVII.html
+175	sonnet	Poetry	Sonnet CXXXVIII	data/text/0175_sonnet_cxxxviii.txt	data/raw/Poetry/sonnet.CXXXVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXVIII.html
+176	sonnet	Poetry	Sonnet CXXXIX	data/text/0176_sonnet_cxxxix.txt	data/raw/Poetry/sonnet.CXXXIX.html	http://shakespeare.mit.edu/Poetry/sonnet.CXXXIX.html
+177	sonnet	Poetry	Sonnet CXL	data/text/0177_sonnet_cxl.txt	data/raw/Poetry/sonnet.CXL.html	http://shakespeare.mit.edu/Poetry/sonnet.CXL.html
+178	sonnet	Poetry	Sonnet CXLI	data/text/0178_sonnet_cxli.txt	data/raw/Poetry/sonnet.CXLI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLI.html
+179	sonnet	Poetry	Sonnet CXLII	data/text/0179_sonnet_cxlii.txt	data/raw/Poetry/sonnet.CXLII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLII.html
+180	sonnet	Poetry	Sonnet CXLIII	data/text/0180_sonnet_cxliii.txt	data/raw/Poetry/sonnet.CXLIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLIII.html
+181	sonnet	Poetry	Sonnet CXLIV	data/text/0181_sonnet_cxliv.txt	data/raw/Poetry/sonnet.CXLIV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLIV.html
+182	sonnet	Poetry	Sonnet CXLV	data/text/0182_sonnet_cxlv.txt	data/raw/Poetry/sonnet.CXLV.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLV.html
+183	sonnet	Poetry	Sonnet CXLVI	data/text/0183_sonnet_cxlvi.txt	data/raw/Poetry/sonnet.CXLVI.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLVI.html
+184	sonnet	Poetry	Sonnet CXLVII	data/text/0184_sonnet_cxlvii.txt	data/raw/Poetry/sonnet.CXLVII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLVII.html
+185	sonnet	Poetry	Sonnet CXLVIII	data/text/0185_sonnet_cxlviii.txt	data/raw/Poetry/sonnet.CXLVIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLVIII.html
+186	sonnet	Poetry	Sonnet CXLIX	data/text/0186_sonnet_cxlix.txt	data/raw/Poetry/sonnet.CXLIX.html	http://shakespeare.mit.edu/Poetry/sonnet.CXLIX.html
+187	sonnet	Poetry	Sonnet CL	data/text/0187_sonnet_cl.txt	data/raw/Poetry/sonnet.CL.html	http://shakespeare.mit.edu/Poetry/sonnet.CL.html
+188	sonnet	Poetry	Sonnet CLI	data/text/0188_sonnet_cli.txt	data/raw/Poetry/sonnet.CLI.html	http://shakespeare.mit.edu/Poetry/sonnet.CLI.html
+189	sonnet	Poetry	Sonnet CLII	data/text/0189_sonnet_clii.txt	data/raw/Poetry/sonnet.CLII.html	http://shakespeare.mit.edu/Poetry/sonnet.CLII.html
+190	sonnet	Poetry	Sonnet CLIII	data/text/0190_sonnet_cliii.txt	data/raw/Poetry/sonnet.CLIII.html	http://shakespeare.mit.edu/Poetry/sonnet.CLIII.html
+191	sonnet	Poetry	Sonnet CLIV	data/text/0191_sonnet_cliv.txt	data/raw/Poetry/sonnet.CLIV.html	http://shakespeare.mit.edu/Poetry/sonnet.CLIV.html
+192	poem	Poetry	A Lover's Complaint	data/text/0192_a_lover_s_complaint.txt	data/raw/Poetry/LoversComplaint.html	http://shakespeare.mit.edu/Poetry/LoversComplaint.html
+193	poem	Poetry	The Rape of Lucrece	data/text/0193_the_rape_of_lucrece.txt	data/raw/Poetry/RapeOfLucrece.html	http://shakespeare.mit.edu/Poetry/RapeOfLucrece.html
+194	poem	Poetry	Venus and Adonis	data/text/0194_venus_and_adonis.txt	data/raw/Poetry/VenusAndAdonis.html	http://shakespeare.mit.edu/Poetry/VenusAndAdonis.html
+195	poem	Poetry	Funeral Elegy by W.S.	data/text/0195_funeral_elegy_by_w_s.txt	data/raw/Poetry/elegy.html	http://shakespeare.mit.edu/Poetry/elegy.html
