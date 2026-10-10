@@ -334,7 +334,8 @@ References 预留条目：Porter stemmer（论文/代码地址）、停用词表
 
 ```text
 proj1/
-├── problem.md / plan.md / README.md   # README 写编译与运行说明
+├── problem.md / problem_zh.md / plan.md / README.md / notes.md
+│                                       # README=用法；notes=开发笔记（坑与发现）
 ├── Makefile                            # make / make test / make clean
 ├── data/
 │   ├── raw/                            # 抓取到的 html（不进 zip 提交）

@@ -4,6 +4,7 @@
 
 - 题目要求：[problem.md](problem.md)（中文翻译见 [problem_zh.md](problem_zh.md)）
 - 设计文档与进度：[plan.md](plan.md)
+- 开发笔记（坑与发现，报告素材）：[notes.md](notes.md)
 - 语料：The Complete Works of William Shakespeare（[shakespeare.mit.edu](http://shakespeare.mit.edu/)
   的官方 GitHub 镜像，commit `6b82db8`，见 `data/raw/SOURCE.txt`）
 
