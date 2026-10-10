@@ -1,0 +1,16 @@
+# build outputs / generated artifacts
+build/
+
+# corpus re-download backups (created by tools/fetch_corpus.sh --force)
+raw.bak.*/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# editors
+.vscode/
+.idea/
