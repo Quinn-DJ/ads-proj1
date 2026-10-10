@@ -1,6 +1,6 @@
-// corpus.cpp -- implementation of the document storage layer (see corpus.h).
+// corpus.cpp -- implementation of the document storage layer (see corpus.hpp).
 
-#include "corpus.h"
+#include "corpus.hpp"
 
 #include <fstream>
 #include <sstream>

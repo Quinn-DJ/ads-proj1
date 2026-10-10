@@ -5,7 +5,7 @@
 // Planned commands (plan.md section 2):
 //   count / build / dump / query / shell / selftest
 
-#include "corpus.h"
+#include "corpus.hpp"
 
 #include <cstddef>
 #include <exception>

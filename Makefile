@@ -4,6 +4,7 @@
 #   make clean    remove the build/ directory
 
 CXX      ?= c++
+CPPFLAGS ?= -Iinclude
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra
 BUILD    := build
 SRCS     := $(wildcard src/*.cpp)
@@ -16,7 +17,7 @@ $(BUILD)/mse: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(BUILD)/%.o: src/%.cpp | $(BUILD)
-	$(CXX) $(CXXFLAGS) -MMD -MP -c -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c -o $@ $<
 
 $(BUILD):
 	mkdir -p $(BUILD)

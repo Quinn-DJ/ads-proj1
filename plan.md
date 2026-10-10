@@ -341,7 +341,8 @@ proj1/
 │   ├── manifest.tsv
 │   └── stopwords.txt                   # 头部注释写来源与理由
 ├── build/                              # index.bin、csv、测试输出（gitignore）
-├── src/{main,corpus,tokenizer,stopwords,stemmer,dict,posting,index,query}.*
+├── include/{corpus,tokenizer,stopwords,stemmer,dict,posting,index,query}.hpp
+├── src/{main,corpus,tokenizer,stopwords,stemmer,dict,posting,index,query}.cpp
 ├── tools/{fetch_corpus.sh,extract.py,brute_force.py,comment_ratio.py,plot_*.py}
 └── tests/
     ├── fixtures/golden4/               # 讲义四文档 + 期望 posting
