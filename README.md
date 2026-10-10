@@ -136,9 +136,49 @@ sample :
 ./build/mse tokenize --all | awk -F'\t' '{s+=$2} END {print s}'
 ```
 
+### `mse count` — 词频统计（Task 1）
+
+```bash
+./build/mse count [--manifest data/manifest.tsv] [--csv build/wordcount.csv]
+                  [--top 50] [--keep-headings] [--keep-speakers] [--keep-stage]
+```
+
+统计每个词的 **tf**（总出现次数）与 **df**（出现在多少篇文档里），写入 CSV，
+并在终端打印摘要与 top 表：
+
+```text
+$ ./build/mse count --top 5
+manifest : data/manifest.tsv
+documents: 195
+tokens   : 866626
+distinct : 25705
+hapax    : 9753 (tf = 1)
+csv      : build/wordcount.csv
+stop-candidates (df_ratio>=0.75 && tf_share>=0.1%): 9
+  the and i to of my that in but
+
+top 5 by term frequency:
+  rank	term	tf	df	df%	share%
+  1	the	28436	177	90.8	3.3
+  2	and	25553	189	96.9	2.9
+  3	i	21131	154	79.0	2.4
+  4	to	20302	187	95.9	2.3
+  5	of	16976	175	89.7	2.0
+```
+
+CSV 列：`rank, term, tf, df, df_ratio`（=df/文档数）`, tf_share`（=tf/总词数）`, stop_candidate`
+（候选停用词标记：`df_ratio ≥ 0.75 且 tf_share ≥ 0.1%`，规则见 plan.md §4.2）。
+
+交叉验证（独立 Python 实现，输出应与 C++ 逐字节一致）：
+
+```bash
+python3 tools/check_wordcount.py > build/wordcount_py.csv
+diff build/wordcount.csv build/wordcount_py.csv && echo identical
+```
+
 ### 规划中的命令
 
-`count`（词频/文档频率 → `wordcount.csv`）、`build`（建倒排索引）、`dump`、`query`、`shell`、`selftest`
+`build`（建倒排索引）、`dump`、`query`、`shell`、`selftest`
 ——按 `plan.md` §14 的里程碑逐步补齐，当前会提示 `not-yet-implemented`。
 
 ## 工具脚本（重建语料时才需要）

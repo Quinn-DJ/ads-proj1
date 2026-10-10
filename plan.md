@@ -147,7 +147,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ### 4.1 计数程序（1 pt）
 
-`mse count` 输出 `build/wordcount.csv`，列：`rank, term, tf, df, df_ratio, tf_share`（tf=总出现次数，df=出现的文档数）。同时打印 top 200 到终端，并保存一份"去停用词/词干化前后"的对照列，供报告使用。
+`mse count`（已实现）：输出 `build/wordcount.csv`，列 `rank, term, tf, df, df_ratio, tf_share, stop_candidate`（tf=总出现次数，df=出现的文档数，stop_candidate 按 §4.2 的规则自动标注）。终端打印摘要（tokens / distinct / hapax / 候选数与候选列表）和 top n 表（`--top`，默认 50，`--top 0` 静默）。首跑结果：866 626 个正文 token、25 705 个不同词、9 753 个 hapax（tf=1）、9 个候选停用词（the and i to of my that in but）；与独立 Python 实现逐字节一致（`tools/check_wordcount.py`）。去停用词/词干化后的对照版本在 stopword / stemmer 模块完成后补跑。
 
 ### 4.2 "线画在哪里"——判定方法
 
@@ -291,6 +291,7 @@ serialize(index) → index.bin
    - `tools/brute_force.py`：独立实现同一套规范化规则，直接扫描原始文本得到 docID 集合（独立实现才有对拍价值）；
    - 随机抽 200 个词 + 30 条短语，比较索引查询结果与扫描结果，要求 **100% 一致**；
    - 不变量检查（`mse selftest`）：posting 内 docID 严格递增且合法；tf = position 数 = 该文档实际出现次数；词典中无停用词；同一条查询的 stem 链路一致。
+   - 词频阶段已提前落地同款对拍：`tools/check_wordcount.py` 与 `mse count` 的输出逐字节比较（默认与 `--keep-speakers` 两个变体都已 100% 一致）。
 4. **边界用例**：空查询、纯停用词、不存在的词、单字符、带标点、全大写、`don't`、`to-day`。
 5. **性能测试**：全量构建时间/峰值内存/索引体积；1000 次随机查询平均延迟（macOS 与 Linux 各跑一次更稳）。
 
@@ -370,7 +371,7 @@ proj1/
 | M3（D9–D11） | 阈值模块 + 阈值矩阵 + 性能数据 | `threshold_matrix.csv` + 图 |
 | M4（D12–D14） | 报告四章 + 注释率检查 + 匿名打包 | 评审清单逐项过一遍 |
 
-进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词、0 警告）、C++ 存储层（`src/corpus` + `mse stats`）与 tokenizer（`src/tokenizer` + 20 条单元测试；与独立 Python 实现逐文档对拍 100% 一致，正文 token 共 866 626 个）已完成；下一步是 `count`（词频/文档频率）程序。
+进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词、0 警告）、C++ 存储层（`src/corpus` + `mse stats`）、tokenizer（`src/tokenizer` + 20 条单元测试；逐文档对拍 100% 一致）与 word count（`src/count` + `mse count`：25 705 个不同词、9 753 个 hapax、9 个候选停用词；CSV 与独立 Python 实现逐字节一致）已完成；下一步是停用词表定案（`data/stopwords.txt`）与 Porter stemmer。
 
 ---
 

@@ -3,14 +3,17 @@
 // Current commands:
 //   mse stats      load the corpus and print storage statistics
 //   mse tokenize   print the token stream of one document (or all documents)
+//   mse count      word frequency / document frequency table -> CSV (task 1)
 // Planned commands (plan.md section 2):
-//   count / build / dump / query / shell / selftest
+//   build / dump / query / shell / selftest
 
 #include "corpus.hpp"
+#include "count.hpp"
 #include "tokenizer.hpp"
 
 #include <cstddef>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -26,6 +29,7 @@ void printUsage(const char* program) {
         << "commands:\n"
         << "  stats                load manifest + text files and print statistics\n"
         << "  tokenize [options]   print the token stream of one document\n"
+        << "  count [options]      word count table (tf/df) -> CSV\n"
         << "\n"
         << "options:\n"
         << "  --manifest <path>    manifest file (default: data/manifest.tsv)\n"
@@ -38,7 +42,11 @@ void printUsage(const char* program) {
         << "  --keep-speakers      include @BERNARDO lines\n"
         << "  --keep-stage         include (Exit Ghost) lines\n"
         << "\n"
-        << "planned: count, build, dump, query, shell, selftest\n";
+        << "count options:\n"
+        << "  --csv <path>         output CSV (default: build/wordcount.csv)\n"
+        << "  --top <n>            print the top n rows (default: 50, 0 = quiet)\n"
+        << "\n"
+        << "planned: build, dump, query, shell, selftest\n";
 }
 
 // Return the value of "--name value" from argv, or `fallback` if absent.
@@ -66,18 +74,30 @@ const char* onOff(bool value) {
     return value ? "on" : "off";
 }
 
+// True when a bare flag like "--all" appears in argv.
+bool hasFlag(int argc, char** argv, const std::string& name) {
+    for (int i = 2; i < argc; ++i) {
+        if (name == argv[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Collect the shared tokenizer options (--keep-headings/--keep-speakers/
+// --keep-stage) from the command line.
+mse::TokenizerOptions tokenizerOptionsFromArgs(int argc, char** argv) {
+    mse::TokenizerOptions options;
+    options.keepHeadings = hasFlag(argc, argv, "--keep-headings");
+    options.keepSpeakers = hasFlag(argc, argv, "--keep-speakers");
+    options.keepStage = hasFlag(argc, argv, "--keep-stage");
+    return options;
+}
+
 int commandTokenize(int argc, char** argv) {
     const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
-
-    mse::TokenizerOptions options;
-    bool all = false;
-    for (int i = 2; i < argc; ++i) {
-        const std::string arg = argv[i];
-        if (arg == "--keep-headings") options.keepHeadings = true;
-        else if (arg == "--keep-speakers") options.keepSpeakers = true;
-        else if (arg == "--keep-stage") options.keepStage = true;
-        else if (arg == "--all") all = true;
-    }
+    const mse::TokenizerOptions options = tokenizerOptionsFromArgs(argc, argv);
+    const bool all = hasFlag(argc, argv, "--all");
 
     const mse::Corpus corpus = mse::Corpus::load(manifest);
     const mse::Tokenizer tokenizer(options);
@@ -108,6 +128,59 @@ int commandTokenize(int argc, char** argv) {
     for (int i = 0; i < limit && static_cast<std::size_t>(i) < tokens.size(); ++i) {
         std::cout << "  line " << tokens[static_cast<std::size_t>(i)].line
                   << "\t" << tokens[static_cast<std::size_t>(i)].text << "\n";
+    }
+    return 0;
+}
+
+int commandCount(int argc, char** argv) {
+    const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
+    const std::string csvPath = optionValue(argc, argv, "--csv", "build/wordcount.csv");
+    const mse::TokenizerOptions options = tokenizerOptionsFromArgs(argc, argv);
+    int top = intOption(argc, argv, "--top", "50");
+    if (top < 0) {
+        top = 0;
+    }
+
+    const mse::Corpus corpus = mse::Corpus::load(manifest);
+    const mse::WordCount result = mse::countWords(corpus, options);
+    mse::writeWordCountCsv(csvPath, result);
+
+    std::cout << "manifest : " << manifest << "\n"
+              << "documents: " << result.documents << "\n"
+              << "tokens   : " << result.tokens << "\n"
+              << "distinct : " << result.distinctTerms << "\n"
+              << "hapax    : " << result.hapax << " (tf = 1)\n"
+              << "csv      : " << csvPath << "\n";
+
+    // stop-word candidates for the task (1) analysis (plan.md 4.2)
+    std::size_t candidates = 0;
+    std::string list;
+    for (const mse::TermRow& row : result.rows) {
+        if (!row.stopCandidate) {
+            continue;
+        }
+        if (candidates < 40) {
+            if (!list.empty()) list += ' ';
+            list += row.term;
+        }
+        ++candidates;
+    }
+    std::cout << "stop-candidates (df_ratio>=0.75 && tf_share>=0.1%): " << candidates << "\n";
+    if (!list.empty()) {
+        std::cout << "  " << list << (candidates > 40 ? " ..." : "") << "\n";
+    }
+
+    if (top > 0) {
+        std::cout << "\ntop " << top << " by term frequency:\n"
+                  << "  rank\tterm\ttf\tdf\tdf%\tshare%\n";
+        for (int i = 0; i < top && static_cast<std::size_t>(i) < result.rows.size(); ++i) {
+            const mse::TermRow& row = result.rows[static_cast<std::size_t>(i)];
+            std::cout << "  " << (i + 1) << '\t' << row.term << '\t' << row.tf
+                      << '\t' << row.df << '\t'
+                      << std::fixed << std::setprecision(1) << (100.0 * row.dfRatio)
+                      << '\t' << (100.0 * row.tfShare) << '\n';
+        }
+        std::cout.unsetf(std::ios::fixed);
     }
     return 0;
 }
@@ -153,6 +226,9 @@ int main(int argc, char** argv) {
         }
         if (command == "tokenize") {
             return commandTokenize(argc, argv);
+        }
+        if (command == "count") {
+            return commandCount(argc, argv);
         }
         std::cerr << "unknown or not-yet-implemented command: " << command << "\n\n";
         printUsage(argv[0]);
