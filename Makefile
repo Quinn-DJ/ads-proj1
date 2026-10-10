@@ -1,6 +1,7 @@
 # Makefile -- build the mini search engine (mse). See plan.md section 13.
 #
 #   make          build build/mse
+#   make test     build and run the unit tests
 #   make clean    remove the build/ directory
 
 CXX      ?= c++
@@ -12,6 +13,15 @@ OBJS     := $(patsubst src/%.cpp,$(BUILD)/%.o,$(SRCS))
 DEPS     := $(OBJS:.o=.d)
 
 all: $(BUILD)/mse
+
+TEST_BIN  := $(BUILD)/test_tokenizer
+TEST_SRCS := tests/test_tokenizer.cpp src/tokenizer.cpp
+
+test: $(TEST_BIN)
+	$(TEST_BIN)
+
+$(TEST_BIN): $(TEST_SRCS) include/tokenizer.hpp include/corpus.hpp | $(BUILD)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(TEST_SRCS)
 
 $(BUILD)/mse: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
@@ -27,4 +37,4 @@ clean:
 
 -include $(DEPS)
 
-.PHONY: all clean
+.PHONY: all test clean

@@ -67,7 +67,7 @@ public:
     const Document& byID(int docID) const;
 
     // Storage statistics; used by `mse stats` and by tests to cross-check the
-    // Python preprocessing numbers (152 080 lines / 930 914 words).
+    // Python preprocessing numbers (152 632 lines / 930 911 words).
     struct Stats {
         std::size_t documents = 0;
         std::size_t lines = 0;

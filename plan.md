@@ -109,7 +109,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 - `tools/fetch_corpus.sh`：`git clone` shakespeare.mit.edu 的官方 GitHub 镜像（`TheMITTech/shakespeare`），把整站 HTML 同步到 `data/raw/`，并把仓库 URL、commit、抓取日期、文件数写入 `data/raw/SOURCE.txt`，保证语料可复现。
 - 抓取一次后本地离线可复现；重跑脚本加 `--force` 即可更新镜像（旧目录保留为备份，不直接删除）。
-- `tools/extract.py`：把 HTML 转成行式文本层 `data/text/*.txt`（195 个文档；首跑 152 080 行、930 914 词），并生成 `data/manifest.tsv`：`docid / kind / category / title / text / source / url`（docID 从 1 开始，按站点索引页顺序：喜剧 17 → 历史 10 → 悲剧 10 → 十四行诗 154 → 长诗 4）。docID 稳定是测试可复现的前提。
+- `tools/extract.py`：把 HTML 转成行式文本层 `data/text/*.txt`（195 个文档；152 632 行、930 911 词），并生成 `data/manifest.tsv`：`docid / kind / category / title / text / source / url`（docID 从 1 开始，按站点索引页顺序：喜剧 17 → 历史 10 → 悲剧 10 → 十四行诗 154 → 长诗 4）。docID 稳定是测试可复现的前提。
 - **站点结构已确认**（commit `6b82db8`，共 1211 个 HTML）：37 部剧各一个文件夹，含 `index.html`（作品页）、`full.html`（整篇台词）和分场页 `<work>.<act>.<scene>.html`（共 922 个）；诗歌都在 `Poetry/`：`sonnets.html` 是 154 首十四行诗的索引、每首有独立页 `sonnet.I–CLIV.html`，另有 `VenusAndAdonis.html`、`RapeOfLucrece.html`、`LoversComplaint.html`、`elegy.html` 各一篇。
 - 根目录的 `index.html` 是唯一权威的文档清单（首页四栏链接 37 剧 + 5 项诗歌）；大写目录 `Comedy/`、`History/`、`Tragedy/`（共 50 个文件）是旧版残留、与首页无链接，不参与建索引。`Poetry/sonnets`、`Poetry/various` 是纯文本 Moby 版本，也不使用。
 
@@ -130,7 +130,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 | `@BERNARDO` | 粗体 `<b>` 说话人标签 | 过滤（`--keep-speakers` 保留） |
 | `Who's there?` | 台词行锚点 `<A NAME=a.s.l>`、诗歌 `<BR>` 行、散文段落 | 正文，参与检索 |
 
-解析要点（全部经过全量验证，0 警告）：解码实体、合并空白；丢弃 `<head>`、顶部导航表格（`td.play`/`td.nav`）和 `<a href>` 链接；诗歌行的 `<BR>` 逐行拆分；散文段落折叠为一行；`elegy.html` 里表格版诗文的行号单元格（纯数字）丢弃；该文件 `</TITLE` 标签残缺，靠 `<body>` 恢复（脚本里有注释说明）。
+解析要点（全部经过全量验证，0 警告）：解码实体、合并空白；丢弃 `<head>`、顶部导航表格（`td.play`/`td.nav`）和 `<a href>` 链接；诗歌行的 `<BR>` 逐行拆分；散文段落折叠为一行；诗句中夹带的方括号舞台提示（`[Aside]`、`[Sings]`、`[To ...]`，共 610 处）拆成独立的 `(...)` 舞台行，避免 `aside`/人名等混进正文词表；`2henryiv` 源码里的转换残渣 `<h3>None</h3>` 丢弃（1 处）；`elegy.html` 里表格版诗文的行号单元格（纯数字）丢弃；该文件 `</TITLE` 标签残缺，靠 `<body>` 恢复（脚本里有注释说明）。
 
 衍生决策：`<A NAME=act.scene.line>` 的行号锚点（如 `1.1.1`）本轮没有写进文本层——`--pretty` 句子定位靠重新切词即可；如果后面想要精确到"行"的引用，扩展 `extract.py` 重跑即可（文本层是派生物，随时可再生成）。
 
@@ -370,7 +370,7 @@ proj1/
 | M3（D9–D11） | 阈值模块 + 阈值矩阵 + 性能数据 | `threshold_matrix.csv` + 图 |
 | M4（D12–D14） | 报告四章 + 注释率检查 + 匿名打包 | 评审清单逐项过一遍 |
 
-进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 080 行、930 914 词、0 警告）与 C++ 存储层（`src/corpus` + `mse stats`，统计数字逐项对拍一致）已完成；下一步是 tokenizer 与 `count` 程序。
+进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词、0 警告）、C++ 存储层（`src/corpus` + `mse stats`）与 tokenizer（`src/tokenizer` + 20 条单元测试；与独立 Python 实现逐文档对拍 100% 一致，正文 token 共 866 626 个）已完成；下一步是 `count`（词频/文档频率）程序。
 
 ---
 
