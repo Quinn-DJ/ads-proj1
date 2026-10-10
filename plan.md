@@ -73,9 +73,10 @@ index 序列化 ──► build/index.bin
 query 子命令：单词 / 短语 /（多词）→ docID 列表；阈值参数调节结果集
 ```
 
-CLI 统一入口（二进制名 `mse`）：
+CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ```text
+./mse stats  --manifest data/manifest.tsv      # 语料统计（已实现，用于和 Python 预处理数字对拍）
 ./mse count  --manifest data/manifest.tsv --csv build/wordcount.csv [--top 200]
 ./mse build  --manifest data/manifest.tsv --index build/index.bin
 ./mse dump   --index build/index.bin --term love [--limit 20]
@@ -368,7 +369,7 @@ proj1/
 | M3（D9–D11） | 阈值模块 + 阈值矩阵 + 性能数据 | `threshold_matrix.csv` + 图 |
 | M4（D12–D14） | 报告四章 + 注释率检查 + 匿名打包 | 评审清单逐项过一遍 |
 
-进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）与文本层 + manifest（195 个文档、152 080 行、930 914 词、0 警告）已完成；下一步是 tokenizer 与 `count` 程序。
+进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 080 行、930 914 词、0 警告）与 C++ 存储层（`src/corpus` + `mse stats`，统计数字逐项对拍一致）已完成；下一步是 tokenizer 与 `count` 程序。
 
 ---
 
