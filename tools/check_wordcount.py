@@ -4,7 +4,8 @@
 The C++ counter (src/count.cpp + src/tokenizer.cpp) and this script implement
 the same specification *independently*; their outputs must be byte-identical:
 
-    make && ./build/mse count --csv build/wordcount.csv
+    cmake -S . -B build && cmake --build build
+    ./build/mse count --csv build/wordcount.csv
     python3 tools/check_wordcount.py > build/wordcount_py.csv
     diff build/wordcount.csv build/wordcount_py.csv && echo identical
 

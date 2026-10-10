@@ -1,4 +1,4 @@
-// test_tokenizer.cpp -- unit tests for the tokenizer (run via `make test`).
+// test_tokenizer.cpp -- unit tests for the tokenizer (run via `ctest --test-dir build`).
 //
 // The table covers every edge case listed in plan.md 3.4: contraction
 // apostrophes (internal / leading / trailing / doubled), hyphens, digits,

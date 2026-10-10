@@ -1,5 +1,16 @@
 # build outputs / generated artifacts
+# build/ is the CMake binary directory (cmake -S . -B build)
 build/
+
+# CMake leftovers from an accidental in-source configure (cmake .)
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+Testing/
+install_manifest.txt
 
 # corpus re-download backups (created by tools/fetch_corpus.sh --force)
 raw.bak.*/
@@ -14,3 +25,6 @@ __pycache__/
 # editors
 .vscode/
 .idea/
+
+# clangd index cache (appears once build/compile_commands.json exists)
+.cache/

@@ -276,7 +276,7 @@ serialize(index) → index.bin
 
 ## 10. 测试与验证（Testing 2+2+3 pts）
 
-三层测试，全部可一键跑：`tests/run_all.sh`。
+三层测试，全部可一键跑：`ctest --test-dir build`（由 CTest 统一登记与调度，见 §13）。
 
 1. **单元测试**
    - tokenizer：撇号、连字符、大小写、空输入；
@@ -336,24 +336,26 @@ References 预留条目：Porter stemmer（论文/代码地址）、停用词表
 proj1/
 ├── problem.md / problem_zh.md / plan.md / README.md / notes.md
 │                                       # README=用法；notes=开发笔记（坑与发现）
-├── Makefile                            # make / make test / make clean
+├── CMakeLists.txt                      # cmake -S . -B build / cmake --build build
 ├── data/
 │   ├── raw/                            # 抓取到的 html（不进 zip 提交）
 │   ├── text/                           # extract.py 生成的行式文本层（195 个 .txt）
 │   ├── manifest.tsv
 │   └── stopwords.txt                   # 头部注释写来源与理由
-├── build/                              # index.bin、csv、测试输出（gitignore）
+├── build/                              # CMake 二进制目录 + index.bin、csv、测试输出（gitignore）
 ├── include/{corpus,tokenizer,stopwords,stemmer,dict,posting,index,query}.hpp
 ├── src/{main,corpus,tokenizer,stopwords,stemmer,dict,posting,index,query}.cpp
 ├── tools/{fetch_corpus.sh,extract.py,brute_force.py,comment_ratio.py,plot_*.py}
 └── tests/
+    ├── CMakeLists.txt                  # CTest 用例登记（取代 run_all.sh）
     ├── fixtures/golden4/               # 讲义四文档 + 期望 posting
     ├── fixtures/stem_vectors.tsv
     ├── tests.md                        # 用例表（报告 Chapter 3 底稿）
-    └── run_all.sh
+    └── test_*.cpp                      # 每个用例一个可执行文件，自校验退出码
 ```
 
-- 编译：`-std=c++17 -O2 -Wall -Wextra`，要求零警告；`make test` 一键跑全部测试。
+- 编译：CMake ≥ 3.16 配置，默认 Release + `-std=c++17` + `-Wall -Wextra`，要求零警告
+  （`-DMSE_WERROR=ON` 可把警告直接变成错误）；`ctest --test-dir build` 一键跑全部测试。
 - 注释规范：每个函数头 4 行（目的/参数/返回/复杂度）+ 关键逻辑行内注释；`tools/comment_ratio.py` 统计非空行注释率，超过 35% 才允许提交。
 - 外部代码（Porter stemmer）单独文件 + 文件头注明来源，与自写代码区分清楚。
 - 提交前匿名检查：删除 `.git`、`.DS_Store`、`.vscode`，报告转 PDF，文件名按课程格式（如 `wc_2026G03_P1.pdf`），文档内不出现任何身份信息。
@@ -401,7 +403,7 @@ proj1/
 
 ## 17. Done 的定义（提交前逐项打勾）
 
-- [ ] `make && make test` 一条命令通过，零警告
+- [ ] `cmake -S . -B build && cmake --build build && ctest --test-dir build` 一条链通过，零警告
 - [ ] 黄金样例两套期望全部一致；随机对拍 100%；`selftest` 全部不变量通过
 - [ ] 单词/短语/边界用例全部符合测试表；阈值矩阵 CSV 与图完成
 - [ ] 注释率 ≥ 35%，外部代码来源标注清楚

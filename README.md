@@ -12,17 +12,21 @@
 
 | 依赖 | 用途 |
 |------|------|
-| C++17 编译器（clang++ / g++） | 编译 `build/mse` |
-| `make` | 构建与测试 |
+| C++17 编译器（clang++ / g++ / MSVC） | 编译 `build/mse` |
+| CMake ≥ 3.16（生成器任选：Ninja / Make / Visual Studio） | 配置、构建与测试 |
 | Python 3.8+ | 仅 `tools/` 下的语料处理脚本；日常使用**不需要**（语料已随仓库提交） |
 
 ## 快速开始
 
 ```bash
-make            # 编译，产物为 build/mse
-make test       # 运行单元测试
+cmake -S . -B build                          # 配置，产物目录 build/
+cmake --build build                          # 编译，产物为 build/mse
+ctest --test-dir build --output-on-failure   # 运行单元测试
 ./build/mse stats
 ```
+
+> Windows 上不加 `-G` 时默认走 Visual Studio（多配置生成器）：产物是 `build/Release/mse.exe`，
+> 测试要写 `ctest --test-dir build -C Release`；想和上面完全一致就加 `-G Ninja`。
 
 > 以下命令都默认在 `proj1/` 目录下执行；路径选项均可用 `--manifest <path>` 覆盖。
 
@@ -32,31 +36,53 @@ make test       # 运行单元测试
 proj1/
 ├── include/                  # C++ 头文件（接口）
 │   ├── corpus.hpp            #   文档存储：manifest + 文本层 → 内存
-│   └── tokenizer.hpp         #   切词：文本行 → 规范化 token 流
+│   ├── tokenizer.hpp         #   切词：文本行 → 规范化 token 流
+│   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
 │   ├── corpus.cpp
 │   ├── tokenizer.cpp
+│   ├── count.cpp
 │   └── main.cpp              #   CLI 入口
-├── tests/                    # 单元测试（make test）
+├── tests/                    # 单元测试（ctest）
+│   ├── CMakeLists.txt        #   用例清单：新增 test_*.cpp 后登记到 MSE_TESTS
+│   └── test_tokenizer.cpp    #   tokenizer 用例，失败即非零退出
 ├── tools/                    # 语料处理脚本（Python / Bash）
 ├── data/
 │   ├── raw/                  # 原始 HTML 镜像（1211 个文件，含 SOURCE.txt）
 │   ├── text/                 # 行式文本层（195 个 .txt，格式说明见其 README.md）
 │   └── manifest.tsv          # 文档表：docid ↔ 标题/路径/URL
-├── build/                    # 编译产物（gitignore，可 make clean 删除）
-├── Makefile
+├── build/                    # CMake 二进制目录 + 生成物（gitignore，删掉即可）
+├── CMakeLists.txt            # 构建入口：cmake -S . -B build / ctest
 └── problem.md / problem_zh.md / plan.md
 ```
 
 ## 构建与测试
 
 ```bash
-make            # 编译 build/mse（-Iinclude -std=c++17 -O2 -Wall -Wextra，要求零警告）
-make test       # 编译并运行 tests/ 下的单元测试
-make clean      # 删除 build/
+cmake -S . -B build                          # 配置：默认 Release（等价 -O2）+ C++17 + -Wall -Wextra
+cmake --build build                          # 编译 build/mse
+ctest --test-dir build --output-on-failure   # 运行 tests/ 下的单元测试 + 语料冒烟测试
+cmake --build build --target clean           # 清理构建产物（或直接删除 build/）
 ```
 
-新增模块时把接口放 `include/xxx.hpp`、实现放 `src/xxx.cpp` 即可，Makefile 会自动纳入编译。
+常用开关（配置阶段加在 `cmake -S . -B build` 后面即可）：
+
+| 开关 | 作用 |
+|------|------|
+| `-G Ninja` | 指定生成器（默认用平台生成器；本机装了 Ninja 时推荐） |
+| `-DCMAKE_BUILD_TYPE=Debug` | 调试版（默认 Release） |
+| `-DMSE_WERROR=ON` | 零警告验收门：把 `-Wall -Wextra` 的警告当错误 |
+| `-DBUILD_TESTING=OFF` | 只编译 `mse`，不编译测试 |
+| `-DCMAKE_CXX_STANDARD=20` | 试用更新的语言标准（默认 17） |
+
+说明：
+
+- 必须**源外构建**（`build/` 已在 `.gitignore` 中）；换生成器或换编译器时换个目录即可，
+  例如 `cmake -S . -B build-gcc -G Ninja -DCMAKE_CXX_COMPILER=g++`。
+- 多配置生成器（Visual Studio）产物在 `build/Release/mse.exe`，运行时 `ctest --test-dir build -C Release`。
+- 配置后会在 `build/compile_commands.json` 生成编译数据库，clangd / clang-tidy 可直接使用。
+- 新增模块时把接口放 `include/xxx.hpp`、实现放 `src/xxx.cpp`，再把 `src/xxx.cpp` 加进
+  `CMakeLists.txt` 里 `mse_core` 的源文件列表（新测试同理，登记到 `tests/CMakeLists.txt` 的 `MSE_TESTS`）。
 
 ## 命令参考
 
