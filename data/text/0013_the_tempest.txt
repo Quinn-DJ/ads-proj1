@@ -575,7 +575,8 @@ Fetch in our wood and serves in offices
 That profit us. What, ho! slave! Caliban!
 Thou earth, thou! speak.
 @CALIBAN
-[Within] There's wood enough within.
+(Within)
+There's wood enough within.
 @PROSPERO
 Come forth, I say! there's other business for thee:
 Come, thou tortoise! when?
@@ -720,7 +721,8 @@ I might call him
 A thing divine, for nothing natural
 I ever saw so noble.
 @PROSPERO
-[Aside] It goes on, I see,
+(Aside)
+It goes on, I see,
 As my soul prompts it. Spirit, fine spirit! I'll free thee
 Within two days for this.
 @FERDINAND
@@ -753,7 +755,8 @@ Alack, for mercy!
 Yes, faith, and all his lords; the Duke of Milan
 And his brave son being twain.
 @PROSPERO
-[Aside] The Duke of Milan
+(Aside)
+The Duke of Milan
 And his more braver daughter could control thee,
 If now 'twere fit to do't. At the first sight
 They have changed eyes. Delicate Ariel,
@@ -845,7 +848,8 @@ Behold this maid: all corners else o' the earth
 Let liberty make use of; space enough
 Have I in such a prison.
 @PROSPERO
-[Aside] It works.
+(Aside)
+It works.
 (To FERDINAND)
 Come on.
 Thou hast done well, fine Ariel!
@@ -1548,7 +1552,8 @@ Stephano, two Neapolitans 'scaped!
 @STEPHANO
 Prithee, do not turn me about; my stomach is not constant.
 @CALIBAN
-[Aside] These be fine things, an if they be
+(Aside)
+These be fine things, an if they be
 not sprites.
 That's a brave god and bears celestial liquor.
 I will kneel to him.
@@ -1633,7 +1638,7 @@ else being drowned, we will inherit here: here;
 bear my bottle: fellow Trinculo, we'll fill him by
 and by again.
 @CALIBAN
-[Sings drunkenly]
+(Sings drunkenly)
 Farewell master; farewell, farewell!
 @TRINCULO
 A howling monster: a drunken monster!
@@ -2034,20 +2039,24 @@ No longer for my flatterer: he is drown'd
 Whom thus we stray to find, and the sea mocks
 Our frustrate search on land. Well, let him go.
 @ANTONIO
-[Aside to SEBASTIAN] I am right glad that he's so
+(Aside to SEBASTIAN)
+I am right glad that he's so
 out of hope.
 Do not, for one repulse, forego the purpose
 That you resolved to effect.
 @SEBASTIAN
-[Aside to ANTONIO] The next advantage
+(Aside to ANTONIO)
+The next advantage
 Will we take throughly.
 @ANTONIO
-[Aside to SEBASTIAN] Let it be to-night;
+(Aside to SEBASTIAN)
+Let it be to-night;
 For, now they are oppress'd with travel, they
 Will not, nor cannot, use such vigilance
 As when they are fresh.
 @SEBASTIAN
-[Aside to ANTONIO] I say, to-night: no more.
+(Aside to ANTONIO)
+I say, to-night: no more.
 (Solemn and strange music)
 @ALONSO
 What harmony is this? My good friends, hark!
@@ -2077,7 +2086,8 @@ Their manners are more gentle-kind than of
 Our human generation you shall find
 Many, nay, almost any.
 @PROSPERO
-[Aside] Honest lord,
+(Aside)
+Honest lord,
 Thou hast said well; for some of you there present
 Are worse than devils.
 @ALONSO
@@ -2086,7 +2096,8 @@ Such shapes, such gesture and such sound, expressing,
 Although they want the use of tongue, a kind
 Of excellent dumb discourse.
 @PROSPERO
-[Aside] Praise in departing.
+(Aside)
+Praise in departing.
 @FRANCISCO
 They vanish'd strangely.
 @SEBASTIAN
@@ -2379,7 +2390,8 @@ And these fresh nymphs encounter every one
 In country footing.
 (Enter certain Reapers, properly habited: they join with the Nymphs in a graceful dance; towards the end whereof PROSPERO starts suddenly, and speaks; after which, to a strange, hollow, and confused noise, they heavily vanish)
 @PROSPERO
-[Aside] I had forgot that foul conspiracy
+(Aside)
+I had forgot that foul conspiracy
 Of the beast Caliban and his confederates
 Against my life: the minute of their plot
 Is almost come.
@@ -2734,7 +2746,8 @@ I here could pluck his highness' frown upon you
 And justify you traitors: at this time
 I will tell no tales.
 @SEBASTIAN
-[Aside] The devil speaks in him.
+(Aside)
+The devil speaks in him.
 @PROSPERO
 No.
 For you, most wicked sir, whom to call brother
@@ -2864,7 +2877,8 @@ Where he himself was lost, Prospero his dukedom
 In a poor isle and all of us ourselves
 When no man was his own.
 @ALONSO
-[To FERDINAND and MIRANDA] Give me your hands:
+(To FERDINAND and MIRANDA)
+Give me your hands:
 Let grief and sorrow still embrace his heart
 That doth not wish you joy!
 @GONZALO
@@ -2882,10 +2896,12 @@ Which, but three glasses since, we gave out split--
 Is tight and yare and bravely rigg'd as when
 We first put out to sea.
 @ARIEL
-[Aside to PROSPERO] Sir, all this service
+(Aside to PROSPERO)
+Sir, all this service
 Have I done since I went.
 @PROSPERO
-[Aside to ARIEL] My tricksy spirit!
+(Aside to ARIEL)
+My tricksy spirit!
 @ALONSO
 These are not natural events; they strengthen
 From strange to stranger. Say, how came you hither?
@@ -2903,9 +2919,11 @@ Capering to eye her: on a trice, so please you,
 Even in a dream, were we divided from them
 And were brought moping hither.
 @ARIEL
-[Aside to PROSPERO] Was't well done?
+(Aside to PROSPERO)
+Was't well done?
 @PROSPERO
-[Aside to ARIEL] Bravely, my diligence. Thou shalt be free.
+(Aside to ARIEL)
+Bravely, my diligence. Thou shalt be free.
 @ALONSO
 This is as strange a maze as e'er men trod
 And there is in this business more than nature

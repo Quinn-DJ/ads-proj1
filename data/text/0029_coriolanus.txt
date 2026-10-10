@@ -340,13 +340,15 @@ O, true-bred!
 Your company to the Capitol; where, I know,
 Our greatest friends attend us.
 @TITUS
-[To COMINIUS] Lead you on.
+(To COMINIUS)
+Lead you on.
 (To MARCIUS)
 Right worthy you priority.
 @COMINIUS
 Noble Marcius!
 @First Senator
-[To the Citizens] Hence to your homes; be gone!
+(To the Citizens)
+Hence to your homes; be gone!
 @MARCIUS
 Nay, let them follow:
 The Volsces have much corn; take these rats thither
@@ -829,7 +831,8 @@ That does appear as he were flay'd? O gods
 He has the stamp of Marcius; and I have
 Before-time seen him thus.
 @MARCIUS
-[Within] Come I too late?
+(Within)
+Come I too late?
 @COMINIUS
 The shepherd knows not thunder from a tabour
 More than I know the sound of Marcius' tongue
@@ -1429,7 +1432,8 @@ Menenius ever, ever.
 @Herald
 Give way there, and go on!
 @CORIOLANUS
-[To VOLUMNIA and VIRGILIA] Your hand, and yours:
+(To VOLUMNIA and VIRGILIA)
+Your hand, and yours:
 Ere in our own house I do shade my head,
 The good patricians must be visited;
 From whom I have received not only greetings,
@@ -2544,7 +2548,8 @@ Beseech you, tribunes, hear me but a word.
 @AEdile
 Peace, peace!
 @MENENIUS
-[To BRUTUS] Be that you seem, truly your
+(To BRUTUS)
+Be that you seem, truly your
 country's friend,
 And temperately proceed to what you would
 Thus violently redress.
@@ -3338,7 +3343,8 @@ Nay, and you shall hear some.
 (To BRUTUS)
 Will you be gone?
 @VIRGILIA
-[To SICINIUS] You shall stay too: I would I had the power
+(To SICINIUS)
+You shall stay too: I would I had the power
 To say so to my husband.
 @SICINIUS
 Are you mankind?
@@ -4738,7 +4744,8 @@ What peace you'll make, advise me: for my part,
 I'll not to Rome, I'll back with you; and pray you,
 Stand to me in this cause. O mother! wife!
 @AUFIDIUS
-[Aside] I am glad thou hast set thy mercy and
+(Aside)
+I am glad thou hast set thy mercy and
 thy honour
 At difference in thee: out of that I'll work
 Myself a former fortune.

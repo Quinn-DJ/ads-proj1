@@ -204,7 +204,8 @@ Henry the Fourth by conquest got the crown.
 @YORK
 'Twas by rebellion against his king.
 @KING HENRY VI
-[Aside] I know not what to say; my title's weak.--
+(Aside)
+I know not what to say; my title's weak.--
 Tell me, may not a king adopt an heir?
 @YORK
 What then?
@@ -231,7 +232,8 @@ Why whisper you, my lords, and answer not?
 @EXETER
 My conscience tells me he is lawful king.
 @KING HENRY VI
-[Aside] All will revolt from me, and turn to him.
+(Aside)
+All will revolt from me, and turn to him.
 @NORTHUMBERLAND
 Plantagenet, for all the claim thou lay'st,
 Think not that Henry shall be so deposed.
@@ -1847,14 +1849,17 @@ It were dishonour to deny it her.
 @KING EDWARD IV
 It were no less; but yet I'll make a pause.
 @GLOUCESTER
-[Aside to CLARENCE] Yea, is it so?
+(Aside to CLARENCE)
+Yea, is it so?
 I see the lady hath a thing to grant,
 Before the king will grant her humble suit.
 @CLARENCE
-[Aside to GLOUCESTER] He knows the game: how true
+(Aside to GLOUCESTER)
+He knows the game: how true
 he keeps the wind!
 @GLOUCESTER
-[Aside to CLARENCE] Silence!
+(Aside to CLARENCE)
+Silence!
 @KING EDWARD IV
 Widow, we will consider of your suit;
 And come some other time to know our mind.
@@ -1863,28 +1868,34 @@ Right gracious lord, I cannot brook delay:
 May it please your highness to resolve me now;
 And what your pleasure is, shall satisfy me.
 @GLOUCESTER
-[Aside to CLARENCE] Ay, widow? then I'll warrant
+(Aside to CLARENCE)
+Ay, widow? then I'll warrant
 you all your lands,
 An if what pleases him shall pleasure you.
 Fight closer, or, good faith, you'll catch a blow.
 @CLARENCE
-[Aside to GLOUCESTER] I fear her not, unless she
+(Aside to GLOUCESTER)
+I fear her not, unless she
 chance to fall.
 @GLOUCESTER
-[Aside to CLARENCE] God forbid that! for he'll
+(Aside to CLARENCE)
+God forbid that! for he'll
 take vantages.
 @KING EDWARD IV
 How many children hast thou, widow? tell me.
 @CLARENCE
-[Aside to GLOUCESTER] I think he means to beg a
+(Aside to GLOUCESTER)
+I think he means to beg a
 child of her.
 @GLOUCESTER
-[Aside to CLARENCE] Nay, whip me then: he'll rather
+(Aside to CLARENCE)
+Nay, whip me then: he'll rather
 give her two.
 @LADY GREY
 Three, my most gracious lord.
 @GLOUCESTER
-[Aside to CLARENCE] You shall have four, if you'll
+(Aside to CLARENCE)
+You shall have four, if you'll
 be ruled by him.
 @KING EDWARD IV
 'Twere pity they should lose their father's lands.
@@ -1893,7 +1904,8 @@ Be pitiful, dread lord, and grant it then.
 @KING EDWARD IV
 Lords, give us leave: I'll try this widow's wit.
 @GLOUCESTER
-[Aside to CLARENCE] Ay, good leave have you; for
+(Aside to CLARENCE)
+Ay, good leave have you; for
 you will have leave,
 Till youth take leave and leave you to the crutch.
 (GLOUCESTER and CLARENCE retire)
@@ -1926,10 +1938,12 @@ Ay, but thou canst do what I mean to ask.
 @LADY GREY
 Why, then I will do what your grace commands.
 @GLOUCESTER
-[Aside to CLARENCE] He plies her hard; and much rain
+(Aside to CLARENCE)
+He plies her hard; and much rain
 wears the marble.
 @CLARENCE
-[Aside to GLOUCESTER] As red as fire! nay, then
+(Aside to GLOUCESTER)
+As red as fire! nay, then
 her wax must melt.
 @LADY GREY
 Why stops my lord, shall I not hear my task?
@@ -1942,7 +1956,8 @@ Why, then, thy husband's lands I freely give thee.
 @LADY GREY
 I take my leave with many thousand thanks.
 @GLOUCESTER
-[Aside to CLARENCE] The match is made; she seals it
+(Aside to CLARENCE)
+The match is made; she seals it
 with a curtsy.
 @KING EDWARD IV
 But stay thee, 'tis the fruits of love I mean.
@@ -1985,13 +2000,16 @@ No if thou dost say 'no' to my demand.
 @LADY GREY
 Then, no, my lord. My suit is at an end.
 @GLOUCESTER
-[Aside to CLARENCE] The widow likes him not, she
+(Aside to CLARENCE)
+The widow likes him not, she
 knits her brows.
 @CLARENCE
-[Aside to GLOUCESTER] He is the bluntest wooer in
+(Aside to GLOUCESTER)
+He is the bluntest wooer in
 Christendom.
 @KING EDWARD IV
-[Aside] Her looks do argue her replete with modesty;
+(Aside)
+Her looks do argue her replete with modesty;
 Her words do show her wit incomparable;
 All her perfections challenge sovereignty:
 One way or other, she is for a king;
@@ -2021,10 +2039,12 @@ Have other some: why, 'tis a happy thing
 To be the father unto many sons.
 Answer no more, for thou shalt be my queen.
 @GLOUCESTER
-[Aside to CLARENCE] The ghostly father now hath done
+(Aside to CLARENCE)
+The ghostly father now hath done
 his shrift.
 @CLARENCE
-[Aside to GLOUCESTER] When he was made a shriver,
+(Aside to GLOUCESTER)
+When he was made a shriver,
 'twas for shift.
 @KING EDWARD IV
 Brothers, you muse what chat we two have had.
@@ -2208,9 +2228,11 @@ With a nuptial knot, if thou vouchsafe to grant
 That virtuous Lady Bona, thy fair sister,
 To England's king in lawful marriage.
 @QUEEN MARGARET
-[Aside] If that go forward, Henry's hope is done.
+(Aside)
+If that go forward, Henry's hope is done.
 @WARWICK
-[To BONA] And, gracious madam, in our king's behalf,
+(To BONA)
+And, gracious madam, in our king's behalf,
 I am commanded, with your leave and favour,
 Humbly to kiss your hand, and with my tongue
 To tell the passion of my sovereign's heart;
@@ -2348,7 +2370,8 @@ For both of you are birds of selfsame feather.
 Warwick, this is some post to us or thee.
 (Enter a Post)
 @Post
-[To WARWICK] My lord ambassador, these letters are for you,
+(To WARWICK)
+My lord ambassador, these letters are for you,
 Sent from your brother, Marquess Montague:
 (To KING LEWIS XI)
 These from our king unto your majesty:
@@ -2600,7 +2623,8 @@ Unless they seek for hatred at my hands;
 Which if they do, yet will I keep thee safe,
 And they shall feel the vengeance of my wrath.
 @GLOUCESTER
-[Aside] I hear, yet say not much, but think the more.
+(Aside)
+I hear, yet say not much, but think the more.
 (Enter a Post)
 @KING EDWARD IV
 Now, messenger, what letters or what news
@@ -2658,7 +2682,8 @@ I may not prove inferior to yourself.
 You that love me and Warwick, follow me.
 (Exit CLARENCE, and SOMERSET follows)
 @GLOUCESTER
-[Aside] Not I:
+(Aside)
+Not I:
 My thoughts aim at a further matter; I
 Stay not for the love of Edward, but the crown.
 @KING EDWARD IV
@@ -3091,7 +3116,8 @@ True, my good lord; I know you for no less.
 Why, and I challenge nothing but my dukedom,
 As being well content with that alone.
 @GLOUCESTER
-[Aside] But when the fox hath once got in his nose,
+(Aside)
+But when the fox hath once got in his nose,
 He'll soon find means to make the body follow.
 @HASTINGS
 Why, master mayor, why stand you in a doubt?
@@ -3921,7 +3947,8 @@ Went all afoot in summer's scalding heat,
 That thou mightst repossess the crown in peace;
 And of our labours thou shalt reap the gain.
 @GLOUCESTER
-[Aside] I'll blast his harvest, if your head were laid;
+(Aside)
+I'll blast his harvest, if your head were laid;
 For yet I am not look'd on in the world.
 This shoulder was ordain'd so thick to heave;
 And heave it shall some weight, or break my back:

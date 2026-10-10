@@ -341,7 +341,8 @@ Take thy fair hour, Laertes; time be thine,
 And thy best graces spend it at thy will!
 But now, my cousin Hamlet, and my son,--
 @HAMLET
-[Aside] A little more than kin, and less than kind.
+(Aside)
+A little more than kin, and less than kind.
 @KING CLAUDIUS
 How is it that the clouds still hang on you?
 @HAMLET
@@ -1074,15 +1075,19 @@ It is 'Adieu, adieu! remember me.'
 I have sworn 't.
 @MARCELLUS
 @HORATIO
-[Within] My lord, my lord,--
+(Within)
+My lord, my lord,--
 @MARCELLUS
-[Within] Lord Hamlet,--
+(Within)
+Lord Hamlet,--
 @HORATIO
-[Within] Heaven secure him!
+(Within)
+Heaven secure him!
 @HAMLET
 So be it!
 @HORATIO
-[Within] Hillo, ho, ho, my lord!
+(Within)
+Hillo, ho, ho, my lord!
 @HAMLET
 Hillo, ho, ho, boy! come, bird, come.
 (Enter HORATIO and MARCELLUS)
@@ -1156,7 +1161,8 @@ We have sworn, my lord, already.
 @HAMLET
 Indeed, upon my sword, indeed.
 @Ghost
-[Beneath] Swear.
+(Beneath)
+Swear.
 @HAMLET
 Ah, ha, boy! say'st thou so? art thou there,
 truepenny?
@@ -1168,7 +1174,8 @@ Propose the oath, my lord.
 Never to speak of this that you have seen,
 Swear by my sword.
 @Ghost
-[Beneath] Swear.
+(Beneath)
+Swear.
 @HAMLET
 Hic et ubique? then we'll shift our ground.
 Come hither, gentlemen,
@@ -1176,7 +1183,8 @@ And lay your hands again upon my sword:
 Never to speak of this that you have heard,
 Swear by my sword.
 @Ghost
-[Beneath] Swear.
+(Beneath)
+Swear.
 @HAMLET
 Well said, old mole! canst work i' the earth so fast?
 A worthy pioner! Once more remove, good friends.
@@ -1199,7 +1207,8 @@ Or such ambiguous giving out, to note
 That you know aught of me: this not to do,
 So grace and mercy at your most need help you, Swear.
 @Ghost
-[Beneath] Swear.
+(Beneath)
+Swear.
 @HAMLET
 Rest, rest, perturbed spirit!
 (They swear)
@@ -1595,7 +1604,7 @@ When it proved otherwise?
 @KING CLAUDIUS
 Not that I know.
 @LORD POLONIUS
-[Pointing to his head and shoulder]
+(Pointing to his head and shoulder)
 Take this from this, if this be otherwise:
 If circumstances lead me, I will find
 Where truth is hid, though it were hid indeed
@@ -1652,7 +1661,8 @@ Let her not walk i' the sun: conception is a
 blessing: but not as your daughter may conceive.
 Friend, look to 't.
 @LORD POLONIUS
-[Aside] How say you by that? Still harping on my
+(Aside)
+How say you by that? Still harping on my
 daughter: yet he knew me not at first; he said I
 was a fishmonger: he is far gone, far gone: and
 truly in my youth I suffered much extremity for
@@ -1677,7 +1687,8 @@ I hold it not honesty to have it thus set down, for
 yourself, sir, should be old as I am, if like a crab
 you could go backward.
 @LORD POLONIUS
-[Aside] Though this be madness, yet there is method
+(Aside)
+Though this be madness, yet there is method
 in 't. Will you walk out of the air, my lord?
 @HAMLET
 Into my grave.
@@ -1702,7 +1713,8 @@ These tedious old fools!
 @LORD POLONIUS
 You go to seek the Lord Hamlet; there he is.
 @ROSENCRANTZ
-[To POLONIUS] God save you, sir!
+(To POLONIUS)
+God save you, sir!
 (Exit POLONIUS)
 @GUILDENSTERN
 My honoured lord!
@@ -1802,9 +1814,11 @@ love, and by what more dear a better proposer could
 charge you withal, be even and direct with me,
 whether you were sent for, or no?
 @ROSENCRANTZ
-[Aside to GUILDENSTERN] What say you?
+(Aside to GUILDENSTERN)
+What say you?
 @HAMLET
-[Aside] Nay, then, I have an eye of you.--If you
+(Aside)
+Nay, then, I have an eye of you.--If you
 love me, hold not off.
 @GUILDENSTERN
 My lord, we were sent for.
@@ -1959,7 +1973,8 @@ Why,
 'One fair daughter and no more,
 The which he loved passing well.'
 @LORD POLONIUS
-[Aside] Still on my daughter.
+(Aside)
+Still on my daughter.
 @HAMLET
 Am I not i' the right, old Jephthah?
 @LORD POLONIUS
@@ -2270,7 +2285,8 @@ Your loneliness. We are oft to blame in this,--
 And pious action we do sugar o'er
 The devil himself.
 @KING CLAUDIUS
-[Aside] O, 'tis too true!
+(Aside)
+O, 'tis too true!
 How smart a lash that speech doth give my conscience!
 The harlot's cheek, beautied with plastering art,
 Is not more ugly to the thing that helps it
@@ -2595,7 +2611,8 @@ Come hither, my dear Hamlet, sit by me.
 @HAMLET
 No, good mother, here's metal more attractive.
 @LORD POLONIUS
-[To KING CLAUDIUS] O, ho! do you mark that?
+(To KING CLAUDIUS)
+O, ho! do you mark that?
 @HAMLET
 Lady, shall I lie in your lap?
 (Lying down at OPHELIA's feet)
@@ -2700,7 +2717,8 @@ Such love must needs be treason in my breast:
 In second husband let me be accurst!
 None wed the second but who kill'd the first.
 @HAMLET
-[Aside] Wormwood, wormwood.
+(Aside)
+Wormwood, wormwood.
 @Player Queen
 The instances that second marriage move
 Are base respects of thrift, but none of love:
@@ -3124,7 +3142,8 @@ As hell, whereto it goes. My mother stays:
 This physic but prolongs thy sickly days.
 (Exit)
 @KING CLAUDIUS
-[Rising] My words fly up, my thoughts remain below:
+(Rising)
+My words fly up, my thoughts remain below:
 Words without thoughts never to heaven go.
 (Exit)
 [SCENE IV. The Queen's closet.]
@@ -3136,7 +3155,8 @@ And that your grace hath screen'd and stood between
 Much heat and him. I'll sconce me even here.
 Pray you, be round with him.
 @HAMLET
-[Within] Mother, mother, mother!
+(Within)
+Mother, mother, mother!
 @QUEEN GERTRUDE
 I'll warrant you,
 Fear me not: withdraw, I hear him coming.
@@ -3172,12 +3192,15 @@ Where you may see the inmost part of you.
 What wilt thou do? thou wilt not murder me?
 Help, help, ho!
 @LORD POLONIUS
-[Behind] What, ho! help, help, help!
+(Behind)
+What, ho! help, help, help!
 @HAMLET
-[Drawing] How now! a rat? Dead, for a ducat, dead!
+(Drawing)
+How now! a rat? Dead, for a ducat, dead!
 (Makes a pass through the arras)
 @LORD POLONIUS
-[Behind] O, I am slain!
+(Behind)
+O, I am slain!
 (Falls and dies)
 @QUEEN GERTRUDE
 O me, what hast thou done?
@@ -3491,7 +3514,8 @@ My soul is full of discord and dismay.
 Safely stowed.
 @ROSENCRANTZ
 @GUILDENSTERN
-[Within] Hamlet! Lord Hamlet!
+(Within)
+Hamlet! Lord Hamlet!
 @HAMLET
 What noise? who calls on Hamlet?
 O, here they come.
@@ -3775,7 +3799,7 @@ Where is the beauteous majesty of Denmark?
 @QUEEN GERTRUDE
 How now, Ophelia!
 @OPHELIA
-[Sings]
+(Sings)
 How should I your true love know
 From another one?
 By his cockle hat and staff,
@@ -3799,7 +3823,7 @@ White his shroud as the mountain snow,--
 @QUEEN GERTRUDE
 Alas, look here, my lord.
 @OPHELIA
-[Sings]
+(Sings)
 Larded with sweet flowers
 Which bewept to the grave did go
 With true-love showers.
@@ -3969,7 +3993,8 @@ And am most sensible in grief for it,
 It shall as level to your judgment pierce
 As day does to your eye.
 @Danes
-[Within] Let her come in.
+(Within)
+Let her come in.
 @LAERTES
 How now! what noise is that?
 (Re-enter OPHELIA)
@@ -3984,7 +4009,7 @@ Nature is fine in love, and where 'tis fine,
 It sends some precious instance of itself
 After the thing it loves.
 @OPHELIA
-[Sings]
+(Sings)
 They bore him barefaced on the bier;
 Hey non nonny, nonny, hey nonny;
 And in his grave rain'd many a tear:--
@@ -3993,7 +4018,7 @@ Fare you well, my dove!
 Hadst thou thy wits, and didst persuade revenge,
 It could not move thus.
 @OPHELIA
-[Sings]
+(Sings)
 You must sing a-down a-down,
 An you call him a-down-a.
 O, how the wheel becomes it! It is the false
@@ -4018,7 +4043,7 @@ For bonny sweet Robin is all my joy.
 Thought and affliction, passion, hell itself,
 She turns to favour and to prettiness.
 @OPHELIA
-[Sings]
+(Sings)
 And will he not come again?
 And will he not come again?
 No, no, he is dead:
@@ -4079,7 +4104,8 @@ you, sir; it comes from the ambassador that was
 bound for England; if your name be Horatio, as I am
 let to know it is.
 @HORATIO
-[Reads] 'Horatio, when thou shalt have overlooked
+(Reads)
+'Horatio, when thou shalt have overlooked
 this, give these fellows some means to the king:
 they have letters for him. Ere we were two days old
 at sea, a pirate of very warlike appointment gave us
@@ -4466,7 +4492,7 @@ Custom hath made it in him a property of easiness.
 'Tis e'en so: the hand of little employment hath
 the daintier sense.
 @First Clown
-[Sings]
+(Sings)
 But age, with his stealing steps,
 Hath claw'd me in his clutch,
 And hath shipped me intil the land,
@@ -4495,7 +4521,7 @@ here's fine revolution, an we had the trick to
 see't. Did these bones cost no more the breeding,
 but to play at loggats with 'em? mine ache to think on't.
 @First Clown
-[Sings]
+(Sings)
 A pick-axe, and a spade, a spade,
 For and a shrouding sheet:
 O, a pit of clay for to be made
@@ -4727,7 +4753,8 @@ Till of this flat a mountain you have made,
 To o'ertop old Pelion, or the skyish head
 Of blue Olympus.
 @HAMLET
-[Advancing] What is he whose grief
+(Advancing)
+What is he whose grief
 Bears such an emphasis? whose phrase of sorrow
 Conjures the wandering stars, and makes them stand
 Like wonder-wounded hearers? This is I,
@@ -5219,7 +5246,8 @@ Gertrude, do not drink.
 @QUEEN GERTRUDE
 I will, my lord; I pray you, pardon me.
 @KING CLAUDIUS
-[Aside] It is the poison'd cup: it is too late.
+(Aside)
+It is the poison'd cup: it is too late.
 @HAMLET
 I dare not drink yet, madam; by and by.
 @QUEEN GERTRUDE
@@ -5229,7 +5257,8 @@ My lord, I'll hit him now.
 @KING CLAUDIUS
 I do not think't.
 @LAERTES
-[Aside] And yet 'tis almost 'gainst my conscience.
+(Aside)
+And yet 'tis almost 'gainst my conscience.
 @HAMLET
 Come, for the third, Laertes: you but dally;
 I pray you, pass with your best violence;

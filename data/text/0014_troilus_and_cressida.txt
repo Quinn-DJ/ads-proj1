@@ -1157,7 +1157,8 @@ Cobloaf!
 He would pun thee into shivers with his fist, as a
 sailor breaks a biscuit.
 @AJAX
-[Beating him] You whoreson cur!
+(Beating him)
+You whoreson cur!
 @THERSITES
 Do, do.
 @AJAX
@@ -1176,7 +1177,8 @@ You dog!
 @THERSITES
 You scurvy lord!
 @AJAX
-[Beating him] You cur!
+(Beating him)
+You cur!
 @THERSITES
 Mars his idiot! do, rudeness; do, camel; do, do.
 (Enter ACHILLES and PATROCLUS)
@@ -1415,13 +1417,15 @@ But, thieves, unworthy of a thing so stol'n,
 That in their country did them that disgrace,
 We fear to warrant in our native place!
 @CASSANDRA
-[Within] Cry, Trojans, cry!
+(Within)
+Cry, Trojans, cry!
 @PRIAM
 What noise? what shriek is this?
 @TROILUS
 'Tis our mad sister, I do know her voice.
 @CASSANDRA
-[Within] Cry, Trojans!
+(Within)
+Cry, Trojans!
 @HECTOR
 It is Cassandra.
 (Enter CASSANDRA, raving)
@@ -1826,10 +1830,12 @@ With entertaining great Hyperion.
 This lord go to him! Jupiter forbid,
 And say in thunder 'Achilles go to him.'
 @NESTOR
-[Aside to DIOMEDES] O, this is well; he rubs the
+(Aside to DIOMEDES)
+O, this is well; he rubs the
 vein of him.
 @DIOMEDES
-[Aside to NESTOR] And how his silence drinks up
+(Aside to NESTOR)
+And how his silence drinks up
 this applause!
 @AJAX
 If I go to him, with my armed fist I'll pash him o'er the face.
@@ -1869,7 +1875,8 @@ I will knead him; I'll make him supple.
 He's not yet through warm: force him with praises:
 pour in, pour in; his ambition is dry.
 @ULYSSES
-[To AGAMEMNON] My lord, you feed too much on this dislike.
+(To AGAMEMNON)
+My lord, you feed too much on this dislike.
 @NESTOR
 Our noble general, do not do so.
 @DIOMEDES
@@ -2995,7 +3002,8 @@ O foolish Cressid! I might have still held off,
 And then you would have tarried. Hark!
 there's one up.
 @PANDARUS
-[Within] What, 's all the doors open here?
+(Within)
+What, 's all the doors open here?
 @TROILUS
 It is your uncle.
 @CRESSIDA
@@ -3221,7 +3229,8 @@ He fumbles up into a lose adieu,
 And scants us with a single famish'd kiss,
 Distasted with the salt of broken tears.
 @AENEAS
-[Within] My lord, is the lady ready?
+(Within)
+My lord, is the lady ready?
 @TROILUS
 Hark! you are call'd: some say the Genius so
 Cries 'come' to him that instantly must die.
@@ -3293,11 +3302,13 @@ And sometimes we are devils to ourselves,
 When we will tempt the frailty of our powers,
 Presuming on their changeful potency.
 @AENEAS
-[Within] Nay, good my lord,--
+(Within)
+Nay, good my lord,--
 @TROILUS
 Come, kiss; and let us part.
 @PARIS
-[Within] Brother Troilus!
+(Within)
+Brother Troilus!
 @TROILUS
 Good brother, come you hither;
 And bring AEneas and the Grecian with you.
@@ -3642,7 +3653,8 @@ From heart of very heart, great Hector, welcome.
 @HECTOR
 I thank thee, most imperious Agamemnon.
 @AGAMEMNON
-[To TROILUS] My well-famed lord of Troy, no
+(To TROILUS)
+My well-famed lord of Troy, no
 less to you.
 @MENELAUS
 Let me confirm my princely brother's greeting:
@@ -3949,7 +3961,8 @@ The tide whereof is now. Good night, great Hector.
 @HECTOR
 Give me your hand.
 @ULYSSES
-[Aside to TROILUS] Follow his torch; he goes to
+(Aside to TROILUS)
+Follow his torch; he goes to
 Calchas' tent:
 I'll keep you company.
 @TROILUS
@@ -3978,11 +3991,13 @@ after. Nothing but lechery! all incontinent varlets!
 @DIOMEDES
 What, are you up here, ho? speak.
 @CALCHAS
-[Within] Who calls?
+(Within)
+Who calls?
 @DIOMEDES
 Calchas, I think. Where's your daughter?
 @CALCHAS
-[Within] She comes to you.
+(Within)
+She comes to you.
 (Enter TROILUS and ULYSSES, at a distance; after them, THERSITES)
 @ULYSSES
 Stand where the torch may not discover us.

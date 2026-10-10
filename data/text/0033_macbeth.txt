@@ -299,7 +299,8 @@ He labour'd in his country's wreck, I know not;
 But treasons capital, confess'd and proved,
 Have overthrown him.
 @MACBETH
-[Aside] Glamis, and thane of Cawdor!
+(Aside)
+Glamis, and thane of Cawdor!
 The greatest is behind.
 (To ROSS and ANGUS)
 Thanks for your pains.
@@ -317,7 +318,8 @@ Win us with honest trifles, to betray's
 In deepest consequence.
 Cousins, a word, I pray you.
 @MACBETH
-[Aside] Two truths are told,
+(Aside)
+Two truths are told,
 As happy prologues to the swelling act
 Of the imperial theme.--I thank you, gentlemen.
 (Aside)
@@ -336,14 +338,16 @@ But what is not.
 @BANQUO
 Look, how our partner's rapt.
 @MACBETH
-[Aside] If chance will have me king, why, chance may crown me,
+(Aside)
+If chance will have me king, why, chance may crown me,
 Without my stir.
 @BANQUO
 New horrors come upon him,
 Like our strange garments, cleave not to their mould
 But with the aid of use.
 @MACBETH
-[Aside] Come what come may,
+(Aside)
+Come what come may,
 Time and the hour runs through the roughest day.
 @BANQUO
 Worthy Macbeth, we stay upon your leisure.
@@ -427,7 +431,8 @@ So humbly take my leave.
 @DUNCAN
 My worthy Cawdor!
 @MACBETH
-[Aside] The Prince of Cumberland! that is a step
+(Aside)
+The Prince of Cumberland! that is a step
 On which I must fall down, or else o'erleap,
 For in my way it lies. Stars, hide your fires;
 Let not light see my black and deep desires:
@@ -807,7 +812,8 @@ their possets,
 That death and nature do contend about them,
 Whether they live or die.
 @MACBETH
-[Within] Who's there? what, ho!
+(Within)
+Who's there? what, ho!
 @LADY MACBETH
 Alack, I am afraid they have awaked,
 And 'tis not done. The attempt and not the deed
@@ -1131,16 +1137,19 @@ Help me hence, ho!
 @MACDUFF
 Look to the lady.
 @MALCOLM
-[Aside to DONALBAIN] Why do we hold our tongues,
+(Aside to DONALBAIN)
+Why do we hold our tongues,
 That most may claim this argument for ours?
 @DONALBAIN
-[Aside to MALCOLM] What should be spoken here,
+(Aside to MALCOLM)
+What should be spoken here,
 where our fate,
 Hid in an auger-hole, may rush, and seize us?
 Let 's away;
 Our tears are not yet brew'd.
 @MALCOLM
-[Aside to DONALBAIN] Nor our strong sorrow
+(Aside to DONALBAIN)
+Nor our strong sorrow
 Upon the foot of motion.
 @BANQUO
 Look to the lady:
@@ -1554,7 +1563,8 @@ The subject of our watch.
 @Third Murderer
 Hark! I hear horses.
 @BANQUO
-[Within] Give us a light there, ho!
+(Within)
+Give us a light there, ho!
 @Second Murderer
 Then 'tis he: the rest
 That are within the note of expectation
@@ -2930,7 +2940,8 @@ Bring it after me.
 I will not be afraid of death and bane,
 Till Birnam forest come to Dunsinane.
 @Doctor
-[Aside] Were I from Dunsinane away and clear,
+(Aside)
+Were I from Dunsinane away and clear,
 Profit again should hardly draw me here.
 (Exeunt)
 [SCENE IV. Country near Birnam wood.]

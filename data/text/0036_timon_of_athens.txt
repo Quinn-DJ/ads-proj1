@@ -36,7 +36,8 @@ Jeweller: I have a jewel here--
 O, pray, let's see't: for the Lord Timon, sir?
 Jeweller: If he will touch the estimate: but, for that--
 @Poet
-[Reciting to himself] 'When we for recompense have
+(Reciting to himself)
+'When we for recompense have
 praised the vile,
 It stains the glory in that happy verse
 Which aptly sings the good.'
@@ -226,7 +227,8 @@ She is young and apt:
 Our own precedent passions do instruct us
 What levity's in youth.
 @TIMON
-[To LUCILIUS] Love you the maid?
+(To LUCILIUS)
+Love you the maid?
 @LUCILIUS
 Ay, my good lord, and she accepts of it.
 @Old Athenian
@@ -740,7 +742,8 @@ Near! why then, another time I'll hear thee:
 I prithee, let's be provided to show them
 entertainment.
 @FLAVIUS
-[Aside] I scarce know how.
+(Aside)
+I scarce know how.
 (Enter a Second Servant)
 @Second Servant
 May it please your honour, Lord Lucius,
@@ -760,7 +763,8 @@ two brace of greyhounds.
 I'll hunt with him; and let them be received,
 Not without fair reward.
 @FLAVIUS
-[Aside] What will this come to?
+(Aside)
+What will this come to?
 He commands us to provide, and give great gifts,
 And all out of an empty coffer:
 Nor will he know his purse, or yield me this,
@@ -1028,7 +1032,8 @@ Good! gramercy.
 @Fool
 Look you, here comes my mistress' page.
 @Page
-[To the Fool] Why, how now, captain! what do you
+(To the Fool)
+Why, how now, captain! what do you
 in this wise company? How dost thou, Apemantus?
 @APEMANTUS
 Would I had a rod in my mouth, that I might answer
@@ -1201,7 +1206,8 @@ the request be fifty talents.
 @FLAMINIUS
 As you have said, my lord.
 @FLAVIUS
-[Aside] Lord Lucius and Lucullus? hum!
+(Aside)
+Lord Lucius and Lucullus? hum!
 @TIMON
 Go you, sir, to the senators--
 Of whom, even to the state's best health, I have
@@ -1270,7 +1276,8 @@ I thank you, sir.
 @Servant
 Here's my lord.
 @LUCULLUS
-[Aside] One of Lord Timon's men? a gift, I
+(Aside)
+One of Lord Timon's men? a gift, I
 warrant. Why, this hits right; I dreamt of a silver
 basin and ewer to-night. Flaminius, honest
 Flaminius; you are very respectively welcome, sir.
@@ -1652,7 +1659,8 @@ Good gods!
 @TITUS
 We cannot take this for answer, sir.
 @FLAMINIUS
-[Within] Servilius, help! My lord! my lord!
+(Within)
+Servilius, help! My lord! my lord!
 (Enter TIMON, in a rage, FLAMINIUS following)
 @TIMON
 What, are my doors opposed against my passage?
@@ -1927,7 +1935,8 @@ Ever at the best, hearing well of your lordship.
 The swallow follows not summer more willing than we
 your lordship.
 @TIMON
-[Aside] Nor more willingly leaves winter; such
+(Aside)
+Nor more willingly leaves winter; such
 summer-birds are men. Gentlemen, our dinner will not
 recompense this long stay: feast your ears with the
 music awhile, if they will fare so harshly o' the
@@ -2974,7 +2983,8 @@ of will or testament which argues a great sickness
 in his judgment that makes it.
 (TIMON comes from his cave, behind)
 @TIMON
-[Aside] Excellent workman! thou canst not paint a
+(Aside)
+Excellent workman! thou canst not paint a
 man so bad as is thyself.
 @Poet
 I am thinking what I shall say I have provided for
@@ -2982,7 +2992,8 @@ him: it must be a personating of himself; a satire
 against the softness of prosperity, with a discovery
 of the infinite flatteries that follow youth and opulency.
 @TIMON
-[Aside] Must thou needs stand for a villain in
+(Aside)
+Must thou needs stand for a villain in
 thine own work? wilt thou whip thine own faults in
 other men? Do so, I have gold for thee.
 @Poet
@@ -2994,7 +3005,8 @@ True;
 When the day serves, before black-corner'd night,
 Find what thou want'st by free and offer'd light. Come.
 @TIMON
-[Aside] I'll meet you at the turn. What a
+(Aside)
+I'll meet you at the turn. What a
 god's gold,
 That he is worshipp'd in a baser temple
 Than where swine feed!
@@ -3413,7 +3425,8 @@ And on his grave-stone this insculpture, which
 With wax I brought away, whose soft impression
 Interprets for my poor ignorance.
 @ALCIBIADES
-[Reads the epitaph] 'Here lies a
+(Reads the epitaph)
+'Here lies a
 wretched corse, of wretched soul bereft:
 Seek not my name: a plague consume you wicked
 caitiffs left!

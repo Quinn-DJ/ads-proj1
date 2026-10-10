@@ -434,13 +434,16 @@ Since Henry's death, I fear, there is conveyance.
 Where be these warders, that they wait not here?
 Open the gates; 'tis Gloucester that calls.
 @First Warder
-[Within] Who's there that knocks so imperiously?
+(Within)
+Who's there that knocks so imperiously?
 First Serving-Man It is the noble Duke of Gloucester.
 @Second Warder
-[Within] Whoe'er he be, you may not be let in.
+(Within)
+Whoe'er he be, you may not be let in.
 First Serving-Man Villains, answer you so the lord protector?
 @First Warder
-[Within] The Lord protect him! so we answer him:
+(Within)
+The Lord protect him! so we answer him:
 We do no otherwise than we are will'd.
 @GLOUCESTER
 Who willed you? or whose will stands but mine?
@@ -1588,7 +1591,8 @@ State holy or unhallow'd, what of that?
 Is not his grace protector to the king?
 RICHARD
 @PLANTAGENET
-[Aside] Plantagenet, I see, must hold his tongue,
+(Aside)
+Plantagenet, I see, must hold his tongue,
 Lest it be said 'Speak, sirrah, when you should;
 Must your bold verdict enter talk with lords?'
 Else would I have a fling at Winchester.
@@ -1688,14 +1692,16 @@ BISHOP
 Well, Duke of Gloucester, I will yield to thee;
 Love for thy love and hand for hand I give.
 @GLOUCESTER
-[Aside] Ay, but, I fear me, with a hollow heart.--
+(Aside)
+Ay, but, I fear me, with a hollow heart.--
 See here, my friends and loving countrymen,
 This token serveth for a flag of truce
 Betwixt ourselves and all our followers:
 So help me God, as I dissemble not!
 BISHOP
 @OF WINCHESTER
-[Aside] So help me God, as I intend it not!
+(Aside)
+So help me God, as I intend it not!
 @KING HENRY VI
 O, loving uncle, kind Duke of Gloucester,
 How joyful am I made by this contract!
@@ -1748,7 +1754,8 @@ That grudge one thought against your majesty!
 @ALL
 Welcome, high prince, the mighty Duke of York!
 @SOMERSET
-[Aside] Perish, base prince, ignoble Duke of York!
+(Aside)
+Perish, base prince, ignoble Duke of York!
 @GLOUCESTER
 Now will it best avail your majesty
 To cross the seas and to be crown'd in France:
@@ -1796,7 +1803,8 @@ And we be lords and rulers over Rouen;
 Therefore we'll knock.
 (Knocks)
 @Watch
-[Within] Qui est la?
+(Within)
+Qui est la?
 @JOAN LA PUCELLE
 Paysans, pauvres gens de France;
 Poor market folks that come to sell their corn.
@@ -2092,7 +2100,8 @@ And, lords, accept this hearty kind embrace:
 My forces and my power of men are yours:
 So farewell, Talbot; I'll no longer trust thee.
 @JOAN LA PUCELLE
-[Aside] Done like a Frenchman: turn, and turn again!
+(Aside)
+Done like a Frenchman: turn, and turn again!
 @CHARLES
 Welcome, brave duke! thy friendship makes us fresh.
 @BASTARD OF ORLEANS
@@ -2953,7 +2962,8 @@ For clothing me in these grave ornaments.
 I will attend upon your lordship's leisure.
 CARDINAL
 @OF WINCHESTER
-[Aside] Now Winchester will not submit, I trow,
+(Aside)
+Now Winchester will not submit, I trow,
 Or be inferior to the proudest peer.
 Humphrey of Gloucester, thou shalt well perceive
 That, neither in birth or for authority,

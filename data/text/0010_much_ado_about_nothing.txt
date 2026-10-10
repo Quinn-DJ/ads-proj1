@@ -613,7 +613,8 @@ I up my apes, and away to Saint Peter for the
 heavens; he shows me where the bachelors sit, and
 there live we as merry as the day is long.
 @ANTONIO
-[To HERO] Well, niece, I trust you will be ruled
+(To HERO)
+Well, niece, I trust you will be ruled
 by your father.
 @BEATRICE
 Yes, faith; it is my cousin's duty to make curtsy
@@ -1414,7 +1415,8 @@ scene that I would see, which will be merely a
 dumb-show. Let us send her to call him in to dinner.
 (Exeunt DON PEDRO, CLAUDIO, and LEONATO)
 @BENEDICK
-[Coming forward] This can be no trick: the
+(Coming forward)
+This can be no trick: the
 conference was sadly borne. They have the truth of
 this from Hero. They seem to pity the lady: it
 seems her affections have their full bent. Love me!
@@ -1608,7 +1610,7 @@ If it proves so, then loving goes by haps:
 Some Cupid kills with arrows, some with traps.
 (Exeunt HERO and URSULA)
 @BEATRICE
-[Coming forward]
+(Coming forward)
 What fire is in mine ears? Can this be true?
 Stand I condemn'd for pride and scorn so much?
 Contempt, farewell! and maiden pride, adieu!
@@ -1741,7 +1743,8 @@ what I would speak of concerns him.
 @DON PEDRO
 What's the matter?
 @DON JOHN
-[To CLAUDIO] Means your lordship to be married
+(To CLAUDIO)
+Means your lordship to be married
 to-morrow?
 @DON PEDRO
 You know he does.
@@ -1932,7 +1935,8 @@ Adieu: be vigitant, I beseech you.
 @BORACHIO
 What Conrade!
 @Watchman
-[Aside] Peace! stir not.
+(Aside)
+Peace! stir not.
 @BORACHIO
 Conrade, I say!
 @CONRADE
@@ -1948,7 +1952,8 @@ Stand thee close, then, under this pent-house, for
 it drizzles rain; and I will, like a true drunkard,
 utter all to thee.
 @Watchman
-[Aside] Some treason, masters: yet stand close.
+(Aside)
+Some treason, masters: yet stand close.
 @BORACHIO
 Therefore know I have earned of Don John a thousand ducats.
 @CONRADE
@@ -1975,7 +1980,8 @@ Tush! I may as well say the fool's the fool. But
 seest thou not what a deformed thief this fashion
 is?
 @Watchman
-[Aside] I know that Deformed; a' has been a vile
+(Aside)
+I know that Deformed; a' has been a vile
 thief this seven year; a' goes up and down like a
 gentleman: I remember his name.
 @BORACHIO
@@ -3063,7 +3069,8 @@ Shall I speak a word in your ear?
 @CLAUDIO
 God bless me from a challenge!
 @BENEDICK
-[Aside to CLAUDIO] You are a villain; I jest not:
+(Aside to CLAUDIO)
+You are a villain; I jest not:
 I will make it good how you dare, with what you
 dare, and when you dare. Do me right, or I will
 protest your cowardice. You have killed a sweet
@@ -3306,7 +3313,8 @@ We will not fail.
 @CLAUDIO
 To-night I'll mourn with Hero.
 @LEONATO
-[To the Watch] Bring you these fellows on. We'll
+(To the Watch)
+Bring you these fellows on. We'll
 talk with Margaret,
 How her acquaintance grew with this lewd fellow.
 (Exeunt, severally)
@@ -3446,7 +3454,7 @@ Is this the monument of Leonato?
 @Lord
 It is, my lord.
 @CLAUDIO
-[Reading out of a scroll]
+(Reading out of a scroll)
 Done to death by slanderous tongues
 Was the Hero that here lies:
 Death, in guerdon of her wrongs,
@@ -3601,7 +3609,8 @@ And to the chapel let us presently.
 @BENEDICK
 Soft and fair, friar. Which is Beatrice?
 @BEATRICE
-[Unmasking] I answer to that name. What is your will?
+(Unmasking)
+I answer to that name. What is your will?
 @BENEDICK
 Do not you love me?
 @BEATRICE

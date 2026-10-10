@@ -469,7 +469,8 @@ Yes, truly; I speak not as desiring more;
 But rather wishing a more strict restraint
 Upon the sisterhood, the votarists of Saint Clare.
 @LUCIO
-[Within] Ho! Peace be in this place!
+(Within)
+Ho! Peace be in this place!
 @ISABELLA
 Who's that which calls?
 @FRANCISCA
@@ -646,7 +647,8 @@ Bring him his confessor, let him be prepared;
 For that's the utmost of his pilgrimage.
 (Exit Provost)
 @ESCALUS
-[Aside] Well, heaven forgive him! and forgive us all!
+(Aside)
+Well, heaven forgive him! and forgive us all!
 Some rise by sin, and some by virtue fall:
 Some run from brakes of ice, and answer none:
 And some condemned for a fault alone.
@@ -1070,7 +1072,8 @@ I have a brother is condemn'd to die:
 I do beseech you, let it be his fault,
 And not my brother.
 @Provost
-[Aside] Heaven give thee moving graces!
+(Aside)
+Heaven give thee moving graces!
 @ANGELO
 Condemn the fault and not the actor of it?
 Why, every fault's condemn'd ere it be done:
@@ -1081,7 +1084,8 @@ And let go by the actor.
 O just but severe law!
 I had a brother, then. Heaven keep your honour!
 @LUCIO
-[Aside to ISABELLA] Give't not o'er so: to him
+(Aside to ISABELLA)
+Give't not o'er so: to him
 again, entreat him;
 Kneel down before him, hang upon his gown:
 You are too cold; if you should need a pin,
@@ -1107,7 +1111,8 @@ A s mine is to him?
 @ANGELO
 He's sentenced; 'tis too late.
 @LUCIO
-[Aside to ISABELLA] You are too cold.
+(Aside to ISABELLA)
+You are too cold.
 @ISABELLA
 Too late? why, no; I, that do speak a word.
 May call it back again. Well, believe this,
@@ -1127,7 +1132,7 @@ And you were Isabel! should it then be thus?
 No; I would tell what 'twere to be a judge,
 And what a prisoner.
 @LUCIO
-[Aside to ISABELLA]
+(Aside to ISABELLA)
 Ay, touch him; there's the vein.
 @ANGELO
 Your brother is a forfeit of the law,
@@ -1155,7 +1160,8 @@ To our gross selves? Good, good my lord, bethink you;
 Who is it that hath died for this offence?
 There's many have committed it.
 @LUCIO
-[Aside to ISABELLA] Ay, well said.
+(Aside to ISABELLA)
+Ay, well said.
 @ANGELO
 The law hath not been dead, though it hath slept:
 Those many had not dared to do that evil,
@@ -1182,7 +1188,8 @@ And he, that suffer's. O, it is excellent
 To have a giant's strength; but it is tyrannous
 To use it like a giant.
 @LUCIO
-[Aside to ISABELLA] That's well said.
+(Aside to ISABELLA)
+That's well said.
 @ISABELLA
 Could great men thunder
 As Jove himself does, Jove would ne'er be quiet,
@@ -1199,11 +1206,13 @@ Plays such fantastic tricks before high heaven
 As make the angels weep; who, with our spleens,
 Would all themselves laugh mortal.
 @LUCIO
-[Aside to ISABELLA] O, to him, to him, wench! he
+(Aside to ISABELLA)
+O, to him, to him, wench! he
 will relent;
 He's coming; I perceive 't.
 @Provost
-[Aside] Pray heaven she win him!
+(Aside)
+Pray heaven she win him!
 @ISABELLA
 We cannot weigh our brother with ourself:
 Great men may jest with saints; 'tis wit in them,
@@ -1214,7 +1223,8 @@ Thou'rt i' the right, girl; more o, that.
 That in the captain's but a choleric word,
 Which in the soldier is flat blasphemy.
 @LUCIO
-[Aside to ISABELLA] Art avised o' that? more on 't.
+(Aside to ISABELLA)
+Art avised o' that? more on 't.
 @ANGELO
 Why do you put these sayings upon me?
 @ISABELLA
@@ -1227,7 +1237,8 @@ A natural guiltiness such as is his,
 Let it not sound a thought upon your tongue
 Against my brother's life.
 @ANGELO
-[Aside] She speaks, and 'tis
+(Aside)
+She speaks, and 'tis
 Such sense, that my sense breeds with it. Fare you well.
 @ISABELLA
 Gentle my lord, turn back.
@@ -1240,7 +1251,8 @@ How! bribe me?
 @ISABELLA
 Ay, with such gifts that heaven shall share with you.
 @LUCIO
-[Aside to ISABELLA] You had marr'd all else.
+(Aside to ISABELLA)
+You had marr'd all else.
 @ISABELLA
 Not with fond shekels of the tested gold,
 Or stones whose rates are either rich or poor
@@ -1252,11 +1264,13 @@ To nothing temporal.
 @ANGELO
 Well; come to me to-morrow.
 @LUCIO
-[Aside to ISABELLA] Go to; 'tis well; away!
+(Aside to ISABELLA)
+Go to; 'tis well; away!
 @ISABELLA
 Heaven keep your honour safe!
 @ANGELO
-[Aside] Amen:
+(Aside)
+Amen:
 For I am that way going to temptation,
 Where prayers cross.
 @ISABELLA
@@ -1677,7 +1691,8 @@ I humbly thank you.
 To sue to live, I find I seek to die;
 And, seeking death, find life: let it come on.
 @ISABELLA
-[Within] What, ho! Peace here; grace and good company!
+(Within)
+What, ho! Peace here; grace and good company!
 @Provost
 Who's there? come in: the wish deserves a welcome.
 @DUKE VINCENTIO
@@ -2637,7 +2652,7 @@ This is his lordship's man.
 @DUKE VINCENTIO
 And here comes Claudio's pardon.
 @Messenger
-[Giving a paper]
+(Giving a paper)
 My lord hath sent you this note; and by me this
 further charge, that you swerve not from the
 smallest article of it, neither in time, matter, or
@@ -2647,7 +2662,8 @@ it is almost day.
 I shall obey him.
 (Exit Messenger)
 @DUKE VINCENTIO
-[Aside] This is his pardon, purchased by such sin
+(Aside)
+This is his pardon, purchased by such sin
 For which the pardoner himself is in.
 Hence hath offence his quick celerity,
 When it is born in high authority:
@@ -2661,7 +2677,7 @@ putting-on; methinks strangely, for he hath not used it before.
 @DUKE VINCENTIO
 Pray you, let's hear.
 @Provost
-[Reads]
+(Reads)
 'Whatsoever you may hear to the contrary, let
 Claudio be executed by four of the clock; and in the
 afternoon Barnardine: for my better satisfaction,
@@ -2808,13 +2824,15 @@ Master Barnardine!
 @ABHORSON
 What, ho, Barnardine!
 @BARNARDINE
-[Within] A pox o' your throats! Who makes that
+(Within)
+A pox o' your throats! Who makes that
 noise there? What are you?
 @POMPEY
 Your friends, sir; the hangman. You must be so
 good, sir, to rise and be put to death.
 @BARNARDINE
-[Within] Away, you rogue, away! I am sleepy.
+(Within)
+Away, you rogue, away! I am sleepy.
 @ABHORSON
 Tell him he must awake, and that quickly too.
 @POMPEY
@@ -2929,7 +2947,8 @@ That want no ear but yours.
 I'll make all speed.
 (Exit)
 @ISABELLA
-[Within] Peace, ho, be here!
+(Within)
+Peace, ho, be here!
 @DUKE VINCENTIO
 The tongue of Isabel. She's come to know
 If yet her brother's pardon be come hither:
@@ -3629,7 +3648,8 @@ to prison! lay bolts enough upon him: let him
 speak no more. Away with those giglots too, and
 with the other confederate companion!
 @DUKE VINCENTIO
-[To Provost] Stay, sir; stay awhile.
+(To Provost)
+Stay, sir; stay awhile.
 @ANGELO
 What, resists he? Help him, Lucio.
 @LUCIO
@@ -3648,7 +3668,8 @@ Must have a word anon. Lay hold on him.
 @LUCIO
 This may prove worse than hanging.
 @DUKE VINCENTIO
-[To ESCALUS] What you have spoke I pardon: sit you down:
+(To ESCALUS)
+What you have spoke I pardon: sit you down:
 We'll borrow place of him.
 (To ANGELO)
 Sir, by your leave.
@@ -3843,7 +3864,8 @@ Who should have died when Claudio lost his head;
 As like almost to Claudio as himself.
 (Unmuffles CLAUDIO)
 @DUKE VINCENTIO
-[To ISABELLA] If he be like your brother, for his sake
+(To ISABELLA)
+If he be like your brother, for his sake
 Is he pardon'd; and, for your lovely sake,
 Give me your hand and say you will be mine.
 He is my brother too: but fitter time for that.

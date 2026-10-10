@@ -431,7 +431,8 @@ I do not so secure me in the error,
 But the main article I do approve
 In fearful sense.
 @Sailor
-[Within] What, ho! what, ho! what, ho!
+(Within)
+What, ho! what, ho! what, ho!
 @First Officer
 A messenger from the galleys.
 (Enter a Sailor)
@@ -530,7 +531,8 @@ Hath hither brought.
 @Senator
 We are very sorry for't.
 @DUKE OF VENICE
-[To OTHELLO] What, in your own part, can you say to this?
+(To OTHELLO)
+What, in your own part, can you say to this?
 @BRABANTIO
 Nothing, but this is so.
 @OTHELLO
@@ -1191,7 +1193,8 @@ counsellor?
 He speaks home, madam: You may relish him more in
 the soldier than in the scholar.
 @IAGO
-[Aside] He takes her by the palm: ay, well said,
+(Aside)
+He takes her by the palm: ay, well said,
 whisper: with as little a web as this will I
 ensnare as great a fly as Cassio. Ay, smile upon
 her, do; I will gyve thee in thine own courtship.
@@ -1239,7 +1242,8 @@ And this, and this, the greatest discords be
 (Kissing her)
 That e'er our hearts shall make!
 @IAGO
-[Aside] O, you are well tuned now!
+(Aside)
+O, you are well tuned now!
 But I'll set down the pegs that make this music,
 As honest as I am.
 @OTHELLO
@@ -1577,7 +1581,8 @@ Prizes the virtue that appears in Cassio,
 And looks not on his evils: is not this true?
 (Enter RODERIGO)
 @IAGO
-[Aside to him] How now, Roderigo!
+(Aside to him)
+How now, Roderigo!
 I pray you, after the lieutenant; go.
 (Exit RODERIGO)
 @MONTANO
@@ -1618,7 +1623,8 @@ you're drunk.
 Drunk!
 (They fight)
 @IAGO
-[Aside to RODERIGO] Away, I say; go out, and cry a mutiny.
+(Aside to RODERIGO)
+Away, I say; go out, and cry a mutiny.
 (Exit RODERIGO)
 Nay, good lieutenant,--alas, gentlemen;--
 Help, ho!--Lieutenant,--sir,--Montano,--sir;
@@ -2384,12 +2390,14 @@ Farewell, farewell:
 If more thou dost perceive, let me know more;
 Set on thy wife to observe: leave me, Iago:
 @IAGO
-[Going] My lord, I take my leave.
+(Going)
+My lord, I take my leave.
 @OTHELLO
 Why did I marry? This honest creature doubtless
 Sees and knows more, much more, than he unfolds.
 @IAGO
-[Returning] My lord, I would I might entreat
+(Returning)
+My lord, I would I might entreat
 your honour
 To scan this thing no further; leave it to time:
 Though it be fit that Cassio have his place,
@@ -2497,7 +2505,8 @@ What will you do with 't, that you have been
 so earnest
 To have me filch it?
 @IAGO
-[Snatching it] Why, what's that to you?
+(Snatching it)
+Why, what's that to you?
 @EMILIA
 If it be not for some purpose of import,
 Give't me again: poor lady, she'll run mad
@@ -3331,7 +3340,8 @@ Prithee, come; will you?
 Go to; say no more.
 (Exit CASSIO)
 @OTHELLO
-[Advancing] How shall I murder him, Iago?
+(Advancing)
+How shall I murder him, Iago?
 @IAGO
 Did you perceive how he laughed at his vice?
 @OTHELLO
@@ -3431,7 +3441,8 @@ Are you sure of that?
 @DESDEMONA
 My lord?
 @OTHELLO
-[Reads] 'This fail you not to do, as you will--'
+(Reads)
+'This fail you not to do, as you will--'
 @LODOVICO
 He did not call; he's busy in the paper.
 Is there division 'twixt my lord and Cassio?
@@ -3461,7 +3472,8 @@ I am glad to see you mad.
 @DESDEMONA
 Why, sweet Othello,--
 @OTHELLO
-[Striking her] Devil!
+(Striking her)
+Devil!
 @DESDEMONA
 I have not deserved this.
 @LODOVICO
@@ -3589,7 +3601,8 @@ Look in my face.
 @DESDEMONA
 What horrible fancy's this?
 @OTHELLO
-[To EMILIA] Some of your function, mistress;
+(To EMILIA)
+Some of your function, mistress;
 Leave procreants alone and shut the door;
 Cough, or cry 'hem,' if any body come:
 Your mystery, your mystery: nay, dispatch.
@@ -3990,7 +4003,8 @@ He speaks well.
 I know a lady in Venice would have walked barefoot
 to Palestine for a touch of his nether lip.
 @DESDEMONA
-[Singing] The poor soul sat sighing by a sycamore tree,
+(Singing)
+The poor soul sat sighing by a sycamore tree,
 Sing all a green willow:
 Her hand on her bosom, her head on her knee,
 Sing willow, willow, willow:
@@ -4008,7 +4022,8 @@ Nay, that's not next.--Hark! who is't that knocks?
 @EMILIA
 It's the wind.
 @DESDEMONA
-[Singing] I call'd my love false love; but what
+(Singing)
+I call'd my love false love; but what
 said he then?
 Sing willow, willow, willow:
 If I court moe women, you'll couch with moe men!
@@ -4282,7 +4297,8 @@ Was my dear friend: what malice was between you?
 @CASSIO
 None in the world; nor do I know the man.
 @IAGO
-[To BIANCA] What, look you pale? O, bear him out
+(To BIANCA)
+What, look you pale? O, bear him out
 o' the air.
 (CASSIO and RODERIGO are borne off)
 Stay you, good gentlemen. Look you pale, mistress?
@@ -4484,17 +4500,20 @@ But while I say one prayer!
 It is too late.
 (He stifles her)
 @EMILIA
-[Within] My lord , my lord! what, ho! my lord, my lord!
+(Within)
+My lord , my lord! what, ho! my lord, my lord!
 @OTHELLO
 What noise is this? Not dead? not yet quite dead?
 I that am cruel am yet merciful;
 I would not have thee linger in thy pain: So, so.
 @EMILIA
-[Within] What, ho! my lord, my lord!
+(Within)
+What, ho! my lord, my lord!
 @OTHELLO
 Who's there?
 @EMILIA
-[Within] O, good my lord, I would speak a word with you!
+(Within)
+O, good my lord, I would speak a word with you!
 @OTHELLO
 Yes: 'tis Emilia. By and by. She's dead.
 'Tis like she comes to speak of Cassio's death.--
@@ -4508,7 +4527,8 @@ Methinks it should be now a huge eclipse
 Of sun and moon, and that the affrighted globe
 Should yawn at alteration.
 @EMILIA
-[Within] I do beseech you
+(Within)
+I do beseech you
 That I may speak with you, O, good my lord!
 @OTHELLO
 I had forgot thee: O, come in, Emilia;
@@ -4689,7 +4709,8 @@ Nay, lay thee down and roar;
 For thou hast kill'd the sweetest innocent
 That e'er did lift up eye.
 @OTHELLO
-[Rising] O, she was foul!
+(Rising)
+O, she was foul!
 I scarce did know you, uncle: there lies your niece,
 Whose breath, indeed, these hands have newly stopp'd:
 I know this act shows horrible and grim.
@@ -4780,7 +4801,8 @@ I have another weapon in this chamber;
 It is a sword of Spain, the ice-brook's temper:--
 O, here it is. Uncle, I must come forth.
 @GRATIANO
-[Within] If thou attempt it, it will cost thee dear:
+(Within)
+If thou attempt it, it will cost thee dear:
 Thou hast no weapon, and perforce must suffer.
 @OTHELLO
 Look in upon me then and speak with me,
@@ -4936,7 +4958,8 @@ Killing myself, to die upon a kiss.
 This did I fear, but thought he had no weapon;
 For he was great of heart.
 @LODOVICO
-[To IAGO] O Spartan dog,
+(To IAGO)
+O Spartan dog,
 More fell than anguish, hunger, or the sea!
 Look on the tragic loading of this bed;
 This is thy work: the object poisons sight;

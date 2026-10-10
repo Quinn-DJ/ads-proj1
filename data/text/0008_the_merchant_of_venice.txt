@@ -447,7 +447,8 @@ news on the Rialto? Who is he comes here?
 @BASSANIO
 This is Signior Antonio.
 @SHYLOCK
-[Aside] How like a fawning publican he looks!
+(Aside)
+How like a fawning publican he looks!
 I hate him for he is a Christian,
 But more for that in low simplicity
 He lends out money gratis and brings down
@@ -726,7 +727,8 @@ at your command; I will run.
 Master young man, you, I pray you, which is the way
 to master Jew's?
 @LAUNCELOT
-[Aside] O heavens, this is my true-begotten father!
+(Aside)
+O heavens, this is my true-begotten father!
 who, being more than sand-blind, high-gravel blind,
 knows me not: I will try confusions with him.
 @GOBBO
@@ -1812,7 +1814,8 @@ Which rather threatenest than dost promise aught,
 Thy paleness moves me more than eloquence;
 And here choose I; joy be the consequence!
 @PORTIA
-[Aside] How all the other passions fleet to air,
+(Aside)
+How all the other passions fleet to air,
 As doubtful thoughts, and rash-embraced despair,
 And shuddering fear, and green-eyed jealousy! O love,
 Be moderate; allay thy ecstasy,
@@ -2062,7 +2065,8 @@ Bid your friends welcome, show a merry cheer:
 Since you are dear bought, I will love you dear.
 But let me hear the letter of your friend.
 @BASSANIO
-[Reads] Sweet Bassanio, my ships have all
+(Reads)
+Sweet Bassanio, my ships have all
 miscarried, my creditors grow cruel, my estate is
 very low, my bond to the Jew is forfeit; and since
 in paying it, it is impossible I should live, all
@@ -2548,7 +2552,7 @@ With all my heart. Some three or four of you
 Go give him courteous conduct to this place.
 Meantime the court shall hear Bellario's letter.
 @Clerk
-[Reads]
+(Reads)
 Your grace shall understand that at the receipt of
 your letter I am very sick: but in the instant that
 your messenger came, in loving visitation was with
@@ -3003,7 +3007,8 @@ Sir, I would speak with you.
 I'll see if I can get my husband's ring,
 Which I did make him swear to keep for ever.
 @PORTIA
-[Aside to NERISSA] Thou mayst, I warrant.
+(Aside to NERISSA)
+Thou mayst, I warrant.
 We shall have old swearing
 That they did give the rings away to men;
 But we'll outface them, and outswear them too.
@@ -3224,7 +3229,8 @@ Sir, you are very welcome to our house:
 It must appear in other ways than words,
 Therefore I scant this breathing courtesy.
 @GRATIANO
-[To NERISSA] By yonder moon I swear you do me wrong;
+(To NERISSA)
+By yonder moon I swear you do me wrong;
 In faith, I gave it to the judge's clerk:
 Would he were gelt that had it, for my part,
 Since you do take it, love, so much at heart.
@@ -3267,7 +3273,8 @@ That the world masters. Now, in faith, Gratiano,
 You give your wife too unkind a cause of grief:
 An 'twere to me, I should be mad at it.
 @BASSANIO
-[Aside] Why, I were best to cut my left hand off
+(Aside)
+Why, I were best to cut my left hand off
 And swear I lost the ring defending it.
 @GRATIANO
 My Lord Bassanio gave his ring away

@@ -1678,7 +1678,7 @@ forest judge.
 @ROSALIND
 Peace! Here comes my sister, reading: stand aside.
 @CELIA
-[Reads]
+(Reads)
 Why should this a desert be?
 For it is unpeopled? No:
 Tongues I'll hang on every tree,
@@ -1914,7 +1914,8 @@ I am glad of your departure: adieu, good Monsieur
 Melancholy.
 (Exit JAQUES)
 @ROSALIND
-[Aside to CELIA] I will speak to him, like a saucy
+(Aside to CELIA)
+I will speak to him, like a saucy
 lackey and under that habit play the knave with him.
 Do you hear, forester?
 @ORLANDO
@@ -2095,7 +2096,8 @@ Your features! Lord warrant us! what features!
 I am here with thee and thy goats, as the most
 capricious poet, honest Ovid, was among the Goths.
 @JAQUES
-[Aside] O knowledge ill-inhabited, worse than Jove
+(Aside)
+O knowledge ill-inhabited, worse than Jove
 in a thatched house!
 @TOUCHSTONE
 When a man's verses cannot be understood, nor a
@@ -2122,7 +2124,8 @@ Would you not have me honest?
 No, truly, unless thou wert hard-favoured; for
 honesty coupled to beauty is to have honey a sauce to sugar.
 @JAQUES
-[Aside] A material fool!
+(Aside)
+A material fool!
 @AUDREY
 Well, I am not fair; and therefore I pray the gods
 make me honest.
@@ -2139,7 +2142,8 @@ with Sir Oliver Martext, the vicar of the next
 village, who hath promised to meet me in this place
 of the forest and to couple us.
 @JAQUES
-[Aside] I would fain see this meeting.
+(Aside)
+I would fain see this meeting.
 @AUDREY
 Well, the gods give us joy!
 @TOUCHSTONE
@@ -2170,7 +2174,7 @@ I will not take her on gift of any man.
 @SIR OLIVER MARTEXT
 Truly, she must be given, or the marriage is not lawful.
 @JAQUES
-[Advancing]
+(Advancing)
 Proceed, proceed I'll give her.
 @TOUCHSTONE
 Good even, good Master What-ye-call't: how do you,
@@ -2191,7 +2195,8 @@ what marriage is: this fellow will but join you
 together as they join wainscot; then one of you will
 prove a shrunk panel and, like green timber, warp, warp.
 @TOUCHSTONE
-[Aside] I am not in the mind but I were better to be
+(Aside)
+I am not in the mind but I were better to be
 married of him than of another: for he is not like
 to marry me well; and not being well married, it
 will be a good excuse for me hereafter to leave my wife.
@@ -2846,7 +2851,7 @@ Can a woman rail thus?
 @SILVIUS
 Call you this railing?
 @ROSALIND
-[Reads]
+(Reads)
 Why, thy godhead laid apart,
 Warr'st thou with a woman's heart?
 Did you ever hear such railing?
@@ -3503,7 +3508,8 @@ Yea, brought her hither,
 That thou mightst join her hand with his
 Whose heart within his bosom is.
 @ROSALIND
-[To DUKE SENIOR] To you I give myself, for I am yours.
+(To DUKE SENIOR)
+To you I give myself, for I am yours.
 (To ORLANDO)
 To you I give myself, for I am yours.
 @DUKE SENIOR

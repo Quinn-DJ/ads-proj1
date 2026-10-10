@@ -98,7 +98,8 @@ peat the door for Master Page.
 (Knocks)
 What, hoa! Got pless your house here!
 @PAGE
-[Within] Who's there?
+(Within)
+Who's there?
 (Enter PAGE)
 @SIR HUGH EVANS
 Here is Got's plessing, and your friend, and Justice
@@ -555,7 +556,8 @@ And by my side wear steel? then, Lucifer take all!
 I will run no base humour: here, take the
 humour-letter: I will keep the havior of reputation.
 @FALSTAFF
-[To ROBIN] Hold, sirrah, bear you these letters tightly;
+(To ROBIN)
+Hold, sirrah, bear you these letters tightly;
 Sail like my pinnace to these golden shores.
 Rogues, hence, avaunt! vanish like hailstones, go;
 Trudge, plod away o' the hoof; seek shelter, pack!
@@ -719,7 +721,8 @@ Sir Hugh send-a you? Rugby, baille me some paper.
 Tarry you a little-a while.
 (Writes)
 @MISTRESS QUICKLY
-[Aside to SIMPLE] I am glad he is so quiet: if he
+(Aside to SIMPLE)
+I am glad he is so quiet: if he
 had been thoroughly moved, you should have heard him
 so loud and so melancholy. But notwithstanding,
 man, I'll do you your master what good I can: and
@@ -729,10 +732,12 @@ keep his house; and I wash, wring, brew, bake,
 scour, dress meat and drink, make the beds and do
 all myself,--
 @SIMPLE
-[Aside to MISTRESS QUICKLY] 'Tis a great charge to
+(Aside to MISTRESS QUICKLY)
+'Tis a great charge to
 come under one body's hand.
 @MISTRESS QUICKLY
-[Aside to SIMPLE] Are you avised o' that? you
+(Aside to SIMPLE)
+Are you avised o' that? you
 shall find it a great charge: and to be up early
 and down late; but notwithstanding,--to tell you in
 your ear; I would have no words of it,--my master
@@ -770,7 +775,8 @@ know Anne's mind for that: never a woman in Windsor
 knows more of Anne's mind than I do; nor can do more
 than I do with her, I thank heaven.
 @FENTON
-[Within] Who's within there? ho!
+(Within)
+Who's within there? ho!
 @MISTRESS QUICKLY
 Who's there, I trow! Come near the house, I pray you.
 (Enter FENTON)
@@ -970,9 +976,11 @@ Away, Sir Corporal Nym!
 Believe it, Page; he speaks sense.
 (Exit)
 @FORD
-[Aside] I will be patient; I will find out this.
+(Aside)
+I will be patient; I will find out this.
 @NYM
-[To PAGE] And this is true; I like not the humour
+(To PAGE)
+And this is true; I like not the humour
 of lying. He hath wronged me in some humours: I
 should have borne the humoured letter to her; but I
 have a sword and it shall bite upon my necessity.
@@ -1014,7 +1022,8 @@ Have with you. You'll come to dinner, George.
 Look who comes yonder: she shall be our messenger
 to this paltry knight.
 @MISTRESS FORD
-[Aside to MISTRESS PAGE] Trust me, I thought on her:
+(Aside to MISTRESS PAGE)
+Trust me, I thought on her:
 she'll fit it.
 (Enter MISTRESS QUICKLY)
 @MISTRESS PAGE
@@ -1079,7 +1088,8 @@ Good mine host o' the Garter, a word with you.
 @Host
 What sayest thou, my bully-rook?
 @SHALLOW
-[To PAGE] Will you go with us to behold it? My
+(To PAGE)
+Will you go with us to behold it? My
 merry host hath had the measuring of their weapons;
 and, I think, hath appointed them contrary places;
 for, believe me, I hear the parson is no jester.
@@ -1704,7 +1714,8 @@ How now, master Parson! Good morrow, good Sir Hugh.
 Keep a gamester from the dice, and a good student
 from his book, and it is wonderful.
 @SLENDER
-[Aside] Ah, sweet Anne Page!
+(Aside)
+Ah, sweet Anne Page!
 @PAGE
 'Save you, good Sir Hugh!
 @SIR HUGH EVANS
@@ -1747,7 +1758,8 @@ would desires to be acquainted withal.
 @PAGE
 I warrant you, he's the man should fight with him.
 @SHALLOW
-[Aside] O sweet Anne Page!
+(Aside)
+O sweet Anne Page!
 @SHALLOW
 It appears so by his weapons. Keep them asunder:
 here comes Doctor Caius.
@@ -1763,12 +1775,14 @@ their limbs whole and hack our English.
 I pray you, let-a me speak a word with your ear.
 Vherefore vill you not meet-a me?
 @SIR HUGH EVANS
-[Aside to DOCTOR CAIUS] Pray you, use your patience:
+(Aside to DOCTOR CAIUS)
+Pray you, use your patience:
 in good time.
 @DOCTOR CAIUS
 By gar, you are de coward, de Jack dog, John ape.
 @SIR HUGH EVANS
-[Aside to DOCTOR CAIUS] Pray you let us not be
+(Aside to DOCTOR CAIUS)
+Pray you let us not be
 laughing-stocks to other men's humours; I desire you
 in friendship, and I will one way or other make you amends.
 (Aloud)
@@ -1803,7 +1817,8 @@ follow, follow, follow.
 @SHALLOW
 Trust me, a mad host. Follow, gentlemen, follow.
 @SLENDER
-[Aside] O sweet Anne Page!
+(Aside)
+O sweet Anne Page!
 (Exeunt SHALLOW, SLENDER, PAGE, and Host)
 @DOCTOR CAIUS
 Ha, do I perceive dat? have you make-a de sot of
@@ -1938,7 +1953,8 @@ Farewell, my hearts: I will to my honest knight
 Falstaff, and drink canary with him.
 (Exit)
 @FORD
-[Aside] I think I shall drink in pipe wine first
+(Aside)
+I think I shall drink in pipe wine first
 with him; I'll make him dance. Will you go, gentles?
 @All
 Have with you to see this monster.
@@ -2057,7 +2073,8 @@ Keep in that mind; I'll deserve it.
 Nay, I must tell you, so you do; or else I could not
 be in that mind.
 @ROBIN
-[Within] Mistress Ford, Mistress Ford! here's
+(Within)
+Mistress Ford, Mistress Ford! here's
 Mistress Page at the door, sweating and blowing and
 looking wildly, and would needs speak with you presently.
 @FALSTAFF
@@ -2115,7 +2132,8 @@ if it were going to bucking: or--it is whiting-time
 @MISTRESS FORD
 He's too big to go in there. What shall I do?
 @FALSTAFF
-[Coming forward] Let me see't, let me see't, O, let
+(Coming forward)
+Let me see't, let me see't, O, let
 me see't! I'll in, I'll in. Follow your friend's
 counsel. I'll in.
 @MISTRESS PAGE
@@ -2204,7 +2222,8 @@ eight o'clock, to have amends.
 I cannot find him: may be the knave bragged of that
 he could not compass.
 @MISTRESS PAGE
-[Aside to MISTRESS FORD] Heard you that?
+(Aside to MISTRESS FORD)
+Heard you that?
 @MISTRESS FORD
 You use me well, Master Ford, do you?
 @FORD
@@ -2752,7 +2771,8 @@ sure of your husband now?
 @MISTRESS FORD
 He's a-birding, sweet Sir John.
 @MISTRESS PAGE
-[Within] What, ho, gossip Ford! what, ho!
+(Within)
+What, ho, gossip Ford! what, ho!
 @MISTRESS FORD
 Step into the chamber, Sir John.
 (Exit FALSTAFF)
@@ -3211,7 +3231,8 @@ call. Bully knight! bully Sir John! speak from
 thy lungs military: art thou there? it is thine
 host, thine Ephesian, calls.
 @FALSTAFF
-[Above] How now, mine host!
+(Above)
+How now, mine host!
 @Host
 Here's a Bohemian-Tartar tarries the coming down of
 thy fat woman. Let her descend, bully, let her
@@ -3764,7 +3785,8 @@ to-night at my house; where I will desire thee to
 laugh at my wife, that now laughs at thee: tell her
 Master Slender hath married her daughter.
 @MISTRESS PAGE
-[Aside] Doctors doubt that: if Anne Page be my
+(Aside)
+Doctors doubt that: if Anne Page be my
 daughter, she is, by this, Doctor Caius' wife.
 (Enter SLENDER)
 @SLENDER

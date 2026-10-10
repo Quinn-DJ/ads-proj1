@@ -1780,7 +1780,8 @@ I crave your blessing.
 God bless thee; and put meekness in thy mind,
 Love, charity, obedience, and true duty!
 @GLOUCESTER
-[Aside] Amen; and make me die a good old man!
+(Aside)
+Amen; and make me die a good old man!
 That is the butt-end of a mother's blessing:
 I marvel why her grace did leave it out.
 @BUCKINGHAM
@@ -2140,7 +2141,8 @@ Methinks the truth should live from age to age,
 As 'twere retail'd to all posterity,
 Even to the general all-ending day.
 @GLOUCESTER
-[Aside] So wise so young, they say, do never
+(Aside)
+So wise so young, they say, do never
 live long.
 @PRINCE EDWARD
 What say you, uncle?
@@ -2163,7 +2165,8 @@ An if I live until I be a man,
 I'll win our ancient right in France again,
 Or die a soldier, as I lived a king.
 @GLOUCESTER
-[Aside] Short summers lightly have a forward spring.
+(Aside)
+Short summers lightly have a forward spring.
 (Enter young YORK, HASTINGS, and the CARDINAL)
 @BUCKINGHAM
 Now, in good time, here comes the Duke of York.
@@ -2334,7 +2337,8 @@ We may digest our complots in some form.
 @Messenger
 What, ho! my lord!
 @HASTINGS
-[Within] Who knocks at the door?
+(Within)
+Who knocks at the door?
 @Messenger
 A messenger from the Lord Stanley.
 (Enter HASTINGS)
@@ -2510,7 +2514,8 @@ I shall return before your lordship thence.
 @HASTINGS
 'Tis like enough, for I stay dinner there.
 @BUCKINGHAM
-[Aside] And supper too, although thou know'st it not.
+(Aside)
+And supper too, although thou know'st it not.
 Come, will you go?
 @HASTINGS
 I'll wait upon your lordship.
@@ -3307,7 +3312,7 @@ Farewell, thou woful welcomer of glory!
 @LADY ANNE
 Adieu, poor soul, that takest thy leave of it!
 @DUCHESS OF YORK
-[To DORSET]
+(To DORSET)
 Go thou to Richmond, and good fortune guide thee!
 (To LADY ANNE)
 Go thou to Richard, and good angels guard thee!
@@ -3372,7 +3377,7 @@ Before I positively herein:
 I will resolve your grace immediately.
 (Exit)
 @CATESBY
-[Aside to a stander by]
+(Aside to a stander by)
 The king is angry: see, he bites the lip.
 @KING RICHARD III
 I will converse with iron-witted fools
@@ -4641,7 +4646,7 @@ Sleeping and waking, O, defend me still!
 (Enter the Ghost of Prince Edward, son to King Henry VI)
 Ghost
 @of Prince Edward
-[To KING RICHARD III]
+(To KING RICHARD III)
 Let me sit heavy on thy soul to-morrow!
 Think, how thou stab'dst me in my prime of youth
 At Tewksbury: despair, therefore, and die!
@@ -4652,7 +4657,7 @@ King Henry's issue, Richmond, comforts thee.
 (Enter the Ghost of King Henry VI)
 Ghost
 @of King Henry VI
-[To KING RICHARD III]
+(To KING RICHARD III)
 When I was mortal, my anointed body
 By thee was punched full of deadly holes
 Think on the Tower and me: despair, and die!
@@ -4663,7 +4668,7 @@ Harry, that prophesied thou shouldst be king,
 Doth comfort thee in thy sleep: live, and flourish!
 (Enter the Ghost of CLARENCE)
 @Ghost of CLARENCE
-[To KING RICHARD III]
+(To KING RICHARD III)
 Let me sit heavy on thy soul to-morrow!
 I, that was wash'd to death with fulsome wine,
 Poor Clarence, by thy guile betrayed to death!
@@ -4675,23 +4680,23 @@ The wronged heirs of York do pray for thee
 Good angels guard thy battle! live, and flourish!
 (Enter the Ghosts of RIVERS, GRAY, and VAUGHAN)
 @Ghost of RIVERS
-[To KING RICHARD III]
+(To KING RICHARD III)
 Let me sit heavy on thy soul to-morrow,
 Rivers. that died at Pomfret! despair, and die!
 @Ghost of GREY
-[To KING RICHARD III]
+(To KING RICHARD III)
 Think upon Grey, and let thy soul despair!
 @Ghost of VAUGHAN
-[To KING RICHARD III]
+(To KING RICHARD III)
 Think upon Vaughan, and, with guilty fear,
 Let fall thy lance: despair, and die!
 @All
-[To RICHMOND]
+(To RICHMOND)
 Awake, and think our wrongs in Richard's bosom
 Will conquer him! awake, and win the day!
 (Enter the Ghost of HASTINGS)
 @Ghost of HASTINGS
-[To KING RICHARD III]
+(To KING RICHARD III)
 Bloody and guilty, guiltily awake,
 And in a bloody battle end thy days!
 Think on Lord Hastings: despair, and die!
@@ -4701,7 +4706,7 @@ Arm, fight, and conquer, for fair England's sake!
 (Enter the Ghosts of the two young Princes)
 Ghosts
 @of young Princes
-[To KING RICHARD III]
+(To KING RICHARD III)
 Dream on thy cousins smother'd in the Tower:
 Let us be led within thy bosom, Richard,
 And weigh thee down to ruin, shame, and death!
@@ -4713,7 +4718,7 @@ Live, and beget a happy race of kings!
 Edward's unhappy sons do bid thee flourish.
 (Enter the Ghost of LADY ANNE)
 @Ghost of LADY ANNE
-[To KING RICHARD III]
+(To KING RICHARD III)
 Richard, thy wife, that wretched Anne thy wife,
 That never slept a quiet hour with thee,
 Now fills thy sleep with perturbations
@@ -4726,7 +4731,7 @@ Thy adversary's wife doth pray for thee.
 (Enter the Ghost of BUCKINGHAM)
 Ghost
 @of BUCKINGHAM
-[To KING RICHARD III]
+(To KING RICHARD III)
 The last was I that helped thee to the crown;
 The last was I that felt thy tyranny:
 O, in the battle think on Buckingham,
@@ -4906,7 +4911,7 @@ A good direction, warlike sovereign.
 This found I on my tent this morning.
 (He sheweth him a paper)
 @KING RICHARD III
-[Reads]
+(Reads)
 'Jockey of Norfolk, be not too bold,
 For Dickon thy master is bought and sold.'
 A thing devised by the enemy.

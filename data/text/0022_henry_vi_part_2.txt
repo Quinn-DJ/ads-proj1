@@ -48,7 +48,8 @@ Makes me from wondering fall to weeping joys;
 Such is the fulness of my heart's content.
 Lords, with one cheerful voice welcome my love.
 @ALL
-[Kneeling] Long live Queen Margaret, England's
+(Kneeling)
+Long live Queen Margaret, England's
 happiness!
 @QUEEN MARGARET
 We thank you all.
@@ -59,7 +60,8 @@ Here are the articles of contracted peace
 Between our sovereign and the French king Charles,
 For eighteen months concluded by consent.
 @GLOUCESTER
-[Reads] 'Imprimis, it is agreed between the French
+(Reads)
+'Imprimis, it is agreed between the French
 king Charles, and William de la Pole, Marquess of
 Suffolk, ambassador for Henry King of England, that
 the said Henry shall espouse the Lady Margaret,
@@ -78,7 +80,8 @@ And dimm'd mine eyes, that I can read no further.
 @KING HENRY VI
 Uncle of Winchester, I pray, read on.
 @CARDINAL
-[Reads] 'Item, It is further agreed between them,
+(Reads)
+'Item, It is further agreed between them,
 that the duchies of Anjou and Maine shall be
 released and delivered over to the king her father,
 and she sent over of the King of England's own
@@ -250,7 +253,8 @@ While they do tend the profit of the land.
 So God help Warwick, as he loves the land,
 And common profit of his country!
 @YORK
-[Aside] And so says York, for he hath greatest cause.
+(Aside)
+And so says York, for he hath greatest cause.
 @SALISBURY
 Then let's make haste away, and look unto the main.
 @WARWICK
@@ -462,7 +466,8 @@ How now, fellow! would'st anything with me?
 I pray, my lord, pardon me; I took ye for my lord
 protector.
 @QUEEN MARGARET
-[Reading] 'To my Lord Protector!' Are your
+(Reading)
+'To my Lord Protector!' Are your
 supplications to his lordship? Let me see them:
 what is thine?
 @First Petitioner
@@ -478,7 +483,8 @@ commons of Melford.' How now, sir knave!
 @Second Petitioner
 Alas, sir, I am but a poor petitioner of our whole township.
 @PETER
-[Giving his petition] Against my master, Thomas
+(Giving his petition)
+Against my master, Thomas
 Horner, for saying that the Duke of York was rightful
 heir to the crown.
 @QUEEN MARGARET
@@ -919,16 +925,20 @@ For blessed are the peacemakers on earth.
 Let me be blessed for the peace I make,
 Against this proud protector, with my sword!
 @GLOUCESTER
-[Aside to CARDINAL] Faith, holy uncle, would
+(Aside to CARDINAL)
+Faith, holy uncle, would
 'twere come to that!
 @CARDINAL
-[Aside to GLOUCESTER] Marry, when thou darest.
+(Aside to GLOUCESTER)
+Marry, when thou darest.
 @GLOUCESTER
-[Aside to CARDINAL] Make up no factious
+(Aside to CARDINAL)
+Make up no factious
 numbers for the matter;
 In thine own person answer thy abuse.
 @CARDINAL
-[Aside to GLOUCESTER] Ay, where thou darest
+(Aside to GLOUCESTER)
+Ay, where thou darest
 not peep: an if thou darest,
 This evening, on the east side of the grove.
 @KING HENRY VI
@@ -942,10 +952,12 @@ Come with thy two-hand sword.
 @GLOUCESTER
 True, uncle.
 @CARDINAL
-[Aside to GLOUCESTER] Are ye advised? the
+(Aside to GLOUCESTER)
+Are ye advised? the
 east side of the grove?
 @GLOUCESTER
-[Aside to CARDINAL] Cardinal, I am with you.
+(Aside to CARDINAL)
+Cardinal, I am with you.
 @KING HENRY VI
 Why, how now, uncle Gloucester!
 @GLOUCESTER
@@ -954,7 +966,8 @@ Talking of hawking; nothing else, my lord.
 Now, by God's mother, priest, I'll shave your crown for this,
 Or all my fence shall fail.
 @CARDINAL
-[Aside to GLOUCESTER] Medice, teipsum--
+(Aside to GLOUCESTER)
+Medice, teipsum--
 Protector, see to't well, protect yourself.
 @KING HENRY VI
 The winds grow high; so do your stomachs, lords.
@@ -1160,7 +1173,8 @@ Demanding of King Henry's life and death,
 And other of your highness' privy-council;
 As more at large your grace shall understand.
 @CARDINAL
-[Aside to GLOUCESTER] And so, my lord protector,
+(Aside to GLOUCESTER)
+And so, my lord protector,
 by this means
 Your lady is forthcoming yet at London.
 This news, I think, hath turn'd your weapon's edge;
@@ -1681,7 +1695,8 @@ Is utterly bereft you; all is lost.
 @KING HENRY VI
 Cold news, Lord Somerset: but God's will be done!
 @YORK
-[Aside] Cold news for me; for I had hope of France
+(Aside)
+Cold news for me; for I had hope of France
 As firmly as I hope for fertile England.
 Thus are my blossoms blasted in the bud
 And caterpillars eat my leaves away;
@@ -2351,7 +2366,8 @@ Why, what tumultuous clamour have we here?
 The traitorous Warwick with the men of Bury
 Set all upon me, mighty sovereign.
 @SALISBURY
-[To the Commons, entering] Sirs, stand apart;
+(To the Commons, entering)
+Sirs, stand apart;
 the king shall know your mind.
 Dread lord, the commons send you word by me,
 Unless Lord Suffolk straight be done to death,
@@ -2381,7 +2397,8 @@ With whose envenomed and fatal sting,
 Your loving uncle, twenty times his worth,
 They say, is shamefully bereft of life.
 @Commons
-[Within] An answer from the king, my
+(Within)
+An answer from the king, my
 Lord of Salisbury!
 @SUFFOLK
 'Tis like the commons, rude unpolish'd hinds,
@@ -2392,7 +2409,8 @@ But all the honour Salisbury hath won
 Is, that he was the lord ambassador
 Sent from a sort of tinkers to the king.
 @Commons
-[Within] An answer from the king, or we will all break in!
+(Within)
+An answer from the king, or we will all break in!
 @KING HENRY VI
 Go, Salisbury, and tell them all from me.
 I thank them for their tender loving care;
@@ -2847,7 +2865,8 @@ Come, come, let's fall in with them.
 @CADE
 We John Cade, so termed of our supposed father,--
 @DICK
-[Aside] Or rather, of stealing a cade of herrings.
+(Aside)
+Or rather, of stealing a cade of herrings.
 @CADE
 For our enemies shall fall before us, inspired with
 the spirit of putting down kings and princes,
@@ -2857,41 +2876,50 @@ Silence!
 @CADE
 My father was a Mortimer,--
 @DICK
-[Aside] He was an honest man, and a good
+(Aside)
+He was an honest man, and a good
 bricklayer.
 @CADE
 My mother a Plantagenet,--
 @DICK
-[Aside] I knew her well; she was a midwife.
+(Aside)
+I knew her well; she was a midwife.
 @CADE
 My wife descended of the Lacies,--
 @DICK
-[Aside] She was, indeed, a pedler's daughter, and
+(Aside)
+She was, indeed, a pedler's daughter, and
 sold many laces.
 @SMITH
-[Aside] But now of late, notable to travel with her
+(Aside)
+But now of late, notable to travel with her
 furred pack, she washes bucks here at home.
 @CADE
 Therefore am I of an honourable house.
 @DICK
-[Aside] Ay, by my faith, the field is honourable;
+(Aside)
+Ay, by my faith, the field is honourable;
 and there was he borne, under a hedge, for his
 father had never a house but the cage.
 @CADE
 Valiant I am.
 @SMITH
-[Aside] A' must needs; for beggary is valiant.
+(Aside)
+A' must needs; for beggary is valiant.
 @CADE
 I am able to endure much.
 @DICK
-[Aside] No question of that; for I have seen him
+(Aside)
+No question of that; for I have seen him
 whipped three market-days together.
 @CADE
 I fear neither sword nor fire.
 @SMITH
-[Aside] He need not fear the sword; for his coat is of proof.
+(Aside)
+He need not fear the sword; for his coat is of proof.
 @DICK
-[Aside] But methinks he should stand in fear of
+(Aside)
+But methinks he should stand in fear of
 fire, being burnt i' the hand for stealing of sheep.
 @CADE
 Be brave, then; for your captain is brave, and vows
@@ -3028,7 +3056,8 @@ Ay, marry, will we; therefore get ye gone.
 @WILLIAM STAFFORD
 Jack Cade, the Duke of York hath taught you this.
 @CADE
-[Aside] He lies, for I invented it myself.
+(Aside)
+He lies, for I invented it myself.
 Go to, sirrah, tell the king from me, that, for his
 father's sake, Henry the Fifth, in whose time boys
 went to span-counter for French crowns, I am content
@@ -3248,18 +3277,21 @@ Be it a lordship, thou shalt have it for that word.
 @DICK
 Only that the laws of England may come out of your mouth.
 @HOLLAND
-[Aside] Mass, 'twill be sore law, then; for he was
+(Aside)
+Mass, 'twill be sore law, then; for he was
 thrust in the mouth with a spear, and 'tis not whole
 yet.
 @SMITH
-[Aside] Nay, John, it will be stinking law for his
+(Aside)
+Nay, John, it will be stinking law for his
 breath stinks with eating toasted cheese.
 @CADE
 I have thought upon it, it shall be so. Away, burn
 all the records of the realm: my mouth shall be
 the parliament of England.
 @HOLLAND
-[Aside] Then we are like to have biting statutes,
+(Aside)
+Then we are like to have biting statutes,
 unless his teeth be pulled out.
 @CADE
 And henceforward all things shall be in common.
@@ -3367,7 +3399,8 @@ These hands are free from guiltless bloodshedding,
 This breast from harbouring foul deceitful thoughts.
 O, let me live!
 @CADE
-[Aside] I feel remorse in myself with his words;
+(Aside)
+I feel remorse in myself with his words;
 but I'll bridle it: he shall die, an it be but for
 pleading so well for his life. Away with him! he
 has a familiar under his tongue; he speaks not o'
@@ -3691,7 +3724,8 @@ Against thy oath and true allegiance sworn,
 Should raise so great a power without his leave,
 Or dare to bring thy force so near the court.
 @YORK
-[Aside] Scarce can I speak, my choler is so great:
+(Aside)
+Scarce can I speak, my choler is so great:
 O, I could hew up rocks and fight with flint,
 I am so angry at these abject terms;
 And now, like Ajax Telamonius,

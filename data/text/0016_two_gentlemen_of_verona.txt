@@ -163,7 +163,8 @@ your lover.
 @PROTEUS
 But what said she?
 @SPEED
-[First nodding] Ay.
+(First nodding)
+Ay.
 @PROTEUS
 Nod--Ay--why, that's noddy.
 @SPEED
@@ -712,17 +713,20 @@ Are they not lamely writ?
 No, boy, but as well as I can do them. Peace!
 here she comes.
 @SPEED
-[Aside] O excellent motion! O exceeding puppet!
+(Aside)
+O excellent motion! O exceeding puppet!
 Now will he interpret to her.
 (Enter SILVIA)
 @VALENTINE
 Madam and mistress, a thousand good-morrows.
 @SPEED
-[Aside] O, give ye good even! here's a million of manners.
+(Aside)
+O, give ye good even! here's a million of manners.
 @SILVIA
 Sir Valentine and servant, to you two thousand.
 @SPEED
-[Aside] He should give her interest and she gives it him.
+(Aside)
+He should give her interest and she gives it him.
 @VALENTINE
 As you enjoin'd me, I have writ your letter
 Unto the secret nameless friend of yours;
@@ -745,7 +749,8 @@ And yet I will not name it; and yet I care not;
 And yet take this again; and yet I thank you,
 Meaning henceforth to trouble you no more.
 @SPEED
-[Aside] And yet you will; and yet another 'yet.'
+(Aside)
+And yet you will; and yet another 'yet.'
 @VALENTINE
 What means your ladyship? do you not like it?
 @SILVIA
@@ -1908,7 +1913,8 @@ Come, fool, come; try me in thy paper.
 @LAUNCE
 There; and St. Nicholas be thy speed!
 @SPEED
-[Reads] 'Imprimis: She can milk.'
+(Reads)
+'Imprimis: She can milk.'
 @LAUNCE
 Ay, that she can.
 @SPEED
@@ -2447,7 +2453,8 @@ Even for this time I spend in talking to thee.
 I grant, sweet love, that I did love a lady;
 But she is dead.
 @JULIA
-[Aside] 'Twere false, if I should speak it;
+(Aside)
+'Twere false, if I should speak it;
 For I am sure she is not buried.
 @SILVIA
 Say that she be; yet Valentine thy friend
@@ -2465,7 +2472,8 @@ Sweet lady, let me rake it from the earth.
 Go to thy lady's grave and call hers thence,
 Or, at the least, in hers sepulchre thine.
 @JULIA
-[Aside] He heard not that.
+(Aside)
+He heard not that.
 @PROTEUS
 Madam, if your heart be so obdurate,
 Vouchsafe me yet your picture for my love,
@@ -2475,7 +2483,8 @@ For since the substance of your perfect self
 Is else devoted, I am but a shadow;
 And to your shadow will I make true love.
 @JULIA
-[Aside] If 'twere a substance, you would, sure,
+(Aside)
+If 'twere a substance, you would, sure,
 deceive it,
 And make it but a shadow, as I am.
 @SILVIA
@@ -2865,7 +2874,8 @@ No; that it is too little.
 @THURIO
 I'll wear a boot, to make it somewhat rounder.
 @JULIA
-[Aside] But love will not be spurr'd to what
+(Aside)
+But love will not be spurr'd to what
 it loathes.
 @THURIO
 What says she to my face?
@@ -2877,7 +2887,8 @@ Nay then, the wanton lies; my face is black.
 But pearls are fair; and the old saying is,
 Black men are pearls in beauteous ladies' eyes.
 @JULIA
-[Aside] 'Tis true; such pearls as put out
+(Aside)
+'Tis true; such pearls as put out
 ladies' eyes;
 For I had rather wink than look on them.
 @THURIO
@@ -2887,19 +2898,22 @@ Ill, when you talk of war.
 @THURIO
 But well, when I discourse of love and peace?
 @JULIA
-[Aside] But better, indeed, when you hold your peace.
+(Aside)
+But better, indeed, when you hold your peace.
 @THURIO
 What says she to my valour?
 @PROTEUS
 O, sir, she makes no doubt of that.
 @JULIA
-[Aside] She needs not, when she knows it cowardice.
+(Aside)
+She needs not, when she knows it cowardice.
 @THURIO
 What says she to my birth?
 @PROTEUS
 That you are well derived.
 @JULIA
-[Aside] True; from a gentleman to a fool.
+(Aside)
+True; from a gentleman to a fool.
 @THURIO
 Considers she my possessions?
 @PROTEUS
@@ -2907,7 +2921,8 @@ O, ay; and pities them.
 @THURIO
 Wherefore?
 @JULIA
-[Aside] That such an ass should owe them.
+(Aside)
+That such an ass should owe them.
 @PROTEUS
 That they are out by lease.
 @JULIA
@@ -3011,7 +3026,8 @@ Vouchsafe me, for my meed, but one fair look;
 A smaller boon than this I cannot beg
 And less than this, I am sure, you cannot give.
 @VALENTINE
-[Aside] How like a dream is this I see and hear!
+(Aside)
+How like a dream is this I see and hear!
 Love, lend me patience to forbear awhile.
 @SILVIA
 O miserable, unhappy that I am!
@@ -3021,7 +3037,8 @@ But by my coming I have made you happy.
 @SILVIA
 By thy approach thou makest me most unhappy.
 @JULIA
-[Aside] And me, when he approacheth to your presence.
+(Aside)
+And me, when he approacheth to your presence.
 @SILVIA
 Had I been seized by a hungry lion,
 I would have been a breakfast to the beast,

@@ -783,7 +783,8 @@ Heigh-ho! an it be not four by the day, I'll be
 hanged: Charles' wain is over the new chimney, and
 yet our horse not packed. What, ostler!
 @Ostler
-[Within] Anon, anon.
+(Within)
+Anon, anon.
 @First Carrier
 I prithee, Tom, beat Cut's saddle, put a few flocks
 in the point; poor jade, is wrung in the withers out
@@ -845,7 +846,8 @@ have great charge.
 @GADSHILL
 What, ho! chamberlain!
 @Chamberlain
-[Within] At hand, quoth pick-purse.
+(Within)
+At hand, quoth pick-purse.
 @GADSHILL
 That's even as fair as--at hand, quoth the
 chamberlain; for thou variest no more from picking
@@ -1276,7 +1278,8 @@ How long hast thou to serve, Francis?
 @FRANCIS
 Forsooth, five years, and as much as to--
 @POINS
-[Within] Francis!
+(Within)
+Francis!
 @FRANCIS
 Anon, anon, sir.
 @PRINCE HENRY
@@ -1288,7 +1291,8 @@ a fair pair of heels and run from it?
 O Lord, sir, I'll be sworn upon all the books in
 England, I could find in my heart.
 @POINS
-[Within] Francis!
+(Within)
+Francis!
 @FRANCIS
 Anon, sir.
 @PRINCE HENRY
@@ -1296,7 +1300,8 @@ How old art thou, Francis?
 @FRANCIS
 Let me see--about Michaelmas next I shall be--
 @POINS
-[Within] Francis!
+(Within)
+Francis!
 @FRANCIS
 Anon, sir. Pray stay a little, my lord.
 @PRINCE HENRY
@@ -1308,7 +1313,8 @@ O Lord, I would it had been two!
 I will give thee for it a thousand pound: ask me
 when thou wilt, and thou shalt have it.
 @POINS
-[Within] Francis!
+(Within)
+Francis!
 @FRANCIS
 Anon, anon.
 @PRINCE HENRY
@@ -1330,7 +1336,8 @@ will sully: in Barbary, sir, it cannot come to so much.
 @FRANCIS
 What, sir?
 @POINS
-[Within] Francis!
+(Within)
+Francis!
 @PRINCE HENRY
 Away, you rogue! dost thou not hear them call?
 (Here they both call him; the drawer stands amazed, not knowing which way to go)
@@ -1955,7 +1962,8 @@ Nothing but papers, my lord.
 @PRINCE HENRY
 Let's see what they be: read them.
 @PETO
-[Reads] Item, A capon,. . 2s. 2d.
+(Reads)
+Item, A capon,. . 2s. 2d.
 Item, Sauce,. . . 4d.
 Item, Sack, two gallons, 5s. 8d.
 Item, Anchovies and sack after supper, 2s. 6d.
@@ -3855,7 +3863,8 @@ Embowell'd will I see thee by and by:
 Till then in blood by noble Percy lie.
 (Exit PRINCE HENRY)
 @FALSTAFF
-[Rising up] Embowelled! if thou embowel me to-day,
+(Rising up)
+Embowelled! if thou embowel me to-day,
 I'll give you leave to powder me and eat me too
 to-morrow. 'Sblood,'twas time to counterfeit, or
 that hot termagant Scot had paid me scot and lot too.

@@ -308,44 +308,52 @@ there's none abroad so wholesome as that you vent.
 @CLOTEN
 If my shirt were bloody, then to shift it. Have I hurt him?
 @Second Lord
-[Aside] No, 'faith; not so much as his patience.
+(Aside)
+No, 'faith; not so much as his patience.
 @First Lord
 Hurt him! his body's a passable carcass, if he be
 not hurt: it is a thoroughfare for steel, if it be not hurt.
 @Second Lord
-[Aside] His steel was in debt; it went o' the
+(Aside)
+His steel was in debt; it went o' the
 backside the town.
 @CLOTEN
 The villain would not stand me.
 @Second Lord
-[Aside] No; but he fled forward still, toward your face.
+(Aside)
+No; but he fled forward still, toward your face.
 @First Lord
 Stand you! You have land enough of your own: but
 he added to your having; gave you some ground.
 @Second Lord
-[Aside] As many inches as you have oceans. Puppies!
+(Aside)
+As many inches as you have oceans. Puppies!
 @CLOTEN
 I would they had not come between us.
 @Second Lord
-[Aside] So would I, till you had measured how long
+(Aside)
+So would I, till you had measured how long
 a fool you were upon the ground.
 @CLOTEN
 And that she should love this fellow and refuse me!
 @Second Lord
-[Aside] If it be a sin to make a true election, she
+(Aside)
+If it be a sin to make a true election, she
 is damned.
 @First Lord
 Sir, as I told you always, her beauty and her brain
 go not together: she's a good sign, but I have seen
 small reflection of her wit.
 @Second Lord
-[Aside] She shines not upon fools, lest the
+(Aside)
+She shines not upon fools, lest the
 reflection should hurt her.
 @CLOTEN
 Come, I'll to my chamber. Would there had been some
 hurt done!
 @Second Lord
-[Aside] I wish not so; unless it had been the fall
+(Aside)
+I wish not so; unless it had been the fall
 of an ass, which is no great hurt.
 @CLOTEN
 You'll go with us?
@@ -692,12 +700,15 @@ An enemy to my son. How now, Pisanio!
 Doctor, your service for this time is ended;
 Take your own way.
 @CORNELIUS
-[Aside] I do suspect you, madam;
+(Aside)
+I do suspect you, madam;
 But you shall do no harm.
 @QUEEN
-[To PISANIO] Hark thee, a word.
+(To PISANIO)
+Hark thee, a word.
 @CORNELIUS
-[Aside] I do not like her. She doth think she has
+(Aside)
+I do not like her. She doth think she has
 Strange lingering poisons: I do know her spirit,
 And will not trust one of her malice with
 A drug of such damn'd nature. Those she has
@@ -794,7 +805,8 @@ And greets your highness dearly.
 Thanks, good sir:
 You're kindly welcome.
 @IACHIMO
-[Aside] All of her that is out of door most rich!
+(Aside)
+All of her that is out of door most rich!
 If she be furnish'd with a mind so rare,
 She is alone the Arabian bird, and I
 Have lost the wager. Boldness be my friend!
@@ -802,7 +814,8 @@ Arm me, audacity, from head to foot!
 Or, like the Parthian, I shall flying fight;
 Rather directly fly.
 @IMOGEN
-[Reads] 'He is one of the noblest note, to whose
+(Reads)
+'He is one of the noblest note, to whose
 kindnesses I am most infinitely tied. Reflect upon
 him accordingly, as you value your trust--
 LEONATUS.'
@@ -1087,7 +1100,8 @@ oaths of him and might not spend them at my pleasure.
 What got he by that? You have broke his pate with
 your bowl.
 @Second Lord
-[Aside] If his wit had been like him that broke it,
+(Aside)
+If his wit had been like him that broke it,
 it would have run all out.
 @CLOTEN
 When a gentleman is disposed to swear, it is not for
@@ -1100,7 +1114,8 @@ nor crop the ears of them.
 Whoreson dog! I give him satisfaction?
 Would he had been one of my rank!
 @Second Lord
-[Aside] To have smelt like a fool.
+(Aside)
+To have smelt like a fool.
 @CLOTEN
 I am not vexed more at any thing in the earth: a
 pox on't! I had rather not be so noble as I am;
@@ -1109,7 +1124,8 @@ mother: every Jack-slave hath his bellyful of
 fighting, and I must go up and down like a cock that
 nobody can match.
 @Second Lord
-[Aside] You are cock and capon too; and you crow,
+(Aside)
+You are cock and capon too; and you crow,
 cock, with your comb on.
 @CLOTEN
 Sayest thou?
@@ -1128,7 +1144,8 @@ Did you hear of a stranger that's come to court to-night?
 @CLOTEN
 A stranger, and I not know on't!
 @Second Lord
-[Aside] He's a strange fellow himself, and knows it
+(Aside)
+He's a strange fellow himself, and knows it
 not.
 @First Lord
 There's an Italian come; and, 'tis thought, one of
@@ -1146,7 +1163,8 @@ You cannot derogate, my lord.
 @CLOTEN
 Not easily, I think.
 @Second Lord
-[Aside] You are a fool granted; therefore your
+(Aside)
+You are a fool granted; therefore your
 issues, being foolish, do not derogate.
 @CLOTEN
 Come, I'll go see this Italian: what I have lost
@@ -2152,7 +2170,8 @@ Please you, read;
 And you shall find me, wretched man, a thing
 The most disdain'd of fortune.
 @IMOGEN
-[Reads] 'Thy mistress, Pisanio, hath played the
+(Reads)
+'Thy mistress, Pisanio, hath played the
 strumpet in my bed; the testimonies whereof lie
 bleeding in me. I speak not out of weak surmises,
 but from proof as strong as my grief and as certain
@@ -2501,7 +2520,8 @@ How now, my son!
 Go in and cheer the king: he rages; none
 Dare come about him.
 @QUEEN
-[Aside] All the better: may
+(Aside)
+All the better: may
 This night forestall him of the coming day!
 (Exit)
 @CLOTEN
@@ -2554,13 +2574,15 @@ Touching her flight.
 Let's see't. I will pursue her
 Even to Augustus' throne.
 @PISANIO
-[Aside] Or this, or perish.
+(Aside)
+Or this, or perish.
 She's far enough; and what he learns by this
 May prove his travel, not her danger.
 @CLOTEN
 Hum!
 @PISANIO
-[Aside] I'll write to my lord she's dead. O Imogen,
+(Aside)
+I'll write to my lord she's dead. O Imogen,
 Safe mayst thou wander, safe return again!
 @CLOTEN
 Sirrah, is this letter true?
@@ -2690,7 +2712,7 @@ I am weak with toil, yet strong in appetite.
 There is cold meat i' the cave; we'll browse on that,
 Whilst what we have kill'd be cook'd.
 @BELARIUS
-[Looking into the cave]
+(Looking into the cave)
 Stay; come not in.
 But that it eats our victuals, I should think
 Here were a fairy.
@@ -2854,10 +2876,12 @@ the fellow dares not deceive me.
 [SCENE II. Before the cave of Belarius.]
 (Enter, from the cave, BELARIUS, GUIDERIUS, ARVIRAGUS, and IMOGEN)
 @BELARIUS
-[To IMOGEN] You are not well: remain here in the cave;
+(To IMOGEN)
+You are not well: remain here in the cave;
 We'll come to you after hunting.
 @ARVIRAGUS
-[To IMOGEN] Brother, stay here
+(To IMOGEN)
+Brother, stay here
 Are we not brothers?
 @IMOGEN
 So man and man should be;
@@ -2890,7 +2914,8 @@ Love's reason's without reason: the bier at door,
 And a demand who is't shall die, I'd say
 'My father, not this youth.'
 @BELARIUS
-[Aside] O noble strain!
+(Aside)
+O noble strain!
 O worthiness of nature! breed of greatness!
 Cowards father cowards and base things sire base:
 Nature hath meal and bran, contempt and grace.
@@ -2904,7 +2929,8 @@ I wish ye sport.
 @ARVIRAGUS
 You health. So please you, sir.
 @IMOGEN
-[Aside] These are kind creatures. Gods, what lies
+(Aside)
+These are kind creatures. Gods, what lies
 I have heard!
 Our courtiers say all's savage but at court:
 Experience, O, thou disprovest report!
@@ -3337,7 +3363,8 @@ The ground that gave them first has them again:
 Their pleasures here are past, so is their pain.
 (Exeunt BELARIUS, GUIDERIUS, and ARVIRAGUS)
 @IMOGEN
-[Awaking] Yes, sir, to Milford-Haven; which is
+(Awaking)
+Yes, sir, to Milford-Haven; which is
 the way?--
 I thank you.--By yond bush?--Pray, how far thither?
 'Ods pittikins! can it be six mile yet?--
@@ -3989,7 +4016,8 @@ His radiant root. Away! and, to be blest,
 Let us with care perform his great behest.
 (The Apparitions vanish)
 @Posthumus Leonatus
-[Waking] Sleep, thou hast been a grandsire, and begot
+(Waking)
+Sleep, thou hast been a grandsire, and begot
 A father to me; and thou hast created
 A mother and two brothers: but, O scorn!
 Gone! they went hence so soon as they were born:
@@ -4289,7 +4317,8 @@ But we saw him dead.
 @BELARIUS
 Be silent; let's see further.
 @PISANIO
-[Aside] It is my mistress:
+(Aside)
+It is my mistress:
 Since she is living, let the time run on
 To good or bad.
 (CYMBELINE and IMOGEN come forward)
@@ -4306,7 +4335,8 @@ Winnow the truth from falsehood. On, speak to him.
 My boon is, that this gentleman may render
 Of whom he had this ring.
 @POSTHUMUS LEONATUS
-[Aside] What's that to him?
+(Aside)
+What's that to him?
 @CYMBELINE
 That diamond upon your finger, say
 How came it yours?
@@ -4400,7 +4430,8 @@ But think her bond of chastity quite crack'd,
 I having ta'en the forfeit. Whereupon--
 Methinks, I see him now--
 @POSTHUMUS LEONATUS
-[Advancing] Ay, so thou dost,
+(Advancing)
+Ay, so thou dost,
 Italian fiend! Ay me, most credulous fool,
 Egregious murderer, thief, any thing
 That's due to all the villains past, in being,
@@ -4496,9 +4527,11 @@ How now, my flesh, my child!
 What, makest thou me a dullard in this act?
 Wilt thou not speak to me?
 @IMOGEN
-[Kneeling] Your blessing, sir.
+(Kneeling)
+Your blessing, sir.
 @BELARIUS
-[To GUIDERIUS and ARVIRAGUS] Though you did love
+(To GUIDERIUS and ARVIRAGUS)
+Though you did love
 this youth, I blame ye not:
 You had a motive for't.
 @CYMBELINE
@@ -4729,7 +4762,8 @@ The purpose I then follow'd. That I was he,
 Speak, Iachimo: I had you down and might
 Have made you finish.
 @IACHIMO
-[Kneeling] I am down again:
+(Kneeling)
+I am down again:
 But now my heavy conscience sinks my knee,
 As then your force did. Take that life, beseech you,
 Which I so often owe: but your ring first;
@@ -4765,7 +4799,8 @@ Here, my good lord.
 @CAIUS LUCIUS
 Read, and declare the meaning.
 @Soothsayer
-[Reads] 'When as a lion's whelp shall, to himself
+(Reads)
+'When as a lion's whelp shall, to himself
 unknown, without seeking find, and be embraced by a
 piece of tender air; and when from a stately cedar
 shall be lopped branches, which, being dead many

@@ -18,6 +18,14 @@ Text format (one line = one unit; header lines start with '#'):
   @BERNARDO          speaker  (speech labels, from <b>...</b>)
   Who's there?       body     (verse lines / prose, original punctuation kept)
 
+In the Moby edition, inline stage directions are written in square brackets
+inside the verse ("[Aside]  Heaven, that I had thy head!", "[Sings]").  The
+extractor relocates a *leading* "[...]" fragment to its own stage line:
+  (Aside)
+  Heaven, that I had thy head!
+so that "aside"/"sings"/addressee names never leak into the searchable text.
+Editorial insertions *inside* a line ("[Censorinus,]", "[   ]") stay put.
+
 HTML hygiene rules (verified against the corpus):
   * <head>, the top navigation table (td.play / td.nav) and <a href> links are dropped
   * entities are decoded; whitespace inside a line is collapsed to single spaces
@@ -48,6 +56,8 @@ class PageParser(HTMLParser):
         self.buf = []          # text of the line being built
         self.lines = []        # finished output lines
         self.in_head = False
+        self.bracket_fragments = 0   # leading [stage directions] relocated from verse
+        self.skipped_artifacts = 0   # bogus headings found in the source (see _flush)
 
     # -- context helpers ---------------------------------------------------
 
@@ -85,13 +95,34 @@ class PageParser(HTMLParser):
             return
         mode = self._mode()
         if mode == "heading":
+            # 2henryiv/full.html contains a bogus "<h3>None</h3>" where the
+            # ACT I heading should be (Moby-conversion artifact). Drop it;
+            # inferring "ACT I" would mean inventing data we cannot verify.
+            if text == "None":
+                self.skipped_artifacts += 1
+                return
             self.lines.append(f"[{text}]")
         elif mode == "stage":
             self.lines.append(f"({text})")
         elif mode == "speaker":
             self.lines.append("@" + text.rstrip(":"))
         else:
-            self.lines.append(text)
+            self._emit_body(text)
+
+    def _emit_body(self, text):
+        """Emit verse/prose text, relocating leading [stage fragments]."""
+        while text.startswith("["):
+            close = text.find("]")
+            if close == -1:
+                break                    # no closing bracket: keep as plain text
+            fragment = text[1:close].strip()
+            if fragment:
+                self.lines.append(f"({fragment})")
+                self.bracket_fragments += 1
+            text = text[close + 1:].strip()
+            if not text:
+                return
+        self.lines.append(text)
 
     # -- tag handling ------------------------------------------------------
 
@@ -335,12 +366,16 @@ def main():
 
     rows = []
     warnings = []
+    bracket_total = 0
+    artifact_total = 0
     for i, (kind, category, title, src_rel) in enumerate(docs, start=1):
         src = args.raw / src_rel
         parser = PageParser()
         parser.feed(src.read_text(encoding="latin-1"))
         parser.close()
         lines = parser.lines
+        bracket_total += parser.bracket_fragments
+        artifact_total += parser.skipped_artifacts
         if not lines:
             warnings.append(f"{src_rel}: no text extracted")
         for ln in lines:
@@ -373,7 +408,7 @@ def main():
         "# data/text/ 格式说明（由 tools/extract.py 生成，勿手改）\n\n"
         "每个文档一个 `.txt`，一行一个单元，`#` 开头是头部注释：\n\n"
         "- `[ACT I]` / `[SCENE I. ...]`：标题行（H1–H3），索引时可用开关决定是否保留\n"
-        "- `(Exit Ghost)`：舞台指示（<i>），默认过滤，可开关\n"
+        "- `(Exit Ghost)`：舞台指示（<i>），以及从诗句中拆出的方括号提示（`[Aside]`、`[Sings]`），默认过滤，可开关\n"
         "- `@BERNARDO`：说话人标签（<b>），默认过滤，可开关\n"
         "- 其余行：台词/诗行/散文正文，保留原标点\n\n"
         "重新生成：`python3 tools/extract.py`（覆盖 `[0-9][0-9][0-9][0-9]_*.txt` 与 README 本身）。\n",
@@ -391,6 +426,8 @@ def main():
 
     print(f"docs: {len(rows)}  ({', '.join(f'{k}={v}' for k, v in sorted(kinds.items()))})")
     print(f"lines: {total_lines}   words: {total_words}")
+    print(f"bracket stage fragments relocated from verse: {bracket_total}")
+    print(f"source-generator artifacts skipped: {artifact_total}")
     print(f"manifest: {args.manifest}")
     print(f"text: {args.text}")
     if warnings:

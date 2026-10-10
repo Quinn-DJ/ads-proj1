@@ -235,7 +235,8 @@ Why, lo you now, I have spoke to the purpose twice:
 The one for ever earn'd a royal husband;
 The other for some while a friend.
 @LEONTES
-[Aside] Too hot, too hot!
+(Aside)
+Too hot, too hot!
 To mingle friendship far is mingling bloods.
 I have tremor cordis on me: my heart dances;
 But not for joy; not joy. This entertainment
@@ -1017,7 +1018,7 @@ Be left her to perform. Come, follow us;
 We are to speak in public; for this business
 Will raise us all.
 @ANTIGONUS
-[Aside]
+(Aside)
 To laughter, as I take it,
 If the good truth were known.
 (Exeunt)
@@ -1500,7 +1501,8 @@ Appear in person here in court. Silence!
 @LEONTES
 Read the indictment.
 @Officer
-[Reads] Hermione, queen to the worthy
+(Reads)
+Hermione, queen to the worthy
 Leontes, king of Sicilia, thou art here accused and
 arraigned of high treason, in committing adultery
 with Polixenes, king of Bohemia, and conspiring
@@ -1645,7 +1647,8 @@ All this we swear.
 @LEONTES
 Break up the seals and read.
 @Officer
-[Reads] Hermione is chaste;
+(Reads)
+Hermione is chaste;
 Polixenes blameless; Camillo a true subject; Leontes
 a jealous tyrant; his innocent babe truly begotten;
 and the king shall live without an heir, if that
@@ -2115,7 +2118,7 @@ Let me see: every 'leven wether tods; every tod
 yields pound and odd shilling; fifteen hundred
 shorn. what comes the wool to?
 @AUTOLYCUS
-[Aside]
+(Aside)
 If the springe hold, the cock's mine.
 @Clown
 I cannot do't without counters. Let me see; what am
@@ -2173,7 +2176,7 @@ shoulder-blade is out.
 @Clown
 How now! canst stand?
 @AUTOLYCUS
-[Picking his pocket]
+(Picking his pocket)
 Softly, dear sir; good sir, softly. You ha' done me
 a charitable office.
 @Clown
@@ -2336,7 +2339,8 @@ That which you are, mistress o' the feast: come on,
 And bid us welcome to your sheep-shearing,
 As your good flock shall prosper.
 @PERDITA
-[To POLIXENES] Sir, welcome:
+(To POLIXENES)
+Sir, welcome:
 It is my father's will I should take on me
 The hostess-ship o' the day.
 (To CAMILLO)
@@ -3209,7 +3213,8 @@ Adieu, sir.
 O Perdita, what have we twain forgot!
 Pray you, a word.
 @CAMILLO
-[Aside] What I do next, shall be to tell the king
+(Aside)
+What I do next, shall be to tell the king
 Of this escape and whither they are bound;
 Wherein my hope is I shall so prevail
 To force him after: in whose company
@@ -3267,17 +3272,20 @@ Indeed, brother-in-law was the farthest off you
 could have been to him and then your blood had been
 the dearer by I know how much an ounce.
 @AUTOLYCUS
-[Aside] Very wisely, puppies!
+(Aside)
+Very wisely, puppies!
 @Shepherd
 Well, let us to the king: there is that in this
 fardel will make him scratch his beard.
 @AUTOLYCUS
-[Aside] I know not what impediment this complaint
+(Aside)
+I know not what impediment this complaint
 may be to the flight of my master.
 @Clown
 Pray heartily he be at palace.
 @AUTOLYCUS
-[Aside] Though I am not naturally honest, I am so
+(Aside)
+Though I am not naturally honest, I am so
 sometimes by chance: let me pocket up my pedlar's excrement.
 (Takes off his false beard)
 How now, rustics! whither are you bound?

@@ -1348,20 +1348,23 @@ Sir, you cannot.
 I would your grace would give us but an hour
 Of private conference.
 @KING HENRY VIII
-[To NORFOLK and SUFFOLK]
+(To NORFOLK and SUFFOLK)
 We are busy; go.
 @NORFOLK
-[Aside to SUFFOLK]
+(Aside to SUFFOLK)
 This priest has no pride in him?
 @SUFFOLK
-[Aside to NORFOLK] Not to speak of:
+(Aside to NORFOLK)
+Not to speak of:
 I would not be so sick though for his place:
 But this cannot continue.
 @NORFOLK
-[Aside to SUFFOLK] If it do,
+(Aside to SUFFOLK)
+If it do,
 I'll venture one have-at-him.
 @SUFFOLK
-[Aside to NORFOLK] I another.
+(Aside to NORFOLK)
+I another.
 (Exeunt NORFOLK and SUFFOLK)
 @CARDINAL WOLSEY
 Your grace has given a precedent of wisdom
@@ -1404,11 +1407,12 @@ I find him a fit fellow.
 (Exit CARDINAL WOLSEY)
 (Re-enter CARDINAL WOLSEY, with GARDINER)
 @CARDINAL WOLSEY
-[Aside to GARDINER] Give me your hand much joy and
+(Aside to GARDINER)
+Give me your hand much joy and
 favour to you;
 You are the king's now.
 @GARDINER
-[Aside to CARDINAL WOLSEY]
+(Aside to CARDINAL WOLSEY)
 But to be commanded
 For ever by your grace, whose hand has raised me.
 @KING HENRY VIII
@@ -1905,7 +1909,8 @@ Meanwhile must be an earnest motion
 Made to the queen, to call back her appeal
 She intends unto his holiness.
 @KING HENRY VIII
-[Aside] I may perceive
+(Aside)
+I may perceive
 These cardinals trifle with me: I abhor
 This dilatory sloth and tricks of Rome.
 My learn'd and well-beloved servant, Cranmer,
@@ -2010,7 +2015,8 @@ Both of his truth and him, which was too far,
 Offers, as I do, in a sign of peace,
 His service and his counsel.
 @QUEEN KATHARINE
-[Aside] To betray me.--
+(Aside)
+To betray me.--
 My lords, I thank you both for your good wills;
 Ye speak like honest men; pray God, ye prove so!
 But how to make ye suddenly an answer,
@@ -2330,7 +2336,8 @@ Does whet his anger to him.
 Sharp enough,
 Lord, for thy justice!
 @CARDINAL WOLSEY
-[Aside] The late queen's gentlewoman,
+(Aside)
+The late queen's gentlewoman,
 a knight's daughter,
 To be her mistress' mistress! the queen's queen!
 This candle burns not clear: 'tis I must snuff it;
@@ -2426,9 +2433,11 @@ Employ'd you where high profits might come home,
 But pared my present havings, to bestow
 My bounties upon you.
 @CARDINAL WOLSEY
-[Aside] What should this mean?
+(Aside)
+What should this mean?
 @SURREY
-[Aside] The Lord increase this business!
+(Aside)
+The Lord increase this business!
 @KING HENRY VIII
 Have I not made you,
 The prime man of the state? I pray you, tell me,
@@ -3425,7 +3434,8 @@ Ay, my good lord.
 He attends your highness' pleasure.
 (Exit DENNY)
 @LOVELL
-[Aside] This is about that which the bishop spake:
+(Aside)
+This is about that which the bishop spake:
 I am happily come hither.
 (Re-enter DENNY, with CRANMER)
 @KING HENRY VIII
@@ -3434,14 +3444,15 @@ Avoid the gallery.
 Ha! I have said. Be gone. What!
 (Exeunt LOVELL and DENNY)
 @CRANMER
-[Aside]
+(Aside)
 I am fearful: wherefore frowns he thus?
 'Tis his aspect of terror. All's not well.
 @KING HENRY VIII
 How now, my lord! you desire to know
 Wherefore I sent for you.
 @CRANMER
-[Kneeling] It is my duty
+(Kneeling)
+It is my duty
 To attend your highness' pleasure.
 @KING HENRY VIII
 Pray you, arise,
@@ -3463,7 +3474,7 @@ To make your house our Tower: you a brother of us,
 It fits we thus proceed, or else no witness
 Would come against you.
 @CRANMER
-[Kneeling]
+(Kneeling)
 I humbly thank your highness;
 And am right glad to catch this good occasion
 Most throughly to be winnow'd, where my chaff
@@ -3528,7 +3539,8 @@ He has strangled
 His language in his tears.
 (Enter Old Lady, LOVELL following)
 @Gentleman
-[Within] Come back: what mean you?
+(Within)
+Come back: what mean you?
 @Old Lady
 I'll not come back; the tidings that I bring
 Will make my boldness manners. Now, good angels
@@ -3581,12 +3593,14 @@ Your grace must wait till you be call'd for.
 @CRANMER
 So.
 @DOCTOR BUTTS
-[Aside] This is a piece of malice. I am glad
+(Aside)
+This is a piece of malice. I am glad
 I came this way so happily: the king
 Shall understand it presently.
 (Exit)
 @CRANMER
-[Aside] 'Tis Butts,
+(Aside)
+'Tis Butts,
 The king's physician: as he pass'd along,
 How earnestly he cast his eyes upon me!
 Pray heaven, he sound not my disgrace! For certain,
@@ -4021,7 +4035,8 @@ life, long, and ever happy, to the high and mighty
 princess of England, Elizabeth!
 (Flourish. Enter KING HENRY VIII and Guard)
 @CRANMER
-[Kneeling] And to your royal grace, and the good queen,
+(Kneeling)
+And to your royal grace, and the good queen,
 My noble partners, and myself, thus pray:
 All comfort, joy, in this most gracious lady,
 Heaven ever laid up to make parents happy,

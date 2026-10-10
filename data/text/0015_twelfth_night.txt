@@ -1010,7 +1010,7 @@ A love-song, a love-song.
 @SIR ANDREW
 Ay, ay: I care not for good life.
 @Clown
-[Sings]
+(Sings)
 O mistress mine, where are you roaming?
 O, stay and hear; your true love's coming,
 That can sing both high and low:
@@ -1022,7 +1022,7 @@ Excellent good, i' faith.
 @SIR TOBY BELCH
 Good, good.
 @Clown
-[Sings]
+(Sings)
 What is love? 'tis not hereafter;
 Present mirth hath present laughter;
 What's to come is still unsure:
@@ -1076,7 +1076,8 @@ Ay, he does well enough if he be disposed, and so do
 I too: he does it with a better grace, but I do it
 more natural.
 @SIR TOBY BELCH
-[Sings] 'O, the twelfth day of December,'--
+(Sings)
+'O, the twelfth day of December,'--
 @MARIA
 For the love o' God, peace!
 (Enter MALVOLIO)
@@ -1543,14 +1544,15 @@ great P's. It is, in contempt of question, her hand.
 @SIR ANDREW
 Her C's, her U's and her T's: why that?
 @MALVOLIO
-[Reads] 'To the unknown beloved, this, and my good
+(Reads)
+'To the unknown beloved, this, and my good
 wishes:'--her very phrases! By your leave, wax.
 Soft! and the impressure her Lucrece, with which she
 uses to seal: 'tis my lady. To whom should this be?
 @FABIAN
 This wins him, liver and all.
 @MALVOLIO
-[Reads]
+(Reads)
 Jove knows I love: But who?
 Lips, do not move;
 No man must know.
@@ -1560,7 +1562,7 @@ thee, Malvolio?
 @SIR TOBY BELCH
 Marry, hang thee, brock!
 @MALVOLIO
-[Reads]
+(Reads)
 I may command where I adore;
 But silence, like a Lucrece knife,
 With bloodless stroke my heart doth gore:
@@ -2343,27 +2345,32 @@ Give me.
 @FABIAN
 Good, and valiant.
 @SIR TOBY BELCH
-[Reads] 'Wonder not, nor admire not in thy mind,
+(Reads)
+'Wonder not, nor admire not in thy mind,
 why I do call thee so, for I will show thee no reason for't.'
 @FABIAN
 A good note; that keeps you from the blow of the law.
 @SIR TOBY BELCH
-[Reads] 'Thou comest to the lady Olivia, and in my
+(Reads)
+'Thou comest to the lady Olivia, and in my
 sight she uses thee kindly: but thou liest in thy
 throat; that is not the matter I challenge thee for.'
 @FABIAN
 Very brief, and to exceeding good sense--less.
 @SIR TOBY BELCH
-[Reads] 'I will waylay thee going home; where if it
+(Reads)
+'I will waylay thee going home; where if it
 be thy chance to kill me,'--
 @FABIAN
 Good.
 @SIR TOBY BELCH
-[Reads] 'Thou killest me like a rogue and a villain.'
+(Reads)
+'Thou killest me like a rogue and a villain.'
 @FABIAN
 Still you keep o' the windy side of the law: good.
 @SIR TOBY BELCH
-[Reads] 'Fare thee well; and God have mercy upon
+(Reads)
+'Fare thee well; and God have mercy upon
 one of our souls! He may have mercy upon mine; but
 my hope is better, and so look to thyself. Thy
 friend, as thou usest him, and thy sworn enemy,
@@ -2536,13 +2543,15 @@ I have persuaded him the youth's a devil.
 He is as horribly conceited of him; and pants and
 looks pale, as if a bear were at his heels.
 @SIR TOBY BELCH
-[To VIOLA] There's no remedy, sir; he will fight
+(To VIOLA)
+There's no remedy, sir; he will fight
 with you for's oath sake: marry, he hath better
 bethought him of his quarrel, and he finds that now
 scarce to be worth talking of: therefore draw, for
 the supportance of his vow; he protests he will not hurt you.
 @VIOLA
-[Aside] Pray God defend me! A little thing would
+(Aside)
+Pray God defend me! A little thing would
 make me tell them how much I lack of a man.
 @FABIAN
 Give ground, if you see him furious.
@@ -2810,7 +2819,8 @@ What, ho, I say! peace in this prison!
 @SIR TOBY BELCH
 The knave counterfeits well; a good knave.
 @MALVOLIO
-[Within] Who calls there?
+(Within)
+Who calls there?
 @Clown
 Sir Topas the curate, who comes to visit Malvolio
 the lunatic.
@@ -2879,7 +2889,7 @@ my niece that I cannot pursue with any safety this
 sport to the upshot. Come by and by to my chamber.
 (Exeunt SIR TOBY BELCH and MARIA)
 @Clown
-[Singing]
+(Singing)
 'Hey, Robin, jolly Robin,
 Tell me how thy lady does.'
 @MALVOLIO
@@ -2953,7 +2963,7 @@ brains. I will fetch you light and paper and ink.
 Fool, I'll requite it in the highest degree: I
 prithee, be gone.
 @Clown
-[Singing]
+(Singing)
 I am gone, sir,
 And anon, sir,
 I'll be with you again,
@@ -3377,7 +3387,8 @@ I was preserved to serve this noble count.
 All the occurrence of my fortune since
 Hath been between this lady and this lord.
 @SEBASTIAN
-[To OLIVIA] So comes it, lady, you have been mistook:
+(To OLIVIA)
+So comes it, lady, you have been mistook:
 But nature to her bias drew in that.
 You would have been contracted to a maid;
 Nor are you therein, by my life, deceived,
@@ -3437,7 +3448,8 @@ read thus: therefore perpend, my princess, and give ear.
 Read it you, sirrah.
 (To FABIAN)
 @FABIAN
-[Reads] 'By the Lord, madam, you wrong me, and the
+(Reads)
+'By the Lord, madam, you wrong me, and the
 world shall know it: though you have put me into
 darkness and given your drunken cousin rule over
 me, yet have I the benefit of my senses as well as
@@ -3553,7 +3565,7 @@ But when in other habits you are seen,
 Orsino's mistress and his fancy's queen.
 (Exeunt all, except Clown)
 @Clown
-[Sings]
+(Sings)
 When that I was and a little tiny boy,
 With hey, ho, the wind and the rain,
 A foolish thing was but a toy,

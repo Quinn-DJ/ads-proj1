@@ -1745,7 +1745,8 @@ Show us the way, sir.
 Come.
 (Exeunt all but MENAS and ENOBARBUS)
 @MENAS
-[Aside] Thy father, Pompey, would ne'er have
+(Aside)
+Thy father, Pompey, would ne'er have
 made this treaty.--You and I have known, sir.
 @DOMITIUS ENOBARBUS
 At sea, I think.
@@ -1853,7 +1854,8 @@ to move in't, are the holes where eyes should be,
 which pitifully disaster the cheeks.
 (A sennet sounded. Enter OCTAVIUS CAESAR, MARK ANTONY, LEPIDUS, POMPEY, AGRIPPA, MECAENAS, DOMITIUS ENOBARBUS, MENAS, with other captains)
 @MARK ANTONY
-[To OCTAVIUS CAESAR] Thus do they, sir: they take
+(To OCTAVIUS CAESAR)
+Thus do they, sir: they take
 the flow o' the Nile
 By certain scales i' the pyramid; they know,
 By the height, the lowness, or the mean, if dearth
@@ -1881,16 +1883,20 @@ Nay, certainly, I have heard the Ptolemies'
 pyramises are very goodly things; without
 contradiction, I have heard that.
 @MENAS
-[Aside to POMPEY] Pompey, a word.
+(Aside to POMPEY)
+Pompey, a word.
 @POMPEY
-[Aside to MENAS] Say in mine ear:
+(Aside to MENAS)
+Say in mine ear:
 what is't?
 @MENAS
-[Aside to POMPEY] Forsake thy seat, I do beseech
+(Aside to POMPEY)
+Forsake thy seat, I do beseech
 thee, captain,
 And hear me speak a word.
 @POMPEY
-[Aside to MENAS] Forbear me till anon.
+(Aside to MENAS)
+Forbear me till anon.
 This wine for Lepidus!
 @LEPIDUS
 What manner o' thing is your crocodile?
@@ -1914,15 +1920,18 @@ Will this description satisfy him?
 With the health that Pompey gives him, else he is a
 very epicure.
 @POMPEY
-[Aside to MENAS] Go hang, sir, hang! Tell me of
+(Aside to MENAS)
+Go hang, sir, hang! Tell me of
 that? away!
 Do as I bid you. Where's this cup I call'd for?
 @MENAS
-[Aside to POMPEY] If for the sake of merit thou
+(Aside to POMPEY)
+If for the sake of merit thou
 wilt hear me,
 Rise from thy stool.
 @POMPEY
-[Aside to MENAS] I think thou'rt mad.
+(Aside to MENAS)
+I think thou'rt mad.
 The matter?
 (Rises, and walks aside)
 @MENAS
@@ -1969,7 +1978,8 @@ Hath so betray'd thine act: being done unknown,
 I should have found it afterwards well done;
 But must condemn it now. Desist, and drink.
 @MENAS
-[Aside] For this,
+(Aside)
+For this,
 I'll never follow thy pall'd fortunes more.
 Who seeks, and will not take when once 'tis offer'd,
 Shall never find it more.
@@ -2214,20 +2224,25 @@ down-feather,
 That stands upon the swell at full of tide,
 And neither way inclines.
 @DOMITIUS ENOBARBUS
-[Aside to AGRIPPA] Will Caesar weep?
+(Aside to AGRIPPA)
+Will Caesar weep?
 @AGRIPPA
-[Aside to DOMITIUS ENOBARBUS] He has a cloud in 's face.
+(Aside to DOMITIUS ENOBARBUS)
+He has a cloud in 's face.
 @DOMITIUS ENOBARBUS
-[Aside to AGRIPPA] He were the worse for that,
+(Aside to AGRIPPA)
+He were the worse for that,
 were he a horse;
 So is he, being a man.
 @AGRIPPA
-[Aside to DOMITIUS ENOBARBUS] Why, Enobarbus,
+(Aside to DOMITIUS ENOBARBUS)
+Why, Enobarbus,
 When Antony found Julius Caesar dead,
 He cried almost to roaring; and he wept
 When at Philippi he found Brutus slain.
 @DOMITIUS ENOBARBUS
-[Aside to AGRIPPA] That year, indeed, he was
+(Aside to AGRIPPA)
+That year, indeed, he was
 troubled with a rheum;
 What willingly he did confound he wail'd,
 Believe't, till I wept too.
@@ -2608,7 +2623,8 @@ Well, is it, is it?
 If not denounced against us, why should not we
 Be there in person?
 @DOMITIUS ENOBARBUS
-[Aside] Well, I could reply:
+(Aside)
+Well, I could reply:
 If we should serve with horse and mares together,
 The horse were merely lost; the mares would bear
 A soldier and his horse.
@@ -3050,7 +3066,8 @@ And answer me declined, sword against sword,
 Ourselves alone. I'll write it: follow me.
 (Exeunt MARK ANTONY and EUPHRONIUS)
 @DOMITIUS ENOBARBUS
-[Aside] Yes, like enough, high-battled Caesar will
+(Aside)
+Yes, like enough, high-battled Caesar will
 Unstate his happiness, and be staged to the show,
 Against a sworder! I see men's judgments are
 A parcel of their fortunes; and things outward
@@ -3068,7 +3085,8 @@ Against the blown rose may they stop their nose
 That kneel'd unto the buds. Admit him, sir.
 (Exit Attendant)
 @DOMITIUS ENOBARBUS
-[Aside] Mine honesty and I begin to square.
+(Aside)
+Mine honesty and I begin to square.
 The loyalty well held to fools does make
 Our faith mere folly: yet he that can endure
 To follow with allegiance a fall'n lord
@@ -3109,7 +3127,8 @@ He is a god, and knows
 What is most right: mine honour was not yielded,
 But conquer'd merely.
 @DOMITIUS ENOBARBUS
-[Aside] To be sure of that,
+(Aside)
+To be sure of that,
 I will ask Antony. Sir, sir, thou art so leaky,
 That we must leave thee to thy sinking, for
 Thy dearest quit thee.
@@ -3154,7 +3173,8 @@ One that but performs
 The bidding of the fullest man, and worthiest
 To have command obey'd.
 @DOMITIUS ENOBARBUS
-[Aside] You will be whipp'd.
+(Aside)
+You will be whipp'd.
 @MARK ANTONY
 Approach, there! Ah, you kite! Now, gods
 and devils!
@@ -3165,7 +3185,8 @@ Antony yet.
 (Enter Attendants)
 Take hence this Jack, and whip him.
 @DOMITIUS ENOBARBUS
-[Aside] 'Tis better playing with a lion's whelp
+(Aside)
+'Tis better playing with a lion's whelp
 Than with an old one dying.
 @MARK ANTONY
 Moon and stars!
@@ -3372,9 +3393,11 @@ Thou hast been rightly honest;--so hast thou;--
 Thou,--and thou,--and thou:--you have served me well,
 And kings have been your fellows.
 @CLEOPATRA
-[Aside to DOMITIUS ENOBARBUS] What means this?
+(Aside to DOMITIUS ENOBARBUS)
+What means this?
 @DOMITIUS ENOBARBUS
-[Aside to CLEOPATRA] 'Tis one of those odd
+(Aside to CLEOPATRA)
+'Tis one of those odd
 tricks which sorrow shoots
 Out of the mind.
 @MARK ANTONY
@@ -3391,9 +3414,11 @@ Scant not my cups; and make as much of me
 As when mine empire was your fellow too,
 And suffer'd my command.
 @CLEOPATRA
-[Aside to DOMITIUS ENOBARBUS] What does he mean?
+(Aside to DOMITIUS ENOBARBUS)
+What does he mean?
 @DOMITIUS ENOBARBUS
-[Aside to CLEOPATRA] To make his followers weep.
+(Aside to CLEOPATRA)
+To make his followers weep.
 @MARK ANTONY
 Tend me to-night;
 May be it is the period of your duty:
@@ -3477,7 +3502,8 @@ Do hear what we do?
 @Second Soldier
 How now, masters!
 @All
-[Speaking together] How now!
+(Speaking together)
+How now!
 How now! do you hear this?
 @First Soldier
 Ay; is't not strange?

@@ -155,7 +155,8 @@ And to the strict'st decrees I'll write my name.
 @FERDINAND
 How well this yielding rescues thee from shame!
 @BIRON
-[Reads] 'Item, That no woman shall come within a
+(Reads)
+'Item, That no woman shall come within a
 mile of my court:' Hath this been proclaimed?
 @LONGAVILLE
 Four days ago.
@@ -286,13 +287,15 @@ As we would hear an oracle.
 @COSTARD
 Such is the simplicity of man to hearken after the flesh.
 @FERDINAND
-[Reads] 'Great deputy, the welkin's vicegerent and
+(Reads)
+'Great deputy, the welkin's vicegerent and
 sole dominator of Navarre, my soul's earth's god,
 and body's fostering patron.'
 @COSTARD
 Not a word of Costard yet.
 @FERDINAND
-[Reads] 'So it is,'--
+(Reads)
+'So it is,'--
 @COSTARD
 It may be so: but if he say it is so, he is, in
 telling true, but so.
@@ -305,7 +308,8 @@ No words!
 @COSTARD
 Of other men's secrets, I beseech you.
 @FERDINAND
-[Reads] 'So it is, besieged with sable-coloured
+(Reads)
+'So it is, besieged with sable-coloured
 melancholy, I did commend the black-oppressing humour
 to the most wholesome physic of thy health-giving
 air; and, as I am a gentleman, betook myself to
@@ -325,26 +329,31 @@ swain, that base minnow of thy mirth,'--
 @COSTARD
 Me?
 @FERDINAND
-[Reads] 'that unlettered small-knowing soul,'--
+(Reads)
+'that unlettered small-knowing soul,'--
 @COSTARD
 Me?
 @FERDINAND
-[Reads] 'that shallow vassal,'--
+(Reads)
+'that shallow vassal,'--
 @COSTARD
 Still me?
 @FERDINAND
-[Reads] 'which, as I remember, hight Costard,'--
+(Reads)
+'which, as I remember, hight Costard,'--
 @COSTARD
 O, me!
 @FERDINAND
-[Reads] 'sorted and consorted, contrary to thy
+(Reads)
+'sorted and consorted, contrary to thy
 established proclaimed edict and continent canon,
 which with,--O, with--but with this I passion to say
 wherewith,--
 @COSTARD
 With a wench.
 @FERDINAND
-[Reads] 'with a child of our grandmother Eve, a
+(Reads)
+'with a child of our grandmother Eve, a
 female; or, for thy more sweet understanding, a
 woman. Him I, as my ever-esteemed duty pricks me on,
 have sent to thee, to receive the meed of
@@ -354,7 +363,8 @@ estimation.'
 @DULL
 'Me, an't shall please you; I am Anthony Dull.
 @FERDINAND
-[Reads] 'For Jaquenetta,--so is the weaker vessel
+(Reads)
+'For Jaquenetta,--so is the weaker vessel
 called which I apprehended with the aforesaid
 swain,--I keep her as a vessel of the law's fury;
 and shall, at the least of thy sweet notice, bring
@@ -481,7 +491,8 @@ DON
 @ADRIANO DE ARMADO
 I love not to be crossed.
 @MOTH
-[Aside] He speaks the mere contrary; crosses love not him.
+(Aside)
+He speaks the mere contrary; crosses love not him.
 DON
 @ADRIANO DE ARMADO
 I have promised to study three years with the duke.
@@ -616,7 +627,8 @@ example my digression by some mighty precedent.
 Boy, I do love that country girl that I took in the
 park with the rational hind Costard: she deserves well.
 @MOTH
-[Aside] To be whipped; and yet a better love than
+(Aside)
+To be whipped; and yet a better love than
 my master.
 DON
 @ADRIANO DE ARMADO
@@ -1759,7 +1771,8 @@ Of one sore I an hundred make by adding but one more L.
 @SIR NATHANIEL
 A rare talent!
 @DULL
-[Aside] If a talent be a claw, look how he claws
+(Aside)
+If a talent be a claw, look how he claws
 him with a talent.
 @HOLOFERNES
 This is a gift that I have, simple, simple; a
@@ -1811,7 +1824,7 @@ Ay, sir, and very learned.
 @HOLOFERNES
 Let me hear a staff, a stanze, a verse; lege, domine.
 @SIR NATHANIEL
-[Reads]
+(Reads)
 If love make me forsworn, how shall I swear to love?
 Ah, never faith could hold, if not to beauty vow'd!
 Though to myself forsworn, to thee I'll faithful prove:
@@ -1918,11 +1931,12 @@ with a paper: God give him grace to groan!
 @FERDINAND
 Ay me!
 @BIRON
-[Aside] Shot, by heaven! Proceed, sweet Cupid:
+(Aside)
+Shot, by heaven! Proceed, sweet Cupid:
 thou hast thumped him with thy bird-bolt under the
 left pap. In faith, secrets!
 @FERDINAND
-[Reads]
+(Reads)
 So sweet a kiss the golden sun gives not
 To those fresh morning drops upon the rose,
 As thy eye-beams, when their fresh rays have smote
@@ -2038,7 +2052,7 @@ Once more I'll read the ode that I have writ.
 @BIRON
 Once more I'll mark how love can vary wit.
 @DUMAIN
-[Reads]
+(Reads)
 On a day--alack the day!--
 Love, whose month is ever May,
 Spied a blossom passing fair
@@ -2066,11 +2080,13 @@ Were lovers too! Ill, to example ill,
 Would from my forehead wipe a perjured note;
 For none offend where all alike do dote.
 @LONGAVILLE
-[Advancing] Dumain, thy love is far from charity.
+(Advancing)
+Dumain, thy love is far from charity.
 You may look pale, but I should blush, I know,
 To be o'erheard and taken napping so.
 @FERDINAND
-[Advancing] Come, sir, you blush; as his your case is such;
+(Advancing)
+Come, sir, you blush; as his your case is such;
 You chide at him, offending twice as much;
 You do not love Maria; Longaville
 Did never sonnet for her sake compile,
@@ -2176,7 +2192,8 @@ It did move him to passion, and therefore let's hear it.
 It is Biron's writing, and here is his name.
 (Gathering up the pieces)
 @BIRON
-[To COSTARD] Ah, you whoreson loggerhead! you were
+(To COSTARD)
+Ah, you whoreson loggerhead! you were
 born to do me shame.
 Guilty, my lord, guilty! I confess, I confess.
 @FERDINAND
@@ -2462,7 +2479,8 @@ Men of peace, well encountered.
 @HOLOFERNES
 Most military sir, salutation.
 @MOTH
-[Aside to COSTARD] They have been at a great feast
+(Aside to COSTARD)
+They have been at a great feast
 of languages, and stolen the scraps.
 @COSTARD
 O, they have lived long on the alms-basket of words.
@@ -2474,7 +2492,8 @@ swallowed than a flap-dragon.
 Peace! the peal begins.
 DON
 @ADRIANO DE ARMADO
-[To HOLOFERNES] Monsieur, are you not lettered?
+(To HOLOFERNES)
+Monsieur, are you not lettered?
 @MOTH
 Yes, yes; he teaches boys the hornbook. What is a,
 b, spelt backward, with the horn on his head?
@@ -2851,7 +2870,8 @@ A holy parcel of the fairest dames.
 (The Ladies turn their backs to him)
 That ever turn'd their--backs--to mortal views!
 @BIRON
-[Aside to MOTH] Their eyes, villain, their eyes!
+(Aside to MOTH)
+Their eyes, villain, their eyes!
 @MOTH
 That ever turn'd their eyes to mortal views!--Out--
 @BOYET
@@ -2860,7 +2880,8 @@ True; out indeed.
 Out of your favours, heavenly spirits, vouchsafe
 Not to behold--
 @BIRON
-[Aside to MOTH] Once to behold, rogue.
+(Aside to MOTH)
+Once to behold, rogue.
 @MOTH
 Once to behold with your sun-beamed eyes,
 --with your sun-beamed eyes--
@@ -3530,7 +3551,8 @@ Your servant, and Costard.
 @BIRON
 Take away the conqueror, take away Alisander.
 @COSTARD
-[To SIR NATHANIEL] O, sir, you have overthrown
+(To SIR NATHANIEL)
+O, sir, you have overthrown
 Alisander the conqueror! You will be scraped out of
 the painted cloth for this: your lion, that holds
 his poll-axe sitting on a close-stool, will be given
@@ -3687,9 +3709,11 @@ DON
 @ADRIANO DE ARMADO
 I do adore thy sweet grace's slipper.
 @BOYET
-[Aside to DUMAIN] Loves her by the foot,--
+(Aside to DUMAIN)
+Loves her by the foot,--
 @DUMAIN
-[Aside to BOYET] He may not by the yard.
+(Aside to BOYET)
+He may not by the yard.
 DON
 @ADRIANO DE ARMADO
 This Hector far surmounted Hannibal,--
@@ -3959,7 +3983,8 @@ Right joyful of your reformation.
 A twelvemonth! well; befall what will befall,
 I'll jest a twelvemonth in an hospital.
 @PRINCESS
-[To FERDINAND] Ay, sweet my lord; and so I take my leave.
+(To FERDINAND)
+Ay, sweet my lord; and so I take my leave.
 @FERDINAND
 No, madam; we will bring you on your way.
 @BIRON

@@ -89,7 +89,8 @@ As much as child e'er loved, or father found;
 A love that makes breath poor, and speech unable;
 Beyond all manner of so much I love you.
 @CORDELIA
-[Aside] What shall Cordelia do?
+(Aside)
+What shall Cordelia do?
 Love, and be silent.
 @LEAR
 Of all these bounds, even from this line to this,
@@ -109,7 +110,8 @@ Which the most precious square of sense possesses;
 And find I am alone felicitate
 In your dear highness' love.
 @CORDELIA
-[Aside] Then poor Cordelia!
+(Aside)
+Then poor Cordelia!
 And yet not so; since, I am sure, my love's
 More richer than my tongue.
 @KING LEAR
@@ -499,7 +501,8 @@ Let's see, let's see.
 I hope, for my brother's justification, he wrote
 this but as an essay or taste of my virtue.
 @GLOUCESTER
-[Reads] 'This policy and reverence of age makes
+(Reads)
+'This policy and reverence of age makes
 the world bitter to the best of our times; keeps
 our fortunes from us till our oldness cannot relish
 them. I begin to find an idle and fond bondage
@@ -923,7 +926,8 @@ nothing, nuncle?
 @KING LEAR
 Why, no, boy; nothing can be made out of nothing.
 @Fool
-[To KENT] Prithee, tell him, so much the rent of
+(To KENT)
+Prithee, tell him, so much the rent of
 his land comes to: he will not believe a fool.
 @KING LEAR
 A bitter fool!
@@ -1094,7 +1098,8 @@ Than the sea-monster!
 @ALBANY
 Pray, sir, be patient.
 @KING LEAR
-[To GONERIL] Detested kite! thou liest.
+(To GONERIL)
+Detested kite! thou liest.
 My train are men of choice and rarest parts,
 That all particulars of duty know,
 And in the most exact regard support
@@ -2002,7 +2007,8 @@ That you'll vouchsafe me raiment, bed, and food.'
 Good sir, no more; these are unsightly tricks:
 Return you to my sister.
 @KING LEAR
-[Rising] Never, Regan:
+(Rising)
+Never, Regan:
 She hath abated me of half my train;
 Look'd black upon me; struck me with her tongue,
 Most serpent-like, upon the very heart:
@@ -2393,7 +2399,7 @@ your hovel.
 Poor fool and knave, I have one part in my heart
 That's sorry yet for thee.
 @Fool
-[Singing]
+(Singing)
 He that has and a little tiny wit--
 With hey, ho, the wind and the rain,--
 Must make content with his fortunes fit,
@@ -2507,7 +2513,8 @@ Expose thyself to feel what wretches feel,
 That thou mayst shake the superflux to them,
 And show the heavens more just.
 @EDGAR
-[Within] Fathom and half, fathom and half! Poor Tom!
+(Within)
+Fathom and half, fathom and half! Poor Tom!
 (The Fool runs out from the hovel)
 @Fool
 Come not in here, nuncle, here's a spirit
@@ -2740,7 +2747,8 @@ True or false, it hath made thee earl of
 Gloucester. Seek out where thy father is, that he
 may be ready for our apprehension.
 @EDMUND
-[Aside] If I find him comforting the king, it will
+(Aside)
+If I find him comforting the king, it will
 stuff his suspicion more fully.--I will persevere in
 my course of loyalty, though the conflict be sore
 between that and my blood.
@@ -2839,7 +2847,8 @@ Bless thy five wits!
 O pity! Sir, where is the patience now,
 That thou so oft have boasted to retain?
 @EDGAR
-[Aside] My tears begin to take his part so much,
+(Aside)
+My tears begin to take his part so much,
 They'll mar my counterfeiting.
 @KING LEAR
 The little dogs and all, Tray, Blanch, and
@@ -3137,13 +3146,15 @@ I'ld say I had eyes again!
 @Old Man
 How now! Who's there?
 @EDGAR
-[Aside] O gods! Who is't can say 'I am at
+(Aside)
+O gods! Who is't can say 'I am at
 the worst'?
 I am worse than e'er I was.
 @Old Man
 'Tis poor mad Tom.
 @EDGAR
-[Aside] And worse I may be yet: the worst is not
+(Aside)
+And worse I may be yet: the worst is not
 So long as we can say 'This is the worst.'
 @Old Man
 Fellow, where goest?
@@ -3161,7 +3172,8 @@ more since.
 As flies to wanton boys, are we to the gods.
 They kill us for their sport.
 @EDGAR
-[Aside] How should this be?
+(Aside)
+How should this be?
 Bad is the trade that must play fool to sorrow,
 Angering itself and others.--Bless thee, master!
 @GLOUCESTER
@@ -3193,7 +3205,8 @@ I cannot daub it further.
 @GLOUCESTER
 Come hither, fellow.
 @EDGAR
-[Aside] And yet I must.--Bless thy sweet eyes, they bleed.
+(Aside)
+And yet I must.--Bless thy sweet eyes, they bleed.
 @GLOUCESTER
 Know'st thou the way to Dover?
 @EDGAR
@@ -3245,7 +3258,8 @@ And told me I had turn'd the wrong side out:
 What most he should dislike seems pleasant to him;
 What like, offensive.
 @GONERIL
-[To EDMUND] Then shall you go no further.
+(To EDMUND)
+Then shall you go no further.
 It is the cowish terror of his spirit,
 That dares not undertake: he'll not feel wrongs
 Which tie him to an answer. Our wishes on the way
@@ -3351,7 +3365,8 @@ Both, both, my lord.
 This letter, madam, craves a speedy answer;
 'Tis from your sister.
 @GONERIL
-[Aside] One way I like this well;
+(Aside)
+One way I like this well;
 But being widow, and my Gloucester with her,
 May all the building in my fancy pluck
 Upon my hateful life: another way,
@@ -3632,7 +3647,8 @@ With all my heart.
 Why I do trifle thus with his despair
 Is done to cure it.
 @GLOUCESTER
-[Kneeling] O you mighty gods!
+(Kneeling)
+O you mighty gods!
 This world I do renounce, and, in your sights,
 Shake patiently my great affliction off:
 If I could bear it longer, and not fall
@@ -4190,7 +4206,8 @@ Fear me not:
 She and the duke her husband!
 (Enter, with drum and colours, ALBANY, GONERIL, and Soldiers)
 @GONERIL
-[Aside] I had rather lose the battle than that sister
+(Aside)
+I had rather lose the battle than that sister
 Should loosen him and me.
 @ALBANY
 Our very loving sister, well be-met.
@@ -4221,7 +4238,8 @@ No.
 @REGAN
 'Tis most convenient; pray you, go with us.
 @GONERIL
-[Aside] O, ho, I know the riddle.--I will go.
+(Aside)
+O, ho, I know the riddle.--I will go.
 (As they are going out, enter EDGAR disguised)
 @EDGAR
 If e'er your grace had speech with man so poor,
@@ -4420,7 +4438,8 @@ Nor in thine, lord.
 @ALBANY
 Half-blooded fellow, yes.
 @REGAN
-[To EDMUND] Let the drum strike, and prove my title thine.
+(To EDMUND)
+Let the drum strike, and prove my title thine.
 @ALBANY
 Stay yet; hear reason. Edmund, I arrest thee
 On capital treason; and, in thine attaint,
@@ -4446,7 +4465,8 @@ Than I have here proclaim'd thee.
 @REGAN
 Sick, O, sick!
 @GONERIL
-[Aside] If not, I'll ne'er trust medicine.
+(Aside)
+If not, I'll ne'er trust medicine.
 @EDMUND
 There's my exchange:
 (Throwing down a glove)
@@ -4475,7 +4495,8 @@ And read out this.
 Sound, trumpet!
 (A trumpet sounds)
 @Herald
-[Reads] 'If any man of quality or degree within
+(Reads)
+'If any man of quality or degree within
 the lists of the army will maintain upon Edmund,
 supposed Earl of Gloucester, that he is a manifold
 traitor, let him appear by the third sound of the
@@ -4733,7 +4754,8 @@ This feather stirs; she lives! if it be so,
 It is a chance which does redeem all sorrows
 That ever I have felt.
 @KENT
-[Kneeling] O my good master!
+(Kneeling)
+O my good master!
 @KING LEAR
 Prithee, away.
 @EDGAR

@@ -94,7 +94,8 @@ I do bite my thumb, sir.
 @ABRAHAM
 Do you bite your thumb at us, sir?
 @SAMPSON
-[Aside to GREGORY] Is the law of our side, if I say
+(Aside to GREGORY)
+Is the law of our side, if I say
 ay?
 @GREGORY
 No.
@@ -862,7 +863,8 @@ His son is thirty.
 Will you tell me that?
 His son was but a ward two years ago.
 @ROMEO
-[To a Servingman] What lady is that, which doth
+(To a Servingman)
+What lady is that, which doth
 enrich the hand
 Of yonder knight?
 @Servant
@@ -933,7 +935,8 @@ I will withdraw: but this intrusion shall
 Now seeming sweet convert to bitter gall.
 (Exit)
 @ROMEO
-[To JULIET] If I profane with my unworthiest hand
+(To JULIET)
+If I profane with my unworthiest hand
 This holy shrine, the gentle fine is this:
 My lips, two blushing pilgrims, ready stand
 To smooth that rough touch with a tender kiss.
@@ -1146,7 +1149,8 @@ Deny thy father and refuse thy name;
 Or, if thou wilt not, be but sworn my love,
 And I'll no longer be a Capulet.
 @ROMEO
-[Aside] Shall I hear more, or shall I speak at this?
+(Aside)
+Shall I hear more, or shall I speak at this?
 @JULIET
 'Tis but thy name that is my enemy;
 Thou art thyself, though not a Montague.
@@ -1295,12 +1299,14 @@ Where and what time thou wilt perform the rite;
 And all my fortunes at thy foot I'll lay
 And follow thee my lord throughout the world.
 @Nurse
-[Within] Madam!
+(Within)
+Madam!
 @JULIET
 I come, anon.--But if thou mean'st not well,
 I do beseech thee--
 @Nurse
-[Within] Madam!
+(Within)
+Madam!
 @JULIET
 By and by, I come:--
 To cease thy suit, and leave me to my grief:
@@ -2517,7 +2523,8 @@ What simpleness is this! I come, I come!
 (Knocking)
 Who knocks so hard? whence come you? what's your will?
 @Nurse
-[Within] Let me come in, and you shall know
+(Within)
+Let me come in, and you shall know
 my errand;
 I come from Lady Juliet.
 @FRIAR LAURENCE
@@ -2774,7 +2781,8 @@ That is renown'd for faith? Be fickle, fortune;
 For then, I hope, thou wilt not keep him long,
 But send him back.
 @LADY CAPULET
-[Within] Ho, daughter! are you up?
+(Within)
+Ho, daughter! are you up?
 @JULIET
 Who is't that calls? is it my lady mother?
 Is she not down so late, or up so early?
@@ -2806,7 +2814,8 @@ What villain madam?
 @LADY CAPULET
 That same villain, Romeo.
 @JULIET
-[Aside] Villain and he be many miles asunder.--
+(Aside)
+Villain and he be many miles asunder.--
 God Pardon him! I do, with all my heart;
 And yet no man like he doth grieve my heart.
 @LADY CAPULET
@@ -3043,7 +3052,8 @@ Which, too much minded by herself alone,
 May be put from her by society:
 Now do you know the reason of this haste.
 @FRIAR LAURENCE
-[Aside] I would I knew not why it should be slow'd.
+(Aside)
+I would I knew not why it should be slow'd.
 Look, sir, here comes the lady towards my cell.
 (Enter JULIET)
 @PARIS
@@ -3750,7 +3760,8 @@ But thou shalt hear it: whistle then to me,
 As signal that thou hear'st something approach.
 Give me those flowers. Do as I bid thee, go.
 @PAGE
-[Aside] I am almost afraid to stand alone
+(Aside)
+I am almost afraid to stand alone
 Here in the churchyard; yet I will adventure.
 (Retires)
 @PARIS
@@ -3792,7 +3803,8 @@ I will be gone, sir, and not trouble you.
 So shalt thou show me friendship. Take thou that:
 Live, and be prosperous: and farewell, good fellow.
 @BALTHASAR
-[Aside] For all this same, I'll hide me hereabout:
+(Aside)
+For all this same, I'll hide me hereabout:
 His looks I fear, and his intents I doubt.
 (Retires)
 @ROMEO
@@ -3968,7 +3980,8 @@ To make die with a restorative.
 (Kisses him)
 Thy lips are warm.
 @First Watchman
-[Within] Lead, boy: which way?
+(Within)
+Lead, boy: which way?
 @JULIET
 Yea, noise? then I'll be brief. O happy dagger!
 (Snatching ROMEO's dagger)

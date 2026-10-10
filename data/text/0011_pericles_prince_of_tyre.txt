@@ -180,7 +180,8 @@ What being more known grows worse, to smother it.
 All love the womb that their first being bred,
 Then give my tongue like leave to love my head.
 @ANTIOCHUS
-[Aside] Heaven, that I had thy head! he has found
+(Aside)
+Heaven, that I had thy head! he has found
 the meaning:
 But I will gloze with him.--Young prince of Tyre,
 Though by the tenor of our strict edict,
@@ -269,7 +270,8 @@ My heart can lend no succor to my head.
 [SCENE II. Tyre. A room in the palace.]
 (Enter PERICLES)
 @PERICLES
-[To Lords without] Let none disturb us.--Why should
+(To Lords without)
+Let none disturb us.--Why should
 this change of thoughts,
 The sad companion, dull-eyed melancholy,
 Be my so used a guest as not an hour,
@@ -340,7 +342,7 @@ They have their nourishment?
 Thou know'st I have power
 To take thy life from thee.
 @HELICANUS
-[Kneeling]
+(Kneeling)
 I have ground the axe myself;
 Do you but strike the blow.
 @PERICLES
@@ -442,14 +444,16 @@ Further to question me of your king's departure:
 His seal'd commission, left in trust with me,
 Doth speak sufficiently he's gone to travel.
 @THALIARD
-[Aside] How! the king gone!
+(Aside)
+How! the king gone!
 @HELICANUS
 If further yet you will be satisfied,
 Why, as it were unlicensed of your loves,
 He would depart, I'll give some light unto you.
 Being at Antioch--
 @THALIARD
-[Aside] What from Antioch?
+(Aside)
+What from Antioch?
 @HELICANUS
 Royal Antiochus--on what cause I know not--
 Took some displeasure at him; at least he judged so:
@@ -458,7 +462,8 @@ To show his sorrow, he'ld correct himself;
 So puts himself unto the shipman's toil,
 With whom each minute threatens life or death.
 @THALIARD
-[Aside] Well, I perceive
+(Aside)
+Well, I perceive
 I shall not be hang'd now, although I would;
 But since he's gone, the king's seas must please:
 He 'scaped the land, to perish at the sea.
@@ -709,7 +714,8 @@ have I heard on o' the land, who never leave gaping
 till they've swallowed the whole parish, church,
 steeple, bells, and all.
 @PERICLES
-[Aside] A pretty moral.
+(Aside)
+A pretty moral.
 @Third Fisherman
 But, master, if I had been the sexton, I would have
 been that day in the belfry.
@@ -723,12 +729,14 @@ left, till he cast bells, steeple, church, and
 parish up again. But if the good King Simonides
 were of my mind,--
 @PERICLES
-[Aside] Simonides!
+(Aside)
+Simonides!
 @Third Fisherman
 We would purge the land of these drones, that rob
 the bee of her honey.
 @PERICLES
-[Aside] How from the finny subject of the sea
+(Aside)
+How from the finny subject of the sea
 These fishers tell the infirmities of men;
 And from their watery empire recollect
 All that may men approve or men detect!
@@ -791,7 +799,8 @@ than to be beadle. But, master, I'll go draw up the
 net.
 (Exit with Third Fisherman)
 @PERICLES
-[Aside] How well this honest mirth becomes their labour!
+(Aside)
+How well this honest mirth becomes their labour!
 @First Fisherman
 Hark you, sir, do you know where ye are?
 @PERICLES
@@ -1083,7 +1092,8 @@ Since men take women's gifts for impudence.
 How!
 Do as I bid you, or you'll move me else.
 @THAISA
-[Aside] Now, by the gods, he could not please me better.
+(Aside)
+Now, by the gods, he could not please me better.
 @SIMONIDES
 And furthermore tell him, we desire to know of him,
 Of whence he is, his name and parentage.
@@ -1293,7 +1303,8 @@ I am unworthy for her schoolmaster.
 @SIMONIDES
 She thinks not so; peruse this writing else.
 @PERICLES
-[Aside] What's here?
+(Aside)
+What's here?
 A letter, that she loves the knight of Tyre!
 'Tis the king's subtlety to have my life.
 O, seek not to entrap me, gracious lord,
@@ -1318,7 +1329,8 @@ Ay, traitor.
 Even in his throat--unless it be the king--
 That calls me traitor, I return the lie.
 @SIMONIDES
-[Aside] Now, by the gods, I do applaud his courage.
+(Aside)
+Now, by the gods, I do applaud his courage.
 @PERICLES
 My actions are as noble as my thoughts,
 That never relish'd of a base descent.
@@ -2079,7 +2091,8 @@ Neither is our profession any trade; it's no
 calling. But here comes Boult.
 (Re-enter BOULT, with the Pirates and MARINA)
 @BOULT
-[To MARINA] Come your ways. My masters, you say
+(To MARINA)
+Come your ways. My masters, you say
 she's a virgin?
 @First Pirate
 O, sir, we doubt it not.
@@ -2188,7 +2201,8 @@ sun.
 Well, if we had of every nation a traveller, we
 should lodge them with this sign.
 @Bawd
-[To MARINA] Pray you, come hither awhile. You
+(To MARINA)
+Pray you, come hither awhile. You
 have fortunes coming upon you. Mark me: you must
 seem to do that fearfully which you commit
 willingly, despise profit where you have most gain.
@@ -2456,7 +2470,8 @@ I'll have done presently.
 @LYSIMACHUS
 I beseech you, do.
 @Bawd
-[To MARINA] First, I would have you note, this is
+(To MARINA)
+First, I would have you note, this is
 an honourable man.
 @MARINA
 I desire to find him so, that I may worthily note him.
@@ -2696,7 +2711,8 @@ within it, reclined on a couch. A barge lying
 beside the Tyrian vessel.
 (Enter two Sailors, one belonging to the Tyrian vessel, the other to the barge; to them HELICANUS)
 @Tyrian Sailor
-[To the Sailor of Mytilene] Where is lord Helicanus?
+(To the Sailor of Mytilene)
+Where is lord Helicanus?
 he can resolve you.
 O, here he is.
 Sir, there's a barge put off from Mytilene,

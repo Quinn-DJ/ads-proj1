@@ -103,7 +103,8 @@ That shall attend his love.
 Heaven bless him! Farewell, Bertram.
 (Exit)
 @BERTRAM
-[To HELENA] The best wishes that can be forged in
+(To HELENA)
+The best wishes that can be forged in
 your thoughts be servants to you! Be comfortable
 to my mother, your mistress, and make much of her.
 @LAFEU
@@ -821,7 +822,8 @@ Mars dote on you for his novices! what will ye do?
 Stay: the king.
 (Re-enter KING. BERTRAM and PAROLLES retire)
 @PAROLLES
-[To BERTRAM] Use a more spacious ceremony to the
+(To BERTRAM)
+Use a more spacious ceremony to the
 noble lords; you have restrained yourself within the
 list of too cold an adieu: be more expressive to
 them: for they wear themselves in the cap of the
@@ -836,7 +838,8 @@ Worthy fellows; and like to prove most sinewy sword-men.
 (Exeunt BERTRAM and PAROLLES)
 (Enter LAFEU)
 @LAFEU
-[Kneeling] Pardon, my lord, for me and for my tidings.
+(Kneeling)
+Pardon, my lord, for me and for my tidings.
 @KING
 I'll fee thee to stand up.
 @LAFEU
@@ -1292,7 +1295,8 @@ There's one grape yet; I am sure thy father drunk
 wine: but if thou be'st not an ass, I am a youth
 of fourteen; I have known thee already.
 @HELENA
-[To BERTRAM] I dare not say I take you; but I give
+(To BERTRAM)
+I dare not say I take you; but I give
 Me and my service, ever whilst I live,
 Into your guiding power. This is the man.
 @KING
@@ -1395,7 +1399,8 @@ Expecting absent friends. As thou lovest her,
 Thy love's to me religious; else, does err.
 (Exeunt all but LAFEU and PAROLLES)
 @LAFEU
-[Advancing] Do you hear, monsieur? a word with you.
+(Advancing)
+Do you hear, monsieur? a word with you.
 @PAROLLES
 Your pleasure, sir?
 @LAFEU
@@ -1662,7 +1667,8 @@ heart to repent. Here he comes: I pray you, make
 us friends; I will pursue the amity.
 (Enter PAROLLES)
 @PAROLLES
-[To BERTRAM] These things shall be done, sir.
+(To BERTRAM)
+These things shall be done, sir.
 @LAFEU
 Pray you, sir, who's his tailor?
 @PAROLLES
@@ -1671,7 +1677,8 @@ Sir?
 O, I know him well, I, sir; he, sir, 's a good
 workman, a very good tailor.
 @BERTRAM
-[Aside to PAROLLES] Is she gone to the king?
+(Aside to PAROLLES)
+Is she gone to the king?
 @PAROLLES
 She is.
 @BERTRAM
@@ -1852,7 +1859,8 @@ What have we here?
 E'en that you have there.
 (Exit)
 @COUNTESS
-[Reads] I have sent you a daughter-in-law: she hath
+(Reads)
+I have sent you a daughter-in-law: she hath
 recovered the king, and undone me. I have wedded
 her, not bedded her; and sworn to make the 'not'
 eternal. You shall hear I am run away: know it
@@ -1933,7 +1941,8 @@ Return you thither?
 @First Gentleman
 Ay, madam, with the swiftest wing of speed.
 @HELENA
-[Reads] Till I have no wife I have nothing in France.
+(Reads)
+Till I have no wife I have nothing in France.
 'Tis bitter.
 @COUNTESS
 Find you that there?
@@ -2037,7 +2046,7 @@ Alas! and would you take the letter of her?
 Might you not know she would do as she has done,
 By sending me a letter? Read it again.
 @Steward
-[Reads]
+(Reads)
 I am Saint Jaques' pilgrim, thither gone:
 Ambitious love hath so in me offended,
 That barefoot plod I the cold ground upon,
@@ -2304,7 +2313,8 @@ entertainment, your inclining cannot be removed.
 Here he comes.
 (Enter PAROLLES)
 @Second Lord
-[Aside to BERTRAM] O, for the love of laughter,
+(Aside to BERTRAM)
+O, for the love of laughter,
 hinder not the honour of his design: let him fetch
 off his drum in any hand.
 @BERTRAM
@@ -2906,7 +2916,8 @@ answer to what I shall ask you out of a note.
 @PAROLLES
 And truly, as I hope to live.
 @First Soldier
-[Reads] 'First demand of him how many horse the
+(Reads)
+'First demand of him how many horse the
 duke is strong.' What say you to that?
 @PAROLLES
 Five or six thousand; but very weak and
@@ -2947,7 +2958,8 @@ Well, that's set down.
 I humbly thank you, sir: a truth's a truth, the
 rogues are marvellous poor.
 @First Soldier
-[Reads] 'Demand of him, of what strength they are
+(Reads)
+'Demand of him, of what strength they are
 a-foot.' What say you to that?
 @PAROLLES
 By my troth, sir, if I were to live this present
@@ -3016,7 +3028,8 @@ Our interpreter does it well.
 @First Lord
 Excellently.
 @First Soldier
-[Reads] 'Dian, the count's a fool, and full of gold,'--
+(Reads)
+'Dian, the count's a fool, and full of gold,'--
 @PAROLLES
 That is not the duke's letter, sir; that is an
 advertisement to a proper maid in Florence, one
@@ -3033,7 +3046,8 @@ virginity and devours up all the fry it finds.
 @BERTRAM
 Damnable both-sides rogue!
 @First Soldier
-[Reads] 'When he swears oaths, bid him drop gold, and take it;
+(Reads)
+'When he swears oaths, bid him drop gold, and take it;
 After he scores, he never pays the score:
 Half won is match well made; match, and well make it;
 He ne'er pays after-debts, take it before;
@@ -3127,7 +3141,8 @@ Ay, and the captain of his horse, Count Rousillon.
 @First Soldier
 I'll whisper with the general, and know his pleasure.
 @PAROLLES
-[Aside] I'll no more drumming; a plague of all
+(Aside)
+I'll no more drumming; a plague of all
 drums! Only to seem to deserve well, and to
 beguile the supposition of that lascivious young boy
 the count, have I run into this danger. Yet who
@@ -3708,7 +3723,8 @@ With an importing visage; and she told me,
 In a sweet verbal brief, it did concern
 Your highness with herself.
 @KING
-[Reads] Upon his many protestations to marry me
+(Reads)
+Upon his many protestations to marry me
 when his wife was dead, I blush to say it, he won
 me. Now is the Count Rousillon a widower: his vows
 are forfeited to me, and my honour's paid to him. He

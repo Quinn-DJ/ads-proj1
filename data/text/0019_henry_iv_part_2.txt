@@ -4,7 +4,6 @@
 # source: 2henryiv/full.html
 # url: http://shakespeare.mit.edu/2henryiv/full.html
 
-[None]
 (Warkworth. Before the castle)
 (Enter RUMOUR, painted full of tongues)
 @RUMOUR
@@ -1143,7 +1142,8 @@ not.
 I do allow this wen to be as familiar with me as my
 dog; and he holds his place; for look you how be writes.
 @POINS
-[Reads] 'John Falstaff, knight,'--every man must
+(Reads)
+'John Falstaff, knight,'--every man must
 know that, as oft as he has occasion to name
 himself: even like those that are kin to the king;
 for they never prick their finger but they say,
@@ -1155,13 +1155,15 @@ cap, 'I am the king's poor cousin, sir.'
 Nay, they will be kin to us, or they will fetch it
 from Japhet. But to the letter.
 @POINS
-[Reads] 'Sir John Falstaff, knight, to the son of
+(Reads)
+'Sir John Falstaff, knight, to the son of
 the king, nearest his father, Harry Prince of
 Wales, greeting.' Why, this is a certificate.
 @PRINCE HENRY
 Peace!
 @POINS
-[Reads] 'I will imitate the honourable Romans in
+(Reads)
+'I will imitate the honourable Romans in
 brevity:' he sure means brevity in breath,
 short-winded. 'I commend me to thee, I commend
 thee, and I leave thee. Be not too familiar with
@@ -1362,7 +1364,8 @@ Why, that's well said; a good heart's worth gold.
 Lo, here comes Sir John.
 (Enter FALSTAFF)
 @FALSTAFF
-[Singing] 'When Arthur first in court,'
+(Singing)
+'When Arthur first in court,'
 --Empty the jordan.
 (Exit First Drawer)
 (Singing)
@@ -1831,7 +1834,8 @@ How now! what's the matter?
 You must away to court, sir, presently;
 A dozen captains stay at door for you.
 @FALSTAFF
-[To the Page] Pay the musicians, sirrah. Farewell,
+(To the Page)
+Pay the musicians, sirrah. Farewell,
 hostess; farewell, Doll. You see, my good wenches,
 how men of merit are sought after: the undeserver
 may sleep, when the man of action is called on.
@@ -1848,11 +1852,13 @@ Well, fare thee well: I have known thee these
 twenty-nine years, come peascod-time; but an
 honester and truer-hearted man,--well, fare thee well.
 @BARDOLPH
-[Within] Mistress Tearsheet!
+(Within)
+Mistress Tearsheet!
 @MISTRESS QUICKLY
 What's the matter?
 @BARDOLPH
-[Within] Good Mistress Tearsheet, come to my master.
+(Within)
+Good Mistress Tearsheet, come to my master.
 @MISTRESS QUICKLY
 O, run, Doll, run; run, good Doll: come.
 (She comes blubbered)
@@ -3643,7 +3649,8 @@ with a sad brow will do with a fellow that never
 had the ache in his shoulders! O, you shall see him
 laugh till his face be like a wet cloak ill laid up!
 @SHALLOW
-[Within] Sir John!
+(Within)
+Sir John!
 @FALSTAFF
 I come, Master Shallow; I come, Master Shallow.
 (Exit)
@@ -3930,7 +3937,7 @@ Look who's at door there, ho! who knocks?
 Why, now you have done me right.
 (To SILENCE, seeing him take off a bumper)
 @SILENCE
-[Singing]
+(Singing)
 Do me right,
 And dub me knight: Samingo.
 Is't not so?

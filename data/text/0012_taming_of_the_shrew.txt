@@ -442,7 +442,8 @@ If either of you both love Katharina,
 Because I know you well and love you well,
 Leave shall you have to court her at your pleasure.
 @GREMIO
-[Aside] To cart her rather: she's too rough for me.
+(Aside)
+To cart her rather: she's too rough for me.
 There, There, Hortensio, will you any wife?
 @KATHARINA
 I pray you, sir, is it your will
@@ -1777,7 +1778,8 @@ Why, I am past my gamut long ago.
 @HORTENSIO
 Yet read the gamut of Hortensio.
 @BIANCA
-[Reads] ''Gamut' I am, the ground of all accord,
+(Reads)
+''Gamut' I am, the ground of all accord,
 'A re,' to Plead Hortensio's passion;
 'B mi,' Bianca, take him for thy lord,
 'C fa ut,' that loves with all affection:
@@ -1808,7 +1810,8 @@ Hortensio will be quit with thee by changing.
 [SCENE II. Padua. Before BAPTISTA'S house.]
 (Enter BAPTISTA, GREMIO, TRANIO, KATHARINA, BIANCA, LUCENTIO, and others, attendants)
 @BAPTISTA
-[To TRANIO] Signior Lucentio, this is the
+(To TRANIO)
+Signior Lucentio, this is the
 'pointed day.
 That Katharina and Petruchio should be married,
 And yet we hear not of our son-in-law.
@@ -2599,7 +2602,8 @@ A merchant of incomparable wealth.
 He is my father, sir; and, sooth to say,
 In countenance somewhat doth resemble you.
 @BIONDELLO
-[Aside] As much as an apple doth an oyster,
+(Aside)
+As much as an apple doth an oyster,
 and all one.
 @TRANIO
 To save your life in this extremity,
@@ -2702,7 +2706,8 @@ I thank you, sir.
 Signior Petruchio, fie! you are to blame.
 Come, mistress Kate, I'll bear you company.
 @PETRUCHIO
-[Aside] Eat it up all, Hortensio, if thou lovest me.
+(Aside)
+Eat it up all, Hortensio, if thou lovest me.
 Much good do it unto thy gentle heart!
 Kate, eat apace: and now, my honey love,
 Will we return unto thy father's house
@@ -2733,7 +2738,8 @@ And gentlewomen wear such caps as these
 When you are gentle, you shall have one too,
 And not till then.
 @HORTENSIO
-[Aside] That will not be in haste.
+(Aside)
+That will not be in haste.
 @KATHARINA
 Why, sir, I trust I may have leave to speak;
 And speak I will; I am no child, no babe:
@@ -2760,7 +2766,8 @@ Here's snip and nip and cut and slish and slash,
 Like to a censer in a barber's shop:
 Why, what, i' devil's name, tailor, call'st thou this?
 @HORTENSIO
-[Aside] I see she's like to have neither cap nor gown.
+(Aside)
+I see she's like to have neither cap nor gown.
 @Tailor
 You bid me make it orderly and well,
 According to the fashion and the time.
@@ -2817,7 +2824,8 @@ Read it.
 @GRUMIO
 The note lies in's throat, if he say I said so.
 @Tailor
-[Reads] 'Imprimis, a loose-bodied gown:'
+(Reads)
+'Imprimis, a loose-bodied gown:'
 @GRUMIO
 Master, if ever I said loose-bodied gown, sew me in
 the skirts of it, and beat me to death with a bottom
@@ -2825,15 +2833,18 @@ of brown thread: I said a gown.
 @PETRUCHIO
 Proceed.
 @Tailor
-[Reads] 'With a small compassed cape:'
+(Reads)
+'With a small compassed cape:'
 @GRUMIO
 I confess the cape.
 @Tailor
-[Reads] 'With a trunk sleeve:'
+(Reads)
+'With a trunk sleeve:'
 @GRUMIO
 I confess two sleeves.
 @Tailor
-[Reads] 'The sleeves curiously cut.'
+(Reads)
+'The sleeves curiously cut.'
 @PETRUCHIO
 Ay, there's the villany.
 @GRUMIO
@@ -2865,7 +2876,8 @@ O, sir, the conceit is deeper than you think for:
 Take up my mistress' gown to his master's use!
 O, fie, fie, fie!
 @PETRUCHIO
-[Aside] Hortensio, say thou wilt see the tailor paid.
+(Aside)
+Hortensio, say thou wilt see the tailor paid.
 Go take it hence; be gone, and say no more.
 @HORTENSIO
 Tailor, I'll pay thee for thy gown tomorrow:
@@ -2903,7 +2915,8 @@ You are still crossing it. Sirs, let't alone:
 I will not go to-day; and ere I do,
 It shall be what o'clock I say it is.
 @HORTENSIO
-[Aside] Why, so this gallant will command the sun.
+(Aside)
+Why, so this gallant will command the sun.
 (Exeunt)
 [SCENE IV. Padua. Before BAPTISTA'S house.]
 (Enter TRANIO, and the Pedant dressed like VINCENTIO)
@@ -3219,7 +3232,8 @@ Art thou his father?
 @Pedant
 Ay, sir; so his mother says, if I may believe her.
 @PETRUCHIO
-[To VINCENTIO] Why, how now, gentleman! why, this
+(To VINCENTIO)
+Why, how now, gentleman! why, this
 is flat knavery, to take upon you another man's name.
 @Pedant
 Lay hands on the villain: I believe a' means to
@@ -3230,7 +3244,7 @@ I have seen them in the church together: God send
 'em good shipping! But who is here? mine old
 master Vincentio! now we are undone and brought to nothing.
 @VINCENTIO
-[Seeing BIONDELLO]
+(Seeing BIONDELLO)
 Come hither, crack-hemp.
 @BIONDELLO
 Hope I may choose, sir.
@@ -3326,7 +3340,8 @@ monstrous villain!
 O! we are spoiled and--yonder he is: deny him,
 forswear him, or else we are all undone.
 @LUCENTIO
-[Kneeling] Pardon, sweet father.
+(Kneeling)
+Pardon, sweet father.
 @VINCENTIO
 Lives my sweet son?
 (Exeunt BIONDELLO, TRANIO, and Pedant, as fast as may be)

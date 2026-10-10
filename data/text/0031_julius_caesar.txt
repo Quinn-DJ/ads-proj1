@@ -1380,7 +1380,8 @@ That your best friends shall wish I had been further.
 Good friends, go in, and taste some wine with me;
 And we, like friends, will straightway go together.
 @BRUTUS
-[Aside] That every like is not the same, O Caesar,
+(Aside)
+That every like is not the same, O Caesar,
 The heart of Brutus yearns to think upon!
 (Exeunt)
 [SCENE III. A street near the Capitol.]
@@ -1480,7 +1481,8 @@ And bring me word what he doth say to thee.
 [SCENE I. Rome. Before the Capitol; the Senate sitting above.]
 (A crowd of people; among them ARTEMIDORUS and the Soothsayer. Flourish. Enter CAESAR, BRUTUS, CASSIUS, CASCA, DECIUS BRUTUS, METELLUS CIMBER, TREBONIUS, CINNA, ANTONY, LEPIDUS, POPILIUS, PUBLIUS, and others)
 @CAESAR
-[To the Soothsayer] The ides of March are come.
+(To the Soothsayer)
+The ides of March are come.
 @Soothsayer
 Ay, Caesar; but not gone.
 @ARTEMIDORUS
@@ -2692,13 +2694,16 @@ Yes, Cassius; and, from henceforth,
 When you are over-earnest with your Brutus,
 He'll think your mother chides, and leave you so.
 @Poet
-[Within] Let me go in to see the generals;
+(Within)
+Let me go in to see the generals;
 There is some grudge between 'em, 'tis not meet
 They be alone.
 @LUCILIUS
-[Within] You shall not come to them.
+(Within)
+You shall not come to them.
 @Poet
-[Within] Nothing but death shall stay me.
+(Within)
+Nothing but death shall stay me.
 (Enter Poet, followed by LUCILIUS, TITINIUS, and LUCIUS)
 @CASSIUS
 How now! what's the matter?
@@ -3134,12 +3139,14 @@ The storm is up, and all is on the hazard.
 @BRUTUS
 Ho, Lucilius! hark, a word with you.
 @LUCILIUS
-[Standing forth] My lord?
+(Standing forth)
+My lord?
 (BRUTUS and LUCILIUS converse apart)
 @CASSIUS
 Messala!
 @MESSALA
-[Standing forth] What says my general?
+(Standing forth)
+What says my general?
 @CASSIUS
 Messala,
 This is my birth-day; as this very day
@@ -3261,11 +3268,13 @@ This day I breathed first: time is come round,
 And where I did begin, there shall I end;
 My life is run his compass. Sirrah, what news?
 @PINDARUS
-[Above] O my lord!
+(Above)
+O my lord!
 @CASSIUS
 What news?
 @PINDARUS
-[Above] Titinius is enclosed round about
+(Above)
+Titinius is enclosed round about
 With horsemen, that make to him on the spur;
 Yet he spurs on. Now they are almost on him.
 Now, Titinius! Now some light. O, he lights too.

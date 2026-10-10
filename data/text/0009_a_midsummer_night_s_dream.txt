@@ -918,7 +918,8 @@ But who is here? Lysander! on the ground!
 Dead? or asleep? I see no blood, no wound.
 Lysander if you live, good sir, awake.
 @LYSANDER
-[Awaking] And run through fire I will for thy sweet sake.
+(Awaking)
+And run through fire I will for thy sweet sake.
 Transparent Helena! Nature shows art,
 That through thy bosom makes me see thy heart.
 Where is Demetrius? O, how fit a word
@@ -967,7 +968,8 @@ And, all my powers, address your love and might
 To honour Helen and to be her knight!
 (Exit)
 @HERMIA
-[Awaking] Help me, Lysander, help me! do thy best
+(Awaking)
+Help me, Lysander, help me! do thy best
 To pluck this crawling serpent from my breast!
 Ay me, for pity! what a dream was here!
 Lysander, look how I do quake with fear:
@@ -1157,9 +1159,10 @@ With orange-tawny bill,
 The throstle with his note so true,
 The wren with little quill,--
 @TITANIA
-[Awaking] What angel wakes me from my flowery bed?
+(Awaking)
+What angel wakes me from my flowery bed?
 @BOTTOM
-[Sings]
+(Sings)
 The finch, the sparrow and the lark,
 The plain-song cuckoo gray,
 Whose note full many a man doth mark,
@@ -1438,7 +1441,8 @@ Nor none, in my mind, now you give her o'er.
 @LYSANDER
 Demetrius loves her, and he loves not you.
 @DEMETRIUS
-[Awaking] O Helena, goddess, nymph, perfect, divine!
+(Awaking)
+O Helena, goddess, nymph, perfect, divine!
 To what, my love, shall I compare thine eyne?
 Crystal is muddy. O, how ripe in show
 Thy lips, those kissing cherries, tempting grow!
@@ -1955,7 +1959,8 @@ O, how I love thee! how I dote on thee!
 (They sleep)
 (Enter PUCK)
 @OBERON
-[Advancing] Welcome, good Robin.
+(Advancing)
+Welcome, good Robin.
 See'st thou this sweet sight?
 Her dotage now I do begin to pity:
 For, meeting her of late behind the wood,
@@ -2155,7 +2160,8 @@ Why, then, we are awake: let's follow him
 And by the way let us recount our dreams.
 (Exeunt)
 @BOTTOM
-[Awaking] When my cue comes, call me, and I will
+(Awaking)
+When my cue comes, call me, and I will
 answer: my next is, 'Most fair Pyramus.' Heigh-ho!
 Peter Quince! Flute, the bellows-mender! Snout,
 the tinker! Starveling! God's my life, stolen
@@ -2297,7 +2303,8 @@ There is a brief how many sports are ripe:
 Make choice of which your highness will see first.
 (Giving a paper)
 @THESEUS
-[Reads] 'The battle with the Centaurs, to be sung
+(Reads)
+'The battle with the Centaurs, to be sung
 By an Athenian eunuch to the harp.'
 We'll none of that: that have I told my love,
 In glory of my kinsman Hercules.
@@ -2587,7 +2594,8 @@ these are in the moon. But, silence! here comes Thisbe.
 @Thisbe
 This is old Ninny's tomb. Where is my love?
 @Lion
-[Roaring] Oh--
+(Roaring)
+Oh--
 (Thisbe runs off)
 @DEMETRIUS
 Well roared, Lion.
@@ -2704,7 +2712,8 @@ Moonshine and Lion are left to bury the dead.
 @DEMETRIUS
 Ay, and Wall too.
 @BOTTOM
-[Starting up] No assure you; the wall is down that
+(Starting up)
+No assure you; the wall is down that
 parted their fathers. Will it please you to see the
 epilogue, or to hear a Bergomask dance between two
 of our company?
