@@ -38,16 +38,19 @@ proj1/
 │   ├── corpus.hpp            #   文档存储：manifest + 文本层 → 内存
 │   ├── tokenizer.hpp         #   切词：文本行 → 规范化 token 流
 │   ├── stopwords.hpp         #   停用词表加载与 O(1) 查询
+│   ├── stemmer.hpp           #   Porter 词干化（论文 + 作者 canonical 改进）
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
 │   ├── corpus.cpp
 │   ├── tokenizer.cpp
 │   ├── stopwords.cpp
+│   ├── stemmer.cpp
 │   ├── count.cpp
 │   └── main.cpp              #   CLI 入口
 ├── tests/                    # 单元测试（ctest）
 │   ├── CMakeLists.txt        #   用例清单：新增 test_*.cpp 后登记到 MSE_TESTS
 │   ├── test_tokenizer.cpp    #   tokenizer 用例（20 条边界）
+│   ├── test_stemmer.cpp      #   Porter 用例（论文示例词 + 收缩词 + 护栏）
 │   └── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
 ├── tools/                    # 语料处理脚本（Python / Bash）
 ├── reference/                # 词干化参考资料（Porter/Snowball/NLTK；来源与许可见其 README.md）
@@ -172,7 +175,7 @@ sample :
 
 ```bash
 ./build/mse count [--manifest data/manifest.tsv] [--csv build/wordcount.csv]
-                  [--top 50] [--stop-words data/stopwords.txt]
+                  [--top 50] [--stop-words data/stopwords.txt] [--stem]
                   [--keep-headings] [--keep-speakers] [--keep-stage]
 ```
 
@@ -224,6 +227,26 @@ csv      : build/wordcount.csv
 ```
 
 （过滤版对拍同样可用：`python3 tools/check_wordcount.py --stop-words data/stopwords.txt`。）
+
+词干化对照（Porter 1980 + 作者 canonical 实现的三处 `--DEPARTURE--` 改进）：
+
+```text
+$ ./build/mse count --stem --top 0
+manifest : data/manifest.tsv
+documents: 195
+tokens   : 866626
+distinct : 14947          ← 词干化把 25,705 个词形并成 14,947 个词干
+hapax    : 4843 (tf = 1)
+stemming : on (Porter 1980)
+csv      : build/wordcount.csv
+```
+
+对拍用 NLTK 参考实现（`MARTIN_EXTENSIONS` 模式），输出应与 C++ 逐字节一致：
+
+```bash
+python3 tools/check_wordcount.py --stem > build/wordcount_stem_py.csv
+diff build/wordcount_stem.csv build/wordcount_stem_py.csv && echo identical
+```
 
 ### 规划中的命令
 

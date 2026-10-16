@@ -2,6 +2,7 @@
 
 #include "count.hpp"
 
+#include "stemmer.hpp"
 #include "stopwords.hpp"
 
 #include <algorithm>
@@ -29,11 +30,21 @@ constexpr double kCandidateTfShare = 0.001;
 
 }  // namespace
 
-WordCount countWords(const Corpus& corpus, const TokenizerOptions& options,
-                     const StopWords* stopWords) {
-    const Tokenizer tokenizer(options);
+WordCount countWords(const Corpus& corpus, const CountOptions& options) {
+    const Tokenizer tokenizer(options.tokenizer);
     std::unordered_map<std::string, TermStats> table;
+    std::unordered_map<std::string, std::string> stemCache;
     std::vector<Token> tokens;
+
+    // Stemming is deterministic, so each distinct word form only needs to be
+    // stemmed once even though it may occur thousands of times.
+    const auto stemmed = [&stemCache](const std::string& word) -> const std::string& {
+        auto it = stemCache.find(word);
+        if (it == stemCache.end()) {
+            it = stemCache.emplace(word, stem(word)).first;
+        }
+        return it->second;
+    };
 
     WordCount result;
     result.documents = corpus.size();
@@ -43,12 +54,15 @@ WordCount countWords(const Corpus& corpus, const TokenizerOptions& options,
         tokens.clear();
         tokenizer.tokenize(doc, tokens);
         for (const Token& token : tokens) {
-            if (stopWords != nullptr && stopWords->contains(token.text)) {
+            if (options.stopWords != nullptr &&
+                options.stopWords->contains(token.text)) {
                 ++result.stopwordTokens;
                 continue;
             }
             ++result.tokens;  // count only tokens that survive the filter
-            TermStats& stats = table[token.text];
+            const std::string& term =
+                options.stem ? stemmed(token.text) : token.text;
+            TermStats& stats = table[term];
             ++stats.tf;
             if (stats.lastDoc != static_cast<std::uint32_t>(doc.id)) {
                 ++stats.df;

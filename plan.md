@@ -94,7 +94,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 | `corpus` | 读 manifest、读 `data/text/` 文本、解析行标记（HTML 解析已在 `tools/extract.py` 一次性完成） | 前置 |
 | `tokenizer` | 切词、小写化、位置编号 | (1)(2) |
 | `stopwords` | 加载停用词表（含来源注释）、过滤 | (1)(2) |
-| `stemmer` | Porter 词干化（外部实现，标注来源） | (2) |
+| `stemmer` | Porter 词干化（自实现，NLTK 做对拍 oracle） | (2) |
 | `dict` | 自实现哈希表：term → posting head | (2) |
 | `posting` | 动态数组：docID/tf/positions 追加与合并 | (2) |
 | `index` | 构建、序列化、反序列化、dump | (2) |
@@ -147,7 +147,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ### 4.1 计数程序（1 pt）
 
-`mse count`（已实现）：输出 `build/wordcount.csv`，列 `rank, term, tf, df, df_ratio, tf_share, stop_candidate`（tf=总出现次数，df=出现的文档数，stop_candidate 按 §4.2 的规则自动标注）。终端打印摘要（tokens / distinct / hapax / 候选数与候选列表）和 top n 表（`--top`，默认 50，`--top 0` 静默）。首跑结果：866 626 个正文 token、25 705 个不同词、9 753 个 hapax（tf=1）；与独立 Python 实现逐字节一致（`tools/check_wordcount.py`）。去停用词对照已就绪：`--stop-words data/stopwords.txt` → 556 866 token（removed 309 760，35.74%）、distinct 25 666，过滤版 CSV 同样逐字节一致；词干化版待 stemmer 完成后补跑。
+`mse count`（已实现）：输出 `build/wordcount.csv`，列 `rank, term, tf, df, df_ratio, tf_share, stop_candidate`（tf=总出现次数，df=出现的文档数，stop_candidate 按 §4.2 的规则自动标注）。终端打印摘要（tokens / distinct / hapax / 候选数与候选列表）和 top n 表（`--top`，默认 50，`--top 0` 静默）。首跑结果：866 626 个正文 token、25 705 个不同词、9 753 个 hapax（tf=1）；与独立 Python 实现逐字节一致（`tools/check_wordcount.py`）。三个变体全部就绪且逐字节对拍：`--stop-words`（556 866 token，removed 309 760 = 35.74%）、`--stem`（distinct 14 947）、`--stem --stop-words`（distinct 14 937）。
 
 ### 4.2 "线画在哪里"——判定方法
 
@@ -166,10 +166,13 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ## 5. 词干化（Task (2) 前置）
 
-- 采用 Porter Stemmer。参考材料（1980 论文、作者 C 实现、NLTK、Snowball/Porter2）已于 2026-10-16 下载至 `reference/`（来源与许可见 `reference/README.md`）。实现二选一：直接移植（快、稳妥）或按论文自实现 + 对拍（推荐——收缩后缀适配本来就要自己写；下载的实现作测试 oracle）。无论哪种，References 必须列出论文与参考实现。
-- 规范化顺序：**小写化 → 停用词过滤 → 词干化**（先滤后干更快，且避免 `is/are/being` 类词先干后不可滤）。
-- 单元测试向量：≥ 20 组（覆盖论文里的 step 1a/1b/1c/2–5 与不规则例子），存 `tests/fixtures/stem_vectors.tsv`。
-- 词典和查询必须用同一函数，否则查不到词——测试里放一条专门的后置检查。
+- **已实现**：`include/stemmer.hpp` + `src/stemmer.cpp`——按论文自实现，下载材料作 oracle（`reference/`，来源见其 README）。
+- **变体选择**：1980 论文 + 作者 canonical C 代码里标注的三处 `--DEPARTURE--`（≤2 字母不改、`bli→ble`、`logi→log`）= NLTK 的 `MARTIN_EXTENSIONS` 语义（作者推荐版）。三处差异与理由写在 `include/stemmer.hpp` 注释里，报告 Chapter 2/4 直接引用。
+- **收缩词预处理**：先剥 `n't / 's / 'd / 'll / 're / 've / 't / 'm` 后缀，再去掉剩余撇号（`o'er→oer`）；文档化特例 `can't→ca`、`won't→wo`。
+- 规范化顺序（全链路）：**小写化 → 停用词过滤 → 词干化**（先滤后干）。
+- 验证：`tests/test_stemmer.cpp` 约 100 条全过；**全词表对拍**——`mse count --stem` 的 CSV 与 NLTK（MARTIN_EXTENSIONS）逐字节一致（25 705 个词形全覆盖）。
+- 效果：distinct 25 705 → **14 947**，hapax 9 753 → 4 843；叠加停用词后 distinct 14 937。
+- 词典和查询必须调用同一个 `stem()`（`stemmer.hpp` 注释中声明；建索引后补一条后置检查）。
 
 ---
 
@@ -372,7 +375,7 @@ proj1/
 | M3（D9–D11） | 阈值模块 + 阈值矩阵 + 性能数据 | `threshold_matrix.csv` + 图 |
 | M4（D12–D14） | 报告四章 + 注释率检查 + 匿名打包 | 评审清单逐项过一遍 |
 
-进度（截至 2026-10-16）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词）、C++ 存储层（`src/corpus`）、tokenizer（20 条单测 + 逐文档对拍）、word count（过滤前/后两版 CSV 均与独立 Python 实现逐字节一致）、停用词表（`data/stopwords.txt` 39 词 + `src/stopwords`，只保留结构功能词）、CMake 构建（ctest 3/3）均已完成；下一步是 Porter stemmer 与倒排索引。
+进度（截至 2026-10-16）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词）、C++ 存储层（`src/corpus`）、tokenizer（20 条单测 + 逐文档对拍）、word count（过滤前/中/后三版 CSV 均逐字节一致）、停用词表（39 词）、Porter 词干化（`src/stemmer`，约 100 条单测，全词表与 NLTK 逐字节一致；ctest 4/4）均已完成；下一步是倒排索引（Task 2 主体）。
 
 ---
 

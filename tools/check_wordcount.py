@@ -11,12 +11,20 @@ the same specification *independently*; their outputs must be byte-identical:
 
 It reads data/manifest.tsv and the referenced data/text/*.txt files, then
 prints the same CSV (rank,term,tf,df,df_ratio,tf_share,stop_candidate) to
-stdout. Flags mirror the C++ side's tokenizer options and --stop-words.
+stdout. Flags mirror the C++ side's tokenizer options, --stop-words and
+--stem. When --stem is given, the stemming itself is done by the *reference*
+NLTK implementation (reference/nltk-porter-3.9.1.py, MARTIN_EXTENSIONS
+mode = the author's canonical C behaviour) after the same contraction
+normalization our C++ stemmer applies, so the comparison validates opposite
+sides: our C++ implementation vs NLTK.
 """
 
 import argparse
 import csv
+import importlib.util
+import os
 import sys
+import types
 from collections import defaultdict
 
 
@@ -60,12 +68,58 @@ def line_kind(line):
     return "body"
 
 
+# --------------------------------------------------------------------------
+# stemming (only used with --stem): reference NLTK Porter + our contraction
+# normalization, duplicated here as an independent implementation of the
+# same specification.
+# --------------------------------------------------------------------------
+
+CONTRACTION_SUFFIXES = ("n't", "'ll", "'re", "'ve", "'s", "'d", "'t", "'m")
+
+
+def normalize_contractions(token):
+    for suffix in CONTRACTION_SUFFIXES:
+        if len(token) > len(suffix) and token.endswith(suffix):
+            token = token[: -len(suffix)]
+            break
+    return token.replace("'", "")
+
+
+def load_reference_porter():
+    """Import reference/nltk-porter-3.9.1.py standalone (tiny shim for
+    nltk.stem.api.StemmerI, the only import it needs)."""
+    if "nltk" not in sys.modules:
+        nltk_mod = types.ModuleType("nltk")
+        nltk_mod.__path__ = []
+        stem_mod = types.ModuleType("nltk.stem")
+        stem_mod.__path__ = []
+        api_mod = types.ModuleType("nltk.stem.api")
+
+        class StemmerI:  # noqa: N801 - mirrors the NLTK name
+            def stem(self, token):
+                raise NotImplementedError
+
+        api_mod.StemmerI = StemmerI
+        sys.modules["nltk"] = nltk_mod
+        sys.modules["nltk.stem"] = stem_mod
+        sys.modules["nltk.stem.api"] = api_mod
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(here, os.pardir, "reference", "nltk-porter-3.9.1.py")
+    spec = importlib.util.spec_from_file_location("reference_porter", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.PorterStemmer(mode=module.PorterStemmer.MARTIN_EXTENSIONS)
+
+
 def main():
     parser = argparse.ArgumentParser(description="independent word-count check")
     parser.add_argument("--manifest", default="data/manifest.tsv")
     parser.add_argument("--stop-words", default=None,
                         help="drop these words before counting (same file as "
                              "`mse count --stop-words`)")
+    parser.add_argument("--stem", action="store_true",
+                        help="Porter-stem the tokens (reference NLTK "
+                             "implementation; same flags as `mse count --stem`)")
     parser.add_argument("--keep-headings", action="store_true")
     parser.add_argument("--keep-speakers", action="store_true")
     parser.add_argument("--keep-stage", action="store_true")
@@ -94,6 +148,16 @@ def main():
             if line and not line.startswith("#"):
                 stop.add(line)
 
+    stem_token = None
+    if args.stem:
+        porter = load_reference_porter()
+        stem_cache = {}
+
+        def stem_token(word):  # memoized: each distinct form stems once
+            if word not in stem_cache:
+                stem_cache[word] = porter.stem(normalize_contractions(word))
+            return stem_cache[word]
+
     for row in documents_rows:
         documents += 1
         seen = set()
@@ -109,6 +173,8 @@ def main():
                 for token in tokenize(line):
                     if token in stop:
                         continue
+                    if stem_token is not None:
+                        token = stem_token(token)
                     tf[token] += 1
                     total_tokens += 1
                     seen.add(token)

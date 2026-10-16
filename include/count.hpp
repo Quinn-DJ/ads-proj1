@@ -11,9 +11,11 @@
 // The flag is deliberately coarse: the final stop-word list comes out of the
 // manual review step of the candidate zone (see plan.md 4.2).
 //
-// countWords() can optionally drop stop words (stopwords.hpp) before
-// counting; the number of dropped tokens is reported in WordCount so the
-// "before vs after" comparison for task 1 can be printed directly.
+// The token pipeline applied by countWords():
+//   token -> [stop word filter] -> [Porter stemmer] -> count
+// Both stages are optional; the number of tokens dropped by the stop word
+// filter is reported in WordCount so the before/after comparison for task 1
+// can be printed directly.
 
 #pragma once
 
@@ -48,11 +50,17 @@ struct WordCount {
     std::size_t hapax = 0;       // terms with tf == 1
 };
 
-// Count tf/df over the whole corpus with the given tokenizer options.
-// When `stopWords` is non-null, tokens found in the list are skipped (and
-// counted in WordCount::stopwordTokens instead).
-WordCount countWords(const Corpus& corpus, const TokenizerOptions& options,
-                     const StopWords* stopWords = nullptr);
+struct CountOptions {
+    TokenizerOptions tokenizer;            // which line kinds contribute tokens
+    const StopWords* stopWords = nullptr;  // drop these tokens first (optional)
+    bool stem = false;                     // Porter-stem the survivors (optional)
+};
+
+// Count tf/df over the whole corpus.
+// Tokens in `options.stopWords` are skipped (counted in stopwordTokens);
+// when `options.stem` is set the surviving tokens are stemmed with the
+// Porter algorithm before counting, so index and query stay consistent.
+WordCount countWords(const Corpus& corpus, const CountOptions& options);
 
 // Write the table as CSV (header included, ratios as fixed 6 decimals).
 // Creates parent directories if needed; throws std::runtime_error on failure.

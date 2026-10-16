@@ -48,6 +48,7 @@ void printUsage(const char* program) {
         << "  --csv <path>         output CSV (default: build/wordcount.csv)\n"
         << "  --top <n>            print the top n rows (default: 50, 0 = quiet)\n"
         << "  --stop-words <path>  drop words from this list before counting\n"
+        << "  --stem               Porter-stem the tokens before counting\n"
         << "\n"
         << "planned: build, dump, query, shell, selftest\n";
 }
@@ -139,7 +140,6 @@ int commandCount(int argc, char** argv) {
     const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
     const std::string csvPath = optionValue(argc, argv, "--csv", "build/wordcount.csv");
     const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
-    const mse::TokenizerOptions options = tokenizerOptionsFromArgs(argc, argv);
     int top = intOption(argc, argv, "--top", "50");
     if (top < 0) {
         top = 0;
@@ -152,8 +152,13 @@ int commandCount(int argc, char** argv) {
         stopPtr = &stopWords;
     }
 
+    mse::CountOptions countOptions;
+    countOptions.tokenizer = tokenizerOptionsFromArgs(argc, argv);
+    countOptions.stopWords = stopPtr;
+    countOptions.stem = hasFlag(argc, argv, "--stem");
+
     const mse::Corpus corpus = mse::Corpus::load(manifest);
-    const mse::WordCount result = mse::countWords(corpus, options, stopPtr);
+    const mse::WordCount result = mse::countWords(corpus, countOptions);
     mse::writeWordCountCsv(csvPath, result);
 
     std::cout << "manifest : " << manifest << "\n"
@@ -171,6 +176,9 @@ int commandCount(int argc, char** argv) {
                   << "removed  : " << result.stopwordTokens << " tokens ("
                   << std::fixed << std::setprecision(2) << removedPercent << "%)\n";
         std::cout.unsetf(std::ios::fixed);
+    }
+    if (countOptions.stem) {
+        std::cout << "stemming : on (Porter 1980)\n";
     }
     std::cout << "csv      : " << csvPath << "\n";
 

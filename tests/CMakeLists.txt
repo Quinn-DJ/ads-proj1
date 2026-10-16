@@ -10,6 +10,7 @@
 
 set(MSE_TESTS
     test_tokenizer
+    test_stemmer
     test_stopwords)
 
 foreach(test IN LISTS MSE_TESTS)

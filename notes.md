@@ -93,6 +93,7 @@
 | df 统计 | 每文档记录 `lastDoc` 去重 | 词在单篇内出现多次只计 1 次，O(1) 更新 |
 | 三层存储 | raw HTML → text → 索引二进制 | 每层可独立检查、可再生成 |
 | 构建系统 | CMake ≥ 3.16 + CTest（替代 Makefile） | 跨工具链一致（clang/gcc/MSVC 零警告）；`-DMSE_WERROR=ON` 作零警告验收门 |
+| 词干化变体 | 论文 + 作者 canonical C 的三处 `--DEPARTURE--`（≤2 字母不改、`bli→ble`、`logi→log`） | = NLTK `MARTIN_EXTENSIONS`（作者推荐版）；全词表对拍逐字节一致 |
 
 ---
 
@@ -165,6 +166,14 @@
 - 量化收益：39 词覆盖正文 **309 760 / 866 626 = 35.74%** 的 token；过滤后 distinct 25 705 → 25 666，hapax 不变（9 753）。
 - 讨论素材：阈值敏感性表见 §3.3；两版列表（39/46）留给 Task 4 的敏感性实验。
 
+### 3.7 Porter 词干化：三个实现的差异与我们的选择（报告素材）
+
+- **论文（1980）**：有几处"隐含行为"容易被误读——step 1a 的 `S→` 无任何条件（`is→i`、`as→a`、`this→thi`）；后缀匹配是"最长匹配后条件只是闸门，条件失败**不再**尝试更短后缀"（`agreement` 匹配 `ement` 但条件失败，保持原形）。
+- **作者 canonical C（官网 c.txt）**：相对论文有 **3 处标注的 `--DEPARTURE--`**：① `k <= k0+1` 长度护栏（≤2 字母不改，`is→is`）；② `bli→ble`（推广论文的 `abli→able`，`possibli→possibl`）；③ `logi→log`（`chronologi→chronolog`）。作者自评"确定是改进"。
+- **NLTK 三档模式**：`ORIGINAL_ALGORITHM`（忠实论文）/ `MARTIN_EXTENSIONS`（= canonical 行为）/ `NLTK_EXTENSIONS`（默认，另加改进）。
+- **我们的选择**：自实现 = 论文 + 三处改进（= `MARTIN_EXTENSIONS`），对拍 oracle 亦用它；理由：作者推荐、`is→i` 类合并过于激进、且与下载的 canonical C 一致。
+- 收缩词特例（我们的预处理）：`can't→ca`、`won't→wo`（`n't` 整段剥离遇上英文不规则拼写）；`was→wa`、`this→thi` 是保留的论文行为。
+
 ---
 
 ## 4. 验证记录
@@ -180,19 +189,21 @@
 | `mse stats` 与 Python 预处理数字对拍 | 一致 |
 | stopwords 单元测试（39 词、边界词保留、错误路径） | 全过（ctest 3/3） |
 | `count --stop-words` 过滤版 CSV 逐字节对拍（C++ vs Python） | 完全一致（556,866 kept / 309,760 removed） |
+| stemmer 单元测试（论文示例词 + 收缩词 + 护栏，约 100 条） | 全过（ctest 4/4） |
+| `count --stem` / `--stem --stop-words` CSV 逐字节对拍（C++ vs NLTK MARTIN_EXTENSIONS） | 完全一致（25,705 词形全覆盖） |
 
-### 4.2 对拍抓出的三个真问题（数字闭环）
+### 4.2 对拍抓出的四个真问题（数字闭环）
 
 1. 对拍脚本的行标记判定错误 → 4,340 token 差异（§1.7）；
 2. 方括号舞台提示污染正文 → 修复后净减 849 token，与片段统计完全吻合（§1.4）。
 3. 过滤版词频的 `tf_share` 分母错误：C++ 曾把过滤前的 token 总数记进 `tokens`，而 CSV 的 `tf_share` 以它作分母 → 与独立 Python 实现（只累计保留 token）对拍时整表不一致。修复：`tokens` 只统计通过过滤器的 token，`stopwordTokens` 单独累计；之后过滤前/后两版 CSV 均恢复逐字节一致。
+4. 词干化的两处规格误读（都由对拍抓出）：(a) 论文示例列是**单条规则的局部效果**，不是全算法最终输出（如 `agreed` 在 1b 变 `agree`，5a 再去 E → `agre`）——最初 21 条测试期望按示例列写，已逐词用 oracle 修正；(b) 后缀匹配是"首个匹配说了算、条件失败即停"，最初写成"条件失败继续试更短后缀"，导致 `agreement` 一类 **41 个词形**被过度词干化（`agreem` ✗）；修复后全词表逐字节一致。
 
 ### 4.3 待做
 
 - 黄金样例（讲义 4 文档）fixture；
 - posting 级对拍（`tools/brute_force.py`：200 词 + 30 短语）；
 - 查询阈值矩阵（Task 4）；
-- 词干化后的对照词频表（过滤前/后两版 CSV 已完成）。
 
 ---
 
@@ -208,6 +219,7 @@
 6. tokenizer 边界（撇号 ×4 态、连字符、数字）20 用例；
 7. 词频 CSV 与独立实现对拍（byte-identical）。
 8. stopwords 模块（39 词收录、边界词保留、缺文件报错）与过滤版词频 CSV 对拍（§3.6）。
+9. 词干化：论文示例词单元测试 + 全词表对拍（C++ vs NLTK，§3.7）。
 
 ### 5.2 Chapter 4 分析素材
 
@@ -216,6 +228,7 @@
 - df 粒度效应与停用词阈值敏感性（§3.3/§3.5）；
 - hapax / Zipf 分布观察（§3.1）；
 - 内存版设计的性能数字与适用边界（为 Bonus 的规模分析铺垫）。
+- Porter 三种实现（论文 / canonical C / NLTK 三档）的差异与变体选择依据（§3.7）。
 
 ### 5.3 References 预备
 

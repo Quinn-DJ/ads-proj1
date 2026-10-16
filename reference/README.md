@@ -21,7 +21,7 @@
 
 | 文件 | 来源 URL | 说明 |
 |------|----------|------|
-| `nltk-porter-3.9.1.py` | https://raw.githubusercontent.com/nltk/nltk/3.9.1/nltk/stem/porter.py | NLTK `PorterStemmer`（含 `ORIGINAL_ALGORITHM` 模式）；NLTK 项目 Apache-2.0 |
+| `nltk-porter-3.9.1.py` | https://raw.githubusercontent.com/nltk/nltk/3.9.1/nltk/stem/porter.py | NLTK `PorterStemmer`（三种模式）；**我们的对拍 oracle 用 `MARTIN_EXTENSIONS` 模式**（= 作者 canonical C 行为）；NLTK 项目 Apache-2.0 |
 | `nltk-snowball-develop.py` | https://raw.githubusercontent.com/nltk/nltk/develop/nltk/stem/snowball.py | NLTK Snowball 各语言实现，`EnglishStemmer` = Porter2；Apache-2.0。**抓自 develop 分支（未定 tag），日期 2026-10-16** |
 
 ## 4. Snowball English（Porter2）
