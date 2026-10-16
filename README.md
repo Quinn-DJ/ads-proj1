@@ -42,6 +42,7 @@ proj1/
 │   ├── posting.hpp           #   倒排记录表：docID/tf/positions
 │   ├── dict.hpp              #   词典接口：伸展树（主）+ 哈希（基线）
 │   ├── index.hpp             #   索引构建/序列化/加载/不变量/ dump
+│   ├── query.hpp             #   查询：word/phrase/boolean + 四个阈值
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
 │   ├── corpus.cpp
@@ -51,6 +52,7 @@ proj1/
 │   ├── posting.cpp
 │   ├── dict.cpp
 │   ├── index.cpp
+│   ├── query.cpp
 │   ├── count.cpp
 │   └── main.cpp              #   CLI 入口
 ├── tests/                    # 单元测试（ctest）
@@ -59,6 +61,7 @@ proj1/
 │   ├── test_stemmer.cpp      #   Porter 用例（论文示例词 + 收缩词 + 护栏）
 │   ├── test_dict.cpp         #   词典用例（行为脚本 + 跨实现互验）
 │   ├── test_index.cpp        #   索引用例（黄金样例 + 往返 + 确定性）
+│   ├── test_query.cpp        #   查询用例（三形态 + 四阈值 + 停用词/词干化）
 │   ├── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
 │   └── fixtures/golden4/     #   讲义四文档黄金样例（data/manifest + 4 篇文本）
 ├── tools/                    # 语料处理脚本（Python / Bash）
@@ -298,9 +301,33 @@ term osric: df=1, tf=3
   doc 30 "Hamlet"  tf=3  positions: 17629 17933 18173
 ```
 
+### `mse query` — 查询（Task 3）
+
+```bash
+./build/mse query --index build/index.bin --stop-words data/stopwords.txt \
+                  --word osric [--pretty]
+./build/mse query ... --phrase "king richard" [--top-x 3]
+./build/mse query ... --words "king queen" --min-match 2     # 或 --or
+# 阈值接口：--max-df <ratio> / --min-df <n> / --min-match <k> / --top-x <n>
+```
+
+```text
+$ ./build/mse query --index build/index.bin --stop-words data/stopwords.txt \
+                    --word osric --pretty
+index      : build/index.bin  (195 docs, 14937 terms)
+flags      : stopwords stemmed
+query      : word "osric"
+terms      : osric
+results    : 1 documents
+  30	Hamlet
+      > Osric, who brings back to him that you attend him in
+```
+
+查询与建索引共用同一条管线（按索引头 flags 自动启用停用词/词干化）；短语在"过滤后 token 流"上匹配，停用词会被 note 行提示（如 `--phrase "my lord"` 退化为查 `lord`）。
+
 ### 规划中的命令
 
-`build`（建倒排索引）、`dump`、`query`、`shell`、`selftest`
+`shell`（交互模式）、`selftest`（其不变量校验已由 `build`/`dump` 内建覆盖）
 ——按 `plan.md` §14 的里程碑逐步补齐，当前会提示 `not-yet-implemented`。
 
 ## 工具脚本（重建语料时才需要）

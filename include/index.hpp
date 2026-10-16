@@ -70,6 +70,10 @@ Index loadIndex(const std::string& path);
 // sums consistent with tokenCount. Throws std::runtime_error on violation.
 void validateIndex(const Index& index);
 
+// Binary search over the sorted term table; nullptr when the term is absent.
+// This is the query-side dictionary lookup (O(log #terms)).
+const IndexTerm* findIndexTerm(const Index& index, const std::string& term);
+
 // Human-readable posting dump (positions capped per posting). Returns false
 // when the term is not in the index.
 bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostings,

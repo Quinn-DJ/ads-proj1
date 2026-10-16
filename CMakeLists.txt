@@ -86,6 +86,7 @@ add_library(mse_core STATIC
     src/posting.cpp
     src/dict.cpp
     src/index.cpp
+    src/query.cpp
     src/count.cpp
     src/stopwords.cpp)
 

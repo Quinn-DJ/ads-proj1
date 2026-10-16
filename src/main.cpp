@@ -6,15 +6,18 @@
 //   mse count      word frequency / document frequency table -> CSV (task 1)
 //   mse build      build the inverted index -> index.bin (task 2)
 //   mse dump       print one term's postings from an index file
+//   mse query      run a word / phrase / boolean query (task 3)
 // Planned commands (plan.md section 2):
-//   query / shell / selftest
+//   shell / selftest
 
 #include "corpus.hpp"
 #include "count.hpp"
 #include "index.hpp"
+#include "query.hpp"
 #include "stopwords.hpp"
 #include "tokenizer.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -40,6 +43,7 @@ void printUsage(const char* program) {
         << "  count [options]      word count table (tf/df) -> CSV\n"
         << "  build [options]      build the inverted index -> <index file>\n"
         << "  dump [options]       print one term's postings from an index file\n"
+        << "  query [options]      run a query against the index (task 3)\n"
         << "\n"
         << "options:\n"
         << "  --manifest <path>    manifest file (default: data/manifest.tsv)\n"
@@ -69,7 +73,20 @@ void printUsage(const char* program) {
         << "  --term <word>        term to dump (the indexed form)\n"
         << "  --limit <n>          max postings printed (default: 20)\n"
         << "\n"
-        << "planned: query, shell, selftest\n";
+        << "query options:\n"
+        << "  --word <w>           single-word query\n"
+        << "  --phrase \"<text>\"    phrase query (adjacent positions required)\n"
+        << "  --words \"<a b c>\"    multi-word query (see --min-match)\n"
+        << "  --or                 shorthand for --min-match 1 (any term matches)\n"
+        << "  --max-df <ratio>     drop terms with df ratio above <ratio> (default 1.0 = off)\n"
+        << "  --min-df <n>         drop terms with df below <n> (default 1 = off)\n"
+        << "  --min-match <k>      keep docs matching at least k terms (0 = all, default)\n"
+        << "  --top-x <n>          keep at most n result docs (0 = all, default)\n"
+        << "  --stop-words <path>  stop word list used by the build (explains skips;\n"
+        << "                       needed for correct --pretty positions)\n"
+        << "  --pretty             print the source line of each match\n"
+        << "\n"
+        << "planned: shell, selftest\n";
 }
 
 // Return the value of "--name value" from argv, or `fallback` if absent.
@@ -95,6 +112,29 @@ int intOption(int argc, char** argv, const std::string& name, const std::string&
 
 const char* onOff(bool value) {
     return value ? "on" : "off";
+}
+
+// " stopwords stemmed" / " (raw)" -- shared by dump and query.
+std::string indexFlagsToString(std::uint32_t flags) {
+    const std::uint32_t known =
+        flags & (mse::kIndexFlagStopWords | mse::kIndexFlagStemmed);
+    std::string text;
+    if ((known & mse::kIndexFlagStopWords) != 0) text += " stopwords";
+    if ((known & mse::kIndexFlagStemmed) != 0) text += " stemmed";
+    return text.empty() ? " (raw)" : text;
+}
+
+// Like optionValue(), but requires the value to be a floating point number.
+double doubleOption(int argc, char** argv, const std::string& name, double fallback) {
+    const std::string value = optionValue(argc, argv, name, "");
+    if (value.empty()) {
+        return fallback;
+    }
+    try {
+        return std::stod(value);
+    } catch (const std::exception&) {
+        throw std::runtime_error("option " + name + " expects a number, got '" + value + "'");
+    }
 }
 
 // True when a bare flag like "--all" appears in argv.
@@ -307,18 +347,111 @@ int commandDump(int argc, char** argv) {
     std::cout << "index      : " << indexPath << "  (" << index.docs.size()
               << " docs, " << index.terms.size() << " terms, "
               << index.tokenCount << " tokens)\n"
-              << "flags      :";
-    const std::uint32_t known =
-        index.flags & (mse::kIndexFlagStopWords | mse::kIndexFlagStemmed);
-    if ((known & mse::kIndexFlagStopWords) != 0) std::cout << " stopwords";
-    if ((known & mse::kIndexFlagStemmed) != 0) std::cout << " stemmed";
-    if (known == 0) std::cout << " (raw)";
-    std::cout << "\n";
+              << "flags      :" << indexFlagsToString(index.flags) << "\n";
 
     if (!mse::dumpTerm(index, term, static_cast<std::size_t>(limit), std::cout)) {
         std::cout << "term not found: " << term
                   << "\n  (dump takes the indexed form: lowercase, stop words removed\n"
                   << "   and stemmed when the index was built with --stem)\n";
+    }
+    return 0;
+}
+
+int commandQuery(int argc, char** argv) {
+    const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
+    const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
+    const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
+    const bool pretty = hasFlag(argc, argv, "--pretty");
+
+    const std::string wordArg = optionValue(argc, argv, "--word", "");
+    const std::string phraseArg = optionValue(argc, argv, "--phrase", "");
+    const std::string wordsArg = optionValue(argc, argv, "--words", "");
+    const int modeCount = (wordArg.empty() ? 0 : 1) + (phraseArg.empty() ? 0 : 1) +
+                          (wordsArg.empty() ? 0 : 1);
+    if (modeCount != 1) {
+        throw std::runtime_error(
+            "query needs exactly one of --word / --phrase / --words");
+    }
+
+    mse::QueryOptions options;
+    std::string queryText;
+    if (!wordArg.empty()) {
+        options.mode = mse::QueryMode::Word;
+        queryText = wordArg;
+    } else if (!phraseArg.empty()) {
+        options.mode = mse::QueryMode::Phrase;
+        queryText = phraseArg;
+    } else {
+        options.mode = mse::QueryMode::Boolean;
+        queryText = wordsArg;
+    }
+    options.maxDfRatio = doubleOption(argc, argv, "--max-df", 1.0);
+    options.minDf = static_cast<std::uint32_t>(
+        std::max(0, intOption(argc, argv, "--min-df", "1")));
+    options.minMatch = static_cast<std::uint32_t>(std::max(
+        0, intOption(argc, argv, "--min-match",
+                     hasFlag(argc, argv, "--or") ? "1" : "0")));
+    options.topX =
+        static_cast<std::size_t>(std::max(0, intOption(argc, argv, "--top-x", "0")));
+
+    mse::StopWords stopWords;
+    const mse::StopWords* stopPtr = nullptr;
+    if (!stopPath.empty()) {
+        stopWords = mse::StopWords::load(stopPath);
+        stopPtr = &stopWords;
+    }
+
+    const mse::Index index = mse::loadIndex(indexPath);
+    const mse::QueryResult result = mse::runQuery(index, queryText, options, stopPtr);
+
+    const char* modeName = options.mode == mse::QueryMode::Word     ? "word"
+                           : options.mode == mse::QueryMode::Phrase ? "phrase"
+                                                                    : "words";
+    std::cout << "index      : " << indexPath << "  (" << index.docs.size()
+              << " docs, " << index.terms.size() << " terms)\n"
+              << "flags      :" << indexFlagsToString(index.flags) << "\n"
+              << "query      : " << modeName << " \"" << queryText << "\"\n"
+              << "terms      :";
+    if (result.terms.empty()) {
+        std::cout << " (none)";
+    } else {
+        for (const std::string& term : result.terms) {
+            std::cout << ' ' << term;
+        }
+    }
+    std::cout << "\n";
+    for (const mse::TermNote& note : result.notes) {
+        std::cout << "note       : " << note.term << " -- " << note.reason << "\n";
+    }
+    std::cout << "results    : " << result.hits.size() << " documents";
+    if (options.topX > 0) {
+        std::cout << " (--top-x " << options.topX << ")";
+    }
+    std::cout << "\n";
+
+    for (const mse::QueryHit& hit : result.hits) {
+        const mse::IndexDoc& doc = index.docs[hit.docID - 1];
+        std::cout << "  " << hit.docID << '\t' << doc.title;
+        if (options.mode != mse::QueryMode::Word || result.terms.size() > 1) {
+            std::cout << "  [matched " << hit.matched << '/' << result.terms.size()
+                      << ", tf " << hit.tfSum << ']';
+        }
+        std::cout << "\n";
+    }
+
+    if (pretty && !result.hits.empty()) {
+        if ((index.flags & mse::kIndexFlagStopWords) != 0 && stopPtr == nullptr) {
+            std::cerr << "warning: --pretty positions need --stop-words matching the build\n";
+        }
+        const mse::Corpus corpus = mse::Corpus::load(manifest);
+        for (const mse::QueryHit& hit : result.hits) {
+            const std::string line =
+                mse::lineOfPosition(corpus.byID(hit.docID), index, stopPtr,
+                                    hit.firstPosition);
+            if (!line.empty()) {
+                std::cout << "      > " << line << "\n";
+            }
+        }
     }
     return 0;
 }
@@ -373,6 +506,9 @@ int main(int argc, char** argv) {
         }
         if (command == "dump") {
             return commandDump(argc, argv);
+        }
+        if (command == "query") {
+            return commandQuery(argc, argv);
         }
         std::cerr << "unknown or not-yet-implemented command: " << command << "\n\n";
         printUsage(argv[0]);

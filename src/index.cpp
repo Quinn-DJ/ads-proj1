@@ -363,37 +363,45 @@ void validateIndex(const Index& index) {
     }
 }
 
-bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostings,
-              std::ostream& out) {
+const IndexTerm* findIndexTerm(const Index& index, const std::string& term) {
     const auto it = std::lower_bound(
         index.terms.begin(), index.terms.end(), term,
         [](const IndexTerm& candidate, const std::string& value) {
             return candidate.term < value;
         });
     if (it == index.terms.end() || it->term != term) {
+        return nullptr;
+    }
+    return &*it;
+}
+
+bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostings,
+              std::ostream& out) {
+    const IndexTerm* entry = findIndexTerm(index, term);
+    if (entry == nullptr) {
         return false;
     }
 
-    out << "term " << it->term << ": df=" << it->postings.size()
-        << ", tf=" << it->positions.size() << "\n";
-    const std::size_t shown = std::min(maxPostings, it->postings.size());
+    out << "term " << entry->term << ": df=" << entry->postings.size()
+        << ", tf=" << entry->positions.size() << "\n";
+    const std::size_t shown = std::min(maxPostings, entry->postings.size());
     for (std::size_t i = 0; i < shown; ++i) {
-        const Posting& posting = it->postings[i];
+        const Posting& posting = entry->postings[i];
         const std::string& title = index.docs[posting.docID - 1].title;
         out << "  doc " << posting.docID << " \"" << title << "\"  tf="
             << posting.tf << "  positions:";
         const std::uint32_t printed =
             std::min(posting.tf, kDumpPositionsPerPosting);
         for (std::uint32_t k = 0; k < printed; ++k) {
-            out << ' ' << it->positions[posting.posStart + k];
+            out << ' ' << entry->positions[posting.posStart + k];
         }
         if (posting.tf > printed) {
             out << " …(+" << (posting.tf - printed) << " more)";
         }
         out << "\n";
     }
-    if (it->postings.size() > shown) {
-        out << "  …(+" << (it->postings.size() - shown) << " more postings)\n";
+    if (entry->postings.size() > shown) {
+        out << "  …(+" << (entry->postings.size() - shown) << " more postings)\n";
     }
     return true;
 }

@@ -13,6 +13,7 @@ set(MSE_TESTS
     test_stemmer
     test_dict
     test_index
+    test_query
     test_stopwords)
 
 foreach(test IN LISTS MSE_TESTS)
