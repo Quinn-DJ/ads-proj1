@@ -39,18 +39,23 @@ proj1/
 │   ├── tokenizer.hpp         #   切词：文本行 → 规范化 token 流
 │   ├── stopwords.hpp         #   停用词表加载与 O(1) 查询
 │   ├── stemmer.hpp           #   Porter 词干化（论文 + 作者 canonical 改进）
+│   ├── posting.hpp           #   倒排记录表：docID/tf/positions
+│   ├── dict.hpp              #   词典接口：伸展树（主）+ 哈希（基线）
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
 │   ├── corpus.cpp
 │   ├── tokenizer.cpp
 │   ├── stopwords.cpp
 │   ├── stemmer.cpp
+│   ├── posting.cpp
+│   ├── dict.cpp
 │   ├── count.cpp
 │   └── main.cpp              #   CLI 入口
 ├── tests/                    # 单元测试（ctest）
 │   ├── CMakeLists.txt        #   用例清单：新增 test_*.cpp 后登记到 MSE_TESTS
 │   ├── test_tokenizer.cpp    #   tokenizer 用例（20 条边界）
 │   ├── test_stemmer.cpp      #   Porter 用例（论文示例词 + 收缩词 + 护栏）
+│   ├── test_dict.cpp         #   词典用例（行为脚本 + 跨实现互验）
 │   └── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
 ├── tools/                    # 语料处理脚本（Python / Bash）
 ├── reference/                # 词干化参考资料（Porter/Snowball/NLTK；来源与许可见其 README.md）

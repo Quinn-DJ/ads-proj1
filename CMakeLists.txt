@@ -83,6 +83,8 @@ add_library(mse_core STATIC
     src/corpus.cpp
     src/tokenizer.cpp
     src/stemmer.cpp
+    src/posting.cpp
+    src/dict.cpp
     src/count.cpp
     src/stopwords.cpp)
 
