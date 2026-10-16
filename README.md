@@ -37,15 +37,18 @@ proj1/
 ├── include/                  # C++ 头文件（接口）
 │   ├── corpus.hpp            #   文档存储：manifest + 文本层 → 内存
 │   ├── tokenizer.hpp         #   切词：文本行 → 规范化 token 流
+│   ├── stopwords.hpp         #   停用词表加载与 O(1) 查询
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
 │   ├── corpus.cpp
 │   ├── tokenizer.cpp
+│   ├── stopwords.cpp
 │   ├── count.cpp
 │   └── main.cpp              #   CLI 入口
 ├── tests/                    # 单元测试（ctest）
 │   ├── CMakeLists.txt        #   用例清单：新增 test_*.cpp 后登记到 MSE_TESTS
-│   └── test_tokenizer.cpp    #   tokenizer 用例，失败即非零退出
+│   ├── test_tokenizer.cpp    #   tokenizer 用例（20 条边界）
+│   └── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
 ├── tools/                    # 语料处理脚本（Python / Bash）
 ├── data/
 │   ├── raw/                  # 原始 HTML 镜像（1211 个文件，含 SOURCE.txt）
@@ -54,7 +57,7 @@ proj1/
 │   └── stopwords.txt         # 停用词表（39 词，由语料统计推导；见文件头注释）
 ├── build/                    # CMake 二进制目录 + 生成物（gitignore，删掉即可）
 ├── CMakeLists.txt            # 构建入口：cmake -S . -B build / ctest
-└── problem.md / problem_zh.md / plan.md
+└── problem.md / problem_zh.md / plan.md / notes.md
 ```
 
 ## 构建与测试
@@ -259,7 +262,8 @@ docid	kind	category	title	text	source	url
 | `#` 开头 | 文件头注释（docID、标题、来源） | 跳过 |
 
 语料规模：195 个文档（37 部剧 + 154 首十四行诗 + 4 首长诗），152,632 行，930,911 词；
-默认配置下切出 866,626 个正文 token。
+默认配置下切出 866,626 个正文 token；`--stop-words data/stopwords.txt`（39 词）过滤后
+556,866 token（removed 309,760，35.74%）。
 
 ## 开发约定
 

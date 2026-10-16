@@ -92,6 +92,7 @@
 | tokenizer | ASCII 字母 + 内部撇号；连字符、数字、标点=分隔 | `don't` 保留、`'Tis`→`tis`、`to-day`→`to day`；`1660s`→`s` 是已知边缘行为 |
 | df 统计 | 每文档记录 `lastDoc` 去重 | 词在单篇内出现多次只计 1 次，O(1) 更新 |
 | 三层存储 | raw HTML → text → 索引二进制 | 每层可独立检查、可再生成 |
+| 构建系统 | CMake ≥ 3.16 + CTest（替代 Makefile） | 跨工具链一致（clang/gcc/MSVC 零警告）；`-DMSE_WERROR=ON` 作零警告验收门 |
 
 ---
 
@@ -137,8 +138,10 @@
 | ≥0.70 | 14 | + a is not for with |
 | ≥0.65 | 16 | + so love |
 | ≥0.60 | 21 | + me be thou thy thee |
+| ≥0.50 | 31 | + it this as by all do on from which when |
+| ≥0.40 | 48 | + his have what no if are o or more then their hath than yet mine time doth |
 
-这张表就是"线画在哪里"（Task 1）最直接的报告材料。
+这张表就是"线画在哪里"（Task 1）最直接的报告材料；最终线画在 **0.40**（48 词候选带，见 §3.6）。
 
 ### 3.4 边界词与抽查
 
@@ -178,10 +181,11 @@
 | stopwords 单元测试（39 词、边界词保留、错误路径） | 全过（ctest 3/3） |
 | `count --stop-words` 过滤版 CSV 逐字节对拍（C++ vs Python） | 完全一致（556,866 kept / 309,760 removed） |
 
-### 4.2 对拍抓出的两个真问题（数字闭环）
+### 4.2 对拍抓出的三个真问题（数字闭环）
 
 1. 对拍脚本的行标记判定错误 → 4,340 token 差异（§1.7）；
 2. 方括号舞台提示污染正文 → 修复后净减 849 token，与片段统计完全吻合（§1.4）。
+3. 过滤版词频的 `tf_share` 分母错误：C++ 曾把过滤前的 token 总数记进 `tokens`，而 CSV 的 `tf_share` 以它作分母 → 与独立 Python 实现（只累计保留 token）对拍时整表不一致。修复：`tokens` 只统计通过过滤器的 token，`stopwordTokens` 单独累计；之后过滤前/后两版 CSV 均恢复逐字节一致。
 
 ### 4.3 待做
 
@@ -203,6 +207,7 @@
 5. 行首括号台词不被误判为标记行（§1.7 的回归用例）；
 6. tokenizer 边界（撇号 ×4 态、连字符、数字）20 用例；
 7. 词频 CSV 与独立实现对拍（byte-identical）。
+8. stopwords 模块（39 词收录、边界词保留、缺文件报错）与过滤版词频 CSV 对拍（§3.6）。
 
 ### 5.2 Chapter 4 分析素材
 
