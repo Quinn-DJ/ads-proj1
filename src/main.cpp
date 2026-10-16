@@ -85,6 +85,7 @@ void printUsage(const char* program) {
         << "  --stop-words <path>  stop word list used by the build (explains skips;\n"
         << "                       needed for correct --pretty positions)\n"
         << "  --pretty             print the source line of each match\n"
+        << "  --json               machine-readable output (for scripts/tests)\n"
         << "\n"
         << "planned: shell, selftest\n";
 }
@@ -135,6 +136,24 @@ double doubleOption(int argc, char** argv, const std::string& name, double fallb
     } catch (const std::exception&) {
         throw std::runtime_error("option " + name + " expects a number, got '" + value + "'");
     }
+}
+
+// Minimal JSON string escaping (only what terms / query text need).
+std::string jsonEscape(const std::string& text) {
+    std::string out;
+    out.reserve(text.size() + 8);
+    for (const char c : text) {
+        switch (c) {
+            case '"': out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n"; break;
+            case '\t': out += "\\t"; break;
+            case '\r': out += "\\r"; break;
+            default:
+                if (static_cast<unsigned char>(c) >= 0x20) out += c;
+        }
+    }
+    return out;
 }
 
 // True when a bare flag like "--all" appears in argv.
@@ -407,6 +426,31 @@ int commandQuery(int argc, char** argv) {
     const char* modeName = options.mode == mse::QueryMode::Word     ? "word"
                            : options.mode == mse::QueryMode::Phrase ? "phrase"
                                                                     : "words";
+
+    if (hasFlag(argc, argv, "--json")) {
+        std::cout << "{\"query\":\"" << jsonEscape(queryText) << "\",\"mode\":\""
+                  << modeName << "\",\"terms\":[";
+        for (std::size_t i = 0; i < result.terms.size(); ++i) {
+            if (i > 0) std::cout << ',';
+            std::cout << '"' << jsonEscape(result.terms[i]) << '"';
+        }
+        std::cout << "],\"hits\":[";
+        for (std::size_t i = 0; i < result.hits.size(); ++i) {
+            if (i > 0) std::cout << ',';
+            const mse::QueryHit& hit = result.hits[i];
+            std::cout << "{\"doc\":" << hit.docID << ",\"matched\":" << hit.matched
+                      << ",\"tf\":" << hit.tfSum << '}';
+        }
+        std::cout << "],\"notes\":[";
+        for (std::size_t i = 0; i < result.notes.size(); ++i) {
+            if (i > 0) std::cout << ',';
+            std::cout << "[\"" << jsonEscape(result.notes[i].term) << "\",\""
+                      << jsonEscape(result.notes[i].reason) << "\"]";
+        }
+        std::cout << "]}\n";
+        return 0;
+    }
+
     std::cout << "index      : " << indexPath << "  (" << index.docs.size()
               << " docs, " << index.terms.size() << " terms)\n"
               << "flags      :" << indexFlagsToString(index.flags) << "\n"

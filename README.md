@@ -325,6 +325,12 @@ results    : 1 documents
 
 查询与建索引共用同一条管线（按索引头 flags 自动启用停用词/词干化）；短语在"过滤后 token 流"上匹配，停用词会被 note 行提示（如 `--phrase "my lord"` 退化为查 `lord`）。
 
+`--json` 输出供脚本消费；阈值矩阵实验（Task 4）：
+
+```bash
+python3 tools/threshold_matrix.py    # → build/threshold_matrix.csv + .svg（15 查询 × 4 参数）
+```
+
 ### 规划中的命令
 
 `shell`（交互模式）、`selftest`（其不变量校验已由 `build`/`dump` 内建覆盖）
