@@ -229,6 +229,7 @@
 - hapax / Zipf 分布观察（§3.1）；
 - 内存版设计的性能数字与适用边界（为 Bonus 的规模分析铺垫）。
 - Porter 三种实现（论文 / canonical C / NLTK 三档）的差异与变体选择依据（§3.7）。
+- 索引压缩实验（讲义《Compression》落地）：raw u32 vs docID 差分 + 字节对齐变长编码的体积/耗时对比；Elias γ/变长向量只作分析引用（讲义 §4.4 例子 vs 我们的 gap 分布）。
 
 ### 5.3 References 预备
 
