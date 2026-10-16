@@ -1,0 +1,5 @@
+# docID: 4
+# title: Doc 4
+# source: class03 notes, four-document example
+
+Shipment of gold arrived in a truck

@@ -1,0 +1,5 @@
+# docID: 2
+# title: Doc 2
+# source: class03 notes, four-document example
+
+Shipment of gold damaged in a fire

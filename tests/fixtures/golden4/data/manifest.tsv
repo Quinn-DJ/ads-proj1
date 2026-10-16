@@ -1,0 +1,5 @@
+docid	kind	category	title	text	source	url
+1	test	fixture	Doc 1	data/text/0001_doc1.txt	golden4/doc1.html	-
+2	test	fixture	Doc 2	data/text/0002_doc2.txt	golden4/doc2.html	-
+3	test	fixture	Doc 3	data/text/0003_doc3.txt	golden4/doc3.html	-
+4	test	fixture	Doc 4	data/text/0004_doc4.txt	golden4/doc4.html	-

@@ -1,0 +1,5 @@
+# docID: 3
+# title: Doc 3
+# source: class03 notes, four-document example
+
+Delivery of silver arrived in a silver truck

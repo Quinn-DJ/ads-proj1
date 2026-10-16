@@ -41,6 +41,7 @@ proj1/
 │   ├── stemmer.hpp           #   Porter 词干化（论文 + 作者 canonical 改进）
 │   ├── posting.hpp           #   倒排记录表：docID/tf/positions
 │   ├── dict.hpp              #   词典接口：伸展树（主）+ 哈希（基线）
+│   ├── index.hpp             #   索引构建/序列化/加载/不变量/ dump
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
 │   ├── corpus.cpp
@@ -49,6 +50,7 @@ proj1/
 │   ├── stemmer.cpp
 │   ├── posting.cpp
 │   ├── dict.cpp
+│   ├── index.cpp
 │   ├── count.cpp
 │   └── main.cpp              #   CLI 入口
 ├── tests/                    # 单元测试（ctest）
@@ -56,7 +58,9 @@ proj1/
 │   ├── test_tokenizer.cpp    #   tokenizer 用例（20 条边界）
 │   ├── test_stemmer.cpp      #   Porter 用例（论文示例词 + 收缩词 + 护栏）
 │   ├── test_dict.cpp         #   词典用例（行为脚本 + 跨实现互验）
-│   └── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
+│   ├── test_index.cpp        #   索引用例（黄金样例 + 往返 + 确定性）
+│   ├── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
+│   └── fixtures/golden4/     #   讲义四文档黄金样例（data/manifest + 4 篇文本）
 ├── tools/                    # 语料处理脚本（Python / Bash）
 ├── reference/                # 词干化参考资料（Porter/Snowball/NLTK；来源与许可见其 README.md）
 ├── data/
@@ -96,6 +100,8 @@ cmake --build build --target clean           # 清理构建产物（或直接删
 - 配置后会在 `build/compile_commands.json` 生成编译数据库，clangd / clang-tidy 可直接使用。
 - 新增模块时把接口放 `include/xxx.hpp`、实现放 `src/xxx.cpp`，再把 `src/xxx.cpp` 加进
   `CMakeLists.txt` 里 `mse_core` 的源文件列表（新测试同理，登记到 `tests/CMakeLists.txt` 的 `MSE_TESTS`）。
+- `tests/fixtures/golden4/` 是讲义四文档示例的黄金样例。注意其中 `a` 一行与讲义表格
+  有一处已知差异（以示例句子为准，见 `notes.md` §3.8）。
 
 ## 命令参考
 
@@ -251,6 +257,45 @@ csv      : build/wordcount.csv
 ```bash
 python3 tools/check_wordcount.py --stem > build/wordcount_stem_py.csv
 diff build/wordcount_stem.csv build/wordcount_stem_py.csv && echo identical
+```
+
+### `mse build` — 构建倒排索引（Task 2）
+
+```bash
+./build/mse build [--manifest data/manifest.tsv] [--index build/index.bin]
+                  [--dict splay|hash] [--stop-words data/stopwords.txt] [--stem]
+```
+
+```text
+$ ./build/mse build --stop-words data/stopwords.txt --stem
+dictionary : splay  (comparisons=6392724, rotations=5850795, rehashes=0)
+documents  : 195
+tokens     : 556866
+terms      : 14937
+postings   : 117704
+positions  : 556866
+index      : build/index.bin (3685655 bytes)
+build time : 0.38 s
+invariants : OK
+```
+
+独立对拍（重新扫描语料 + 独立解析索引文件，全词表逐项比较 df/tf/docID/positions）：
+
+```bash
+python3 tools/brute_force.py --stop-words data/stopwords.txt --stem
+```
+
+### `mse dump` — 查看某个词的 posting
+
+```bash
+./build/mse dump --index build/index.bin --term osric [--limit 20]
+```
+
+```text
+index      : build/index.bin  (195 docs, 14937 terms, 556866 tokens)
+flags      : stopwords stemmed
+term osric: df=1, tf=3
+  doc 30 "Hamlet"  tf=3  positions: 17629 17933 18173
 ```
 
 ### 规划中的命令

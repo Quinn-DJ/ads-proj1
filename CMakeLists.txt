@@ -85,6 +85,7 @@ add_library(mse_core STATIC
     src/stemmer.cpp
     src/posting.cpp
     src/dict.cpp
+    src/index.cpp
     src/count.cpp
     src/stopwords.cpp)
 

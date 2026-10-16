@@ -4,20 +4,26 @@
 //   mse stats      load the corpus and print storage statistics
 //   mse tokenize   print the token stream of one document (or all documents)
 //   mse count      word frequency / document frequency table -> CSV (task 1)
+//   mse build      build the inverted index -> index.bin (task 2)
+//   mse dump       print one term's postings from an index file
 // Planned commands (plan.md section 2):
-//   build / dump / query / shell / selftest
+//   query / shell / selftest
 
 #include "corpus.hpp"
 #include "count.hpp"
+#include "index.hpp"
 #include "stopwords.hpp"
 #include "tokenizer.hpp"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -32,6 +38,8 @@ void printUsage(const char* program) {
         << "  stats                load manifest + text files and print statistics\n"
         << "  tokenize [options]   print the token stream of one document\n"
         << "  count [options]      word count table (tf/df) -> CSV\n"
+        << "  build [options]      build the inverted index -> <index file>\n"
+        << "  dump [options]       print one term's postings from an index file\n"
         << "\n"
         << "options:\n"
         << "  --manifest <path>    manifest file (default: data/manifest.tsv)\n"
@@ -50,7 +58,18 @@ void printUsage(const char* program) {
         << "  --stop-words <path>  drop words from this list before counting\n"
         << "  --stem               Porter-stem the tokens before counting\n"
         << "\n"
-        << "planned: build, dump, query, shell, selftest\n";
+        << "build options:\n"
+        << "  --index <path>       output index file (default: build/index.bin)\n"
+        << "  --dict <name>        build dictionary: splay | hash (default: splay)\n"
+        << "  --stop-words <path>  drop these tokens (recorded in the index flags)\n"
+        << "  --stem               Porter-stem the tokens (recorded in the flags)\n"
+        << "\n"
+        << "dump options:\n"
+        << "  --index <path>       index file (default: build/index.bin)\n"
+        << "  --term <word>        term to dump (the indexed form)\n"
+        << "  --limit <n>          max postings printed (default: 20)\n"
+        << "\n"
+        << "planned: query, shell, selftest\n";
 }
 
 // Return the value of "--name value" from argv, or `fallback` if absent.
@@ -215,6 +234,95 @@ int commandCount(int argc, char** argv) {
     return 0;
 }
 
+int commandBuild(int argc, char** argv) {
+    const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
+    const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
+    const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
+    const std::string dictName = optionValue(argc, argv, "--dict", "splay");
+
+    mse::StopWords stopWords;
+    mse::BuildOptions options;
+    options.tokenizer = tokenizerOptionsFromArgs(argc, argv);
+    if (!stopPath.empty()) {
+        stopWords = mse::StopWords::load(stopPath);
+        options.stopWords = &stopWords;
+    }
+    options.stem = hasFlag(argc, argv, "--stem");
+
+    std::unique_ptr<mse::Dictionary> dictionary;
+    if (dictName == "splay") {
+        dictionary = std::make_unique<mse::SplayDictionary>();
+    } else if (dictName == "hash") {
+        dictionary = std::make_unique<mse::HashDictionary>();
+    } else {
+        throw std::runtime_error("unknown --dict '" + dictName +
+                                 "' (expected splay|hash)");
+    }
+
+    const mse::Corpus corpus = mse::Corpus::load(manifest);
+    const auto started = std::chrono::steady_clock::now();
+    const mse::Index index = mse::buildIndex(corpus, options, *dictionary);
+    mse::validateIndex(index);
+    mse::writeIndex(indexPath, index);
+    const double seconds = std::chrono::duration<double>(
+                               std::chrono::steady_clock::now() - started)
+                               .count();
+
+    std::uint64_t postings = 0;
+    std::uint64_t positions = 0;
+    for (const mse::IndexTerm& term : index.terms) {
+        postings += term.postings.size();
+        positions += term.positions.size();
+    }
+    const mse::DictStats stats = dictionary->stats();
+    std::cout << "dictionary : " << dictName << "  (comparisons="
+              << stats.stringComparisons << ", rotations=" << stats.rotations
+              << ", rehashes=" << stats.rehashes << ")\n"
+              << "documents  : " << index.docs.size() << "\n"
+              << "tokens     : " << index.tokenCount << "\n"
+              << "terms      : " << index.terms.size() << "\n"
+              << "postings   : " << postings << "\n"
+              << "positions  : " << positions << "\n"
+              << "index      : " << indexPath << " ("
+              << std::filesystem::file_size(indexPath) << " bytes)\n"
+              << "build time : " << std::fixed << std::setprecision(2)
+              << seconds << " s\n";
+    std::cout.unsetf(std::ios::fixed);
+    std::cout << "invariants : OK\n";
+    return 0;
+}
+
+int commandDump(int argc, char** argv) {
+    const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
+    const std::string term = optionValue(argc, argv, "--term", "");
+    int limit = intOption(argc, argv, "--limit", "20");
+    if (term.empty()) {
+        throw std::runtime_error("dump needs --term <word>");
+    }
+    if (limit < 0) {
+        limit = 0;
+    }
+
+    const mse::Index index = mse::loadIndex(indexPath);
+    std::cout << "index      : " << indexPath << "  (" << index.docs.size()
+              << " docs, " << index.terms.size() << " terms, "
+              << index.tokenCount << " tokens)\n"
+              << "flags      :";
+    const std::uint32_t known =
+        index.flags & (mse::kIndexFlagStopWords | mse::kIndexFlagStemmed);
+    if ((known & mse::kIndexFlagStopWords) != 0) std::cout << " stopwords";
+    if ((known & mse::kIndexFlagStemmed) != 0) std::cout << " stemmed";
+    if (known == 0) std::cout << " (raw)";
+    std::cout << "\n";
+
+    if (!mse::dumpTerm(index, term, static_cast<std::size_t>(limit), std::cout)) {
+        std::cout << "term not found: " << term
+                  << "\n  (dump takes the indexed form: lowercase, stop words removed\n"
+                  << "   and stemmed when the index was built with --stem)\n";
+    }
+    return 0;
+}
+
 int commandStats(int argc, char** argv) {
     const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
     const mse::Corpus corpus = mse::Corpus::load(manifest);
@@ -259,6 +367,12 @@ int main(int argc, char** argv) {
         }
         if (command == "count") {
             return commandCount(argc, argv);
+        }
+        if (command == "build") {
+            return commandBuild(argc, argv);
+        }
+        if (command == "dump") {
+            return commandDump(argc, argv);
         }
         std::cerr << "unknown or not-yet-implemented command: " << command << "\n\n";
         printUsage(argv[0]);
