@@ -50,7 +50,8 @@ proj1/
 ├── data/
 │   ├── raw/                  # 原始 HTML 镜像（1211 个文件，含 SOURCE.txt）
 │   ├── text/                 # 行式文本层（195 个 .txt，格式说明见其 README.md）
-│   └── manifest.tsv          # 文档表：docid ↔ 标题/路径/URL
+│   ├── manifest.tsv          # 文档表：docid ↔ 标题/路径/URL
+│   └── stopwords.txt         # 停用词表（39 词，由语料统计推导；见文件头注释）
 ├── build/                    # CMake 二进制目录 + 生成物（gitignore，删掉即可）
 ├── CMakeLists.txt            # 构建入口：cmake -S . -B build / ctest
 └── problem.md / problem_zh.md / plan.md
@@ -167,7 +168,8 @@ sample :
 
 ```bash
 ./build/mse count [--manifest data/manifest.tsv] [--csv build/wordcount.csv]
-                  [--top 50] [--keep-headings] [--keep-speakers] [--keep-stage]
+                  [--top 50] [--stop-words data/stopwords.txt]
+                  [--keep-headings] [--keep-speakers] [--keep-stage]
 ```
 
 统计每个词的 **tf**（总出现次数）与 **df**（出现在多少篇文档里），写入 CSV，
@@ -202,6 +204,22 @@ CSV 列：`rank, term, tf, df, df_ratio`（=df/文档数）`, tf_share`（=tf/�
 python3 tools/check_wordcount.py > build/wordcount_py.csv
 diff build/wordcount.csv build/wordcount_py.csv && echo identical
 ```
+
+去停用词对照（正式索引会用这份表，Task 2）：
+
+```text
+$ ./build/mse count --stop-words data/stopwords.txt --top 0
+manifest : data/manifest.tsv
+documents: 195
+tokens   : 556866
+distinct : 25666
+hapax    : 9753 (tf = 1)
+stopwords: data/stopwords.txt (39 words)
+removed  : 309760 tokens (35.74%)
+csv      : build/wordcount.csv
+```
+
+（过滤版对拍同样可用：`python3 tools/check_wordcount.py --stop-words data/stopwords.txt`。）
 
 ### 规划中的命令
 

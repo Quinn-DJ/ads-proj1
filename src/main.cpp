@@ -9,9 +9,11 @@
 
 #include "corpus.hpp"
 #include "count.hpp"
+#include "stopwords.hpp"
 #include "tokenizer.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <iomanip>
 #include <iostream>
@@ -45,6 +47,7 @@ void printUsage(const char* program) {
         << "count options:\n"
         << "  --csv <path>         output CSV (default: build/wordcount.csv)\n"
         << "  --top <n>            print the top n rows (default: 50, 0 = quiet)\n"
+        << "  --stop-words <path>  drop words from this list before counting\n"
         << "\n"
         << "planned: build, dump, query, shell, selftest\n";
 }
@@ -135,22 +138,41 @@ int commandTokenize(int argc, char** argv) {
 int commandCount(int argc, char** argv) {
     const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
     const std::string csvPath = optionValue(argc, argv, "--csv", "build/wordcount.csv");
+    const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
     const mse::TokenizerOptions options = tokenizerOptionsFromArgs(argc, argv);
     int top = intOption(argc, argv, "--top", "50");
     if (top < 0) {
         top = 0;
     }
 
+    mse::StopWords stopWords;
+    const mse::StopWords* stopPtr = nullptr;
+    if (!stopPath.empty()) {
+        stopWords = mse::StopWords::load(stopPath);
+        stopPtr = &stopWords;
+    }
+
     const mse::Corpus corpus = mse::Corpus::load(manifest);
-    const mse::WordCount result = mse::countWords(corpus, options);
+    const mse::WordCount result = mse::countWords(corpus, options, stopPtr);
     mse::writeWordCountCsv(csvPath, result);
 
     std::cout << "manifest : " << manifest << "\n"
               << "documents: " << result.documents << "\n"
               << "tokens   : " << result.tokens << "\n"
               << "distinct : " << result.distinctTerms << "\n"
-              << "hapax    : " << result.hapax << " (tf = 1)\n"
-              << "csv      : " << csvPath << "\n";
+              << "hapax    : " << result.hapax << " (tf = 1)\n";
+    if (stopPtr != nullptr) {
+        const std::uint64_t allTokens = result.tokens + result.stopwordTokens;
+        const double removedPercent =
+            allTokens == 0 ? 0.0
+                           : 100.0 * static_cast<double>(result.stopwordTokens) /
+                                 static_cast<double>(allTokens);
+        std::cout << "stopwords: " << stopPath << " (" << stopPtr->size() << " words)\n"
+                  << "removed  : " << result.stopwordTokens << " tokens ("
+                  << std::fixed << std::setprecision(2) << removedPercent << "%)\n";
+        std::cout.unsetf(std::ios::fixed);
+    }
+    std::cout << "csv      : " << csvPath << "\n";
 
     // stop-word candidates for the task (1) analysis (plan.md 4.2)
     std::size_t candidates = 0;

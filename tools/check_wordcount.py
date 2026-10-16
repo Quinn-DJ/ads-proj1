@@ -11,7 +11,7 @@ the same specification *independently*; their outputs must be byte-identical:
 
 It reads data/manifest.tsv and the referenced data/text/*.txt files, then
 prints the same CSV (rank,term,tf,df,df_ratio,tf_share,stop_candidate) to
-stdout. Flags mirror the tokenizer options of the C++ side.
+stdout. Flags mirror the C++ side's tokenizer options and --stop-words.
 """
 
 import argparse
@@ -63,6 +63,9 @@ def line_kind(line):
 def main():
     parser = argparse.ArgumentParser(description="independent word-count check")
     parser.add_argument("--manifest", default="data/manifest.tsv")
+    parser.add_argument("--stop-words", default=None,
+                        help="drop these words before counting (same file as "
+                             "`mse count --stop-words`)")
     parser.add_argument("--keep-headings", action="store_true")
     parser.add_argument("--keep-speakers", action="store_true")
     parser.add_argument("--keep-stage", action="store_true")
@@ -84,6 +87,13 @@ def main():
     documents = 0
     total_tokens = 0
 
+    stop = set()
+    if args.stop_words:
+        for line in open(args.stop_words, encoding="utf-8"):
+            line = line.strip()
+            if line and not line.startswith("#"):
+                stop.add(line)
+
     for row in documents_rows:
         documents += 1
         seen = set()
@@ -97,6 +107,8 @@ def main():
                 if kind != "body":
                     line = line[1:-1] if kind != "speaker" else line[1:]
                 for token in tokenize(line):
+                    if token in stop:
+                        continue
                     tf[token] += 1
                     total_tokens += 1
                     seen.add(token)

@@ -9,7 +9,8 @@
 # MSE_TESTS below.
 
 set(MSE_TESTS
-    test_tokenizer)
+    test_tokenizer
+    test_stopwords)
 
 foreach(test IN LISTS MSE_TESTS)
     add_executable(${test} ${test}.cpp)

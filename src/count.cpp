@@ -2,6 +2,8 @@
 
 #include "count.hpp"
 
+#include "stopwords.hpp"
+
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -27,7 +29,8 @@ constexpr double kCandidateTfShare = 0.001;
 
 }  // namespace
 
-WordCount countWords(const Corpus& corpus, const TokenizerOptions& options) {
+WordCount countWords(const Corpus& corpus, const TokenizerOptions& options,
+                     const StopWords* stopWords) {
     const Tokenizer tokenizer(options);
     std::unordered_map<std::string, TermStats> table;
     std::vector<Token> tokens;
@@ -39,8 +42,12 @@ WordCount countWords(const Corpus& corpus, const TokenizerOptions& options) {
         const Document& doc = corpus[i];
         tokens.clear();
         tokenizer.tokenize(doc, tokens);
-        result.tokens += tokens.size();
         for (const Token& token : tokens) {
+            if (stopWords != nullptr && stopWords->contains(token.text)) {
+                ++result.stopwordTokens;
+                continue;
+            }
+            ++result.tokens;  // count only tokens that survive the filter
             TermStats& stats = table[token.text];
             ++stats.tf;
             if (stats.lastDoc != static_cast<std::uint32_t>(doc.id)) {

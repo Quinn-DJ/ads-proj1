@@ -1,0 +1,53 @@
+# Stop word list for proj1 (mini search engine over the Shakespeare corpus).
+#
+# Derived from OUR OWN corpus statistics -- not copied from an external list.
+# Method (notes.md 3.6, plan.md 4.2):
+#   1. candidate band: tf_share >= 0.1% (>= 867 occurrences) AND
+#      df_ratio >= 0.40 (appears in >= 78 of the 195 documents)  -> 48 words
+#   2. keep only *structural* function words (articles, prepositions,
+#      conjunctions, pronouns, auxiliaries, wh-words)            -> 39 words
+#   Deliberately NOT included for now (kept searchable):
+#     - content words that passed the statistical gate: love, time
+#     - archaic function words: thou thee thy hath doth o mine
+# Source data: build/wordcount.csv (regenerate with `mse count`)
+# Date: 2026-10-16
+#
+the
+and
+i
+to
+of
+a
+my
+that
+in
+is
+not
+me
+it
+for
+with
+be
+his
+this
+but
+have
+as
+so
+what
+by
+no
+all
+do
+if
+are
+on
+from
+or
+which
+more
+then
+their
+when
+than
+yet

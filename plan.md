@@ -77,7 +77,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ```text
 ./mse stats  --manifest data/manifest.tsv      # 语料统计（已实现，用于和 Python 预处理数字对拍）
-./mse count  --manifest data/manifest.tsv --csv build/wordcount.csv [--top 200]
+./mse count  --manifest data/manifest.tsv --csv build/wordcount.csv [--top 200] [--stop-words data/stopwords.txt]
 ./mse build  --manifest data/manifest.tsv --index build/index.bin
 ./mse dump   --index build/index.bin --term love [--limit 20]
 ./mse query  --index build/index.bin --word love
@@ -147,21 +147,19 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ### 4.1 计数程序（1 pt）
 
-`mse count`（已实现）：输出 `build/wordcount.csv`，列 `rank, term, tf, df, df_ratio, tf_share, stop_candidate`（tf=总出现次数，df=出现的文档数，stop_candidate 按 §4.2 的规则自动标注）。终端打印摘要（tokens / distinct / hapax / 候选数与候选列表）和 top n 表（`--top`，默认 50，`--top 0` 静默）。首跑结果：866 626 个正文 token、25 705 个不同词、9 753 个 hapax（tf=1）、9 个候选停用词（the and i to of my that in but）；与独立 Python 实现逐字节一致（`tools/check_wordcount.py`）。去停用词/词干化后的对照版本在 stopword / stemmer 模块完成后补跑。
+`mse count`（已实现）：输出 `build/wordcount.csv`，列 `rank, term, tf, df, df_ratio, tf_share, stop_candidate`（tf=总出现次数，df=出现的文档数，stop_candidate 按 §4.2 的规则自动标注）。终端打印摘要（tokens / distinct / hapax / 候选数与候选列表）和 top n 表（`--top`，默认 50，`--top 0` 静默）。首跑结果：866 626 个正文 token、25 705 个不同词、9 753 个 hapax（tf=1）；与独立 Python 实现逐字节一致（`tools/check_wordcount.py`）。去停用词对照已就绪：`--stop-words data/stopwords.txt` → 556 866 token（removed 309 760，35.74%）、distinct 25 666，过滤版 CSV 同样逐字节一致；词干化版待 stemmer 完成后补跑。
 
 ### 4.2 "线画在哪里"——判定方法
 
-分两步，最终结论写进报告（这是题目里明确问的问题）：
+已定案：**纯自有统计推导，不采用外部停用词表**（题目只要求"识别"；自有统计更贴题，敏感性也能自证）。三层方法：
 
-1. **数据驱动候选**：把词按 (df_ratio, tf_share) 排序。候选停用词 = `df_ratio ≥ 0.75 且 tf_share ≥ 0.1%` 的词；同时输出第 50–150 名的"边界区"词表（这一区的取舍才是需要解释的）。
-2. **对照 + 人工审阅**：下载一份标准英语停用词表（注明来源）做对照；对边界词逐个人工判断：
-   - 保留例：`thou, thee, hath, shall` —— 高频但有文体/语义价值，删除会让莎士比亚检索失真；
-   - 删除例：`a, the, of, in` 及本语料特有的排版噪声词。
-3. **敏感性检查**：用两种停用词表（保守版/激进版）各建一次索引，对比索引大小和若干查询结果，用数据支撑"线"的位置。
+1. **数据驱动候选带**：`tf_share ≥ 0.1%`（正文 ≥867 次，管"强度"）且 `df_ratio ≥ 0.40`（覆盖 ≥78/195 篇，管"广度"）→ **48 个词**。阈值敏感性扫描（df 线 0.9→0.4 各档新增词）见 notes.md §3.3。
+2. **边界判定（逐词记录理由）**：只保留结构性功能词（冠词/介词/连词/代词/助动词/wh-词）→ **39 词** = `data/stopwords.txt`。过线但暂不收录：内容词 `love`、`time`（检索价值）；古语功能词 `thou/thee/thy/hath/doth/o/mine`（莎士比亚文体中有意义，留作对照）。线下方但保留可检索：`you`(38.5%)、`he`(33.3%)、`we`(26.7%)——粒度效应，报告里说明。
+3. **敏感性检查**：保守版（39 词，正式）vs 激进版（46 词 = 39 + 7 古语词）各建一次索引，对比索引体积与查询结果（并入 Task 4 的实验）。
 
 ### 4.3 产出
 
-- `data/stopwords.txt`：最终列表，文件头注释写清来源（参考表 URL + 访问日期）与自定义增删理由。
+- `data/stopwords.txt`（已产出）：39 词，文件头注释写明方法（自有统计规则）与暂不收录的 9 个边界词及理由。
 - `build/wordcount.csv` + top 表的截图/摘录、rank–frequency（Zipf）图（可选，`tools/plot_zipf.py`）→ 报告 Chapter 3/4 素材。
 
 ---
@@ -326,7 +324,7 @@ serialize(index) → index.bin
 
 预备图表：索引构建设计图（可复用讲义 `index-construction.svg` 重绘）、索引结构示意、Zipf 词频图、阈值-结果数曲线、黄金样例对照表。
 
-References 预留条目：Porter stemmer（论文/代码地址）、停用词表来源、MIT Shakespeare 语料 URL + 访问日期、Manning《Introduction to Information Retrieval》、课程讲义。
+References 预留条目：Porter stemmer（论文/代码地址）、MIT Shakespeare 语料 URL + 访问日期、Manning《Introduction to Information Retrieval》、课程讲义。（停用词表由本项目自有统计推导，无外部来源；方法在报告中说明。）
 
 ---
 
@@ -374,7 +372,7 @@ proj1/
 | M3（D9–D11） | 阈值模块 + 阈值矩阵 + 性能数据 | `threshold_matrix.csv` + 图 |
 | M4（D12–D14） | 报告四章 + 注释率检查 + 匿名打包 | 评审清单逐项过一遍 |
 
-进度（2026-10-10）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词、0 警告）、C++ 存储层（`src/corpus` + `mse stats`）、tokenizer（`src/tokenizer` + 20 条单元测试；逐文档对拍 100% 一致）与 word count（`src/count` + `mse count`：25 705 个不同词、9 753 个 hapax、9 个候选停用词；CSV 与独立 Python 实现逐字节一致）已完成；下一步是停用词表定案（`data/stopwords.txt`）与 Porter stemmer。
+进度（截至 2026-10-16）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词）、C++ 存储层（`src/corpus`）、tokenizer（20 条单测 + 逐文档对拍）、word count（过滤前/后两版 CSV 均与独立 Python 实现逐字节一致）、停用词表（`data/stopwords.txt` 39 词 + `src/stopwords`，只保留结构功能词）、CMake 构建（ctest 3/3）均已完成；下一步是 Porter stemmer 与倒排索引。
 
 ---
 

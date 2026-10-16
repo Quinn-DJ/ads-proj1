@@ -10,6 +10,10 @@
 //   df_ratio >= 0.75  AND  tf_share >= 0.1%
 // The flag is deliberately coarse: the final stop-word list comes out of the
 // manual review step of the candidate zone (see plan.md 4.2).
+//
+// countWords() can optionally drop stop words (stopwords.hpp) before
+// counting; the number of dropped tokens is reported in WordCount so the
+// "before vs after" comparison for task 1 can be printed directly.
 
 #pragma once
 
@@ -23,6 +27,8 @@
 
 namespace mse {
 
+class StopWords;
+
 // One row of the wordcount table, sorted by tf descending then term ascending.
 struct TermRow {
     std::string term;
@@ -35,14 +41,18 @@ struct TermRow {
 
 struct WordCount {
     std::vector<TermRow> rows;   // complete table, sorted
-    std::uint64_t tokens = 0;    // tokens over all documents
+    std::uint64_t tokens = 0;    // tokens over all documents (after filtering)
+    std::uint64_t stopwordTokens = 0;  // tokens dropped by the stop word filter
     std::size_t documents = 0;
     std::size_t distinctTerms = 0;
     std::size_t hapax = 0;       // terms with tf == 1
 };
 
 // Count tf/df over the whole corpus with the given tokenizer options.
-WordCount countWords(const Corpus& corpus, const TokenizerOptions& options);
+// When `stopWords` is non-null, tokens found in the list are skipped (and
+// counted in WordCount::stopwordTokens instead).
+WordCount countWords(const Corpus& corpus, const TokenizerOptions& options,
+                     const StopWords* stopWords = nullptr);
 
 // Write the table as CSV (header included, ratios as fixed 6 decimals).
 // Creates parent directories if needed; throws std::runtime_error on failure.
