@@ -1,0 +1,586 @@
+<HTML>
+<HEAD>
+<TITLE>Porter Stemming Algorithm</TITLE>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+</HEAD>
+
+<BODY>
+
+<!-- make with m-tohtml PorterStemmer/index -->
+
+<CENTER><H2>The Porter Stemming Algorithm</H2></CENTER>
+<BLOCKQUOTE>
+<BR><BR>
+<I>This page was completely revised Jan 2006. The earlier edition is <A HREF="index-old.html">here</A>.</I>
+<BR><BR>
+<!--
+(It has also been
+<A HREF="http://science.webhostinggeeks.com/porter-stemming-algoritam-">translated
+into Serbo-Croat</A> by
+Jovana Milutinovich from
+<A HREF="http://webhostinggeeks.com/">Web Geeks Resources</A>. Thank you, Jovana!)
+<BR><BR>
+-->
+
+<BLOCKQUOTE>
+This is the &#x2018;official&#x2019; home page for distribution of the Porter Stemming
+Algorithm, written and maintained by its author,
+<A HREF="../index.html">Martin Porter</A>.
+
+<BR><BR>
+
+The Porter stemming algorithm (or &#x2018;Porter stemmer&#x2019;) is a process for removing
+the commoner morphological and inflexional endings from words in English. Its
+main use is as part of a term normalisation process that is usually done when
+setting up Information Retrieval systems.<BR><BR>
+</BLOCKQUOTE>
+<BR><FONT SIZE=+1><B>History</FONT></B><BR><BR>
+<BLOCKQUOTE>
+The original <A HREF="def.txt">stemming algorithm paper</A> was written in 1979 in the
+Computer Laboratory, Cambridge (England), as part of a larger IR project, and
+appeared as Chapter 6 of the final project report,
+
+<DL><DD>
+C.J. van Rijsbergen, S.E. Robertson and M.F. Porter, 1980. <I>New models in
+probabilistic information retrieval.</I> London: British Library. (British
+Library Research and Development Report, no. 5587).
+</DL>
+
+With van Rijsbergen&#x2019;s encouragement, it was also published in,
+<DL><DD>
+M.F. Porter, 1980, An algorithm
+for suffix stripping, <I>Program</I>, <B>14</B>(3) pp 130&#x2212;137.
+</DL>
+
+And since then it has
+been reprinted in
+<DL><DD>
+Karen Sparck Jones and Peter Willet, 1997, <I>Readings in
+Information Retrieval</I>, San Francisco: Morgan Kaufmann, ISBN
+1-55860-454-4.
+</DL>
+
+The original stemmer was written in
+<A HREF="http://www.cl.cam.ac.uk/users/mr/BCPL.html">BCPL</A>,
+a language once popular, but now defunct. For the first few years after 1980 it
+was distributed in its BCPL form, via the medium of punched paper
+tape. Versions in other languages soon began to appear, and by 1999 it
+was being widely used, quoted and adapted. Unfortunately there were numerous
+variations in functionality among these versions, and this web page was set up
+primarily to &#x2018;put the record straight&#x2019; and establish a definitive version for
+distribution.
+<BR><BR>
+</BLOCKQUOTE>
+<BR><FONT SIZE=+1><B>Encodings</FONT></B><BR><BR>
+<BLOCKQUOTE>
+The ANSI C version that heads the table below is exactly equivalent to the original
+BCPL version. The BCPL version did, however, differ in three minor points from
+the published algorithm and these are clearly marked in the downloadable ANSI C version.
+They are discussed further below.
+
+<BR><BR>
+
+This ANSI C version may be regarded as definitive, in that it
+now acts as a better definition
+of the algorithm than the original published paper.<BR><BR>
+
+
+Over the years, I have received many encoding from other workers, and they
+are also presented below. I have a reasonable confidence that all these versions
+are correctly encoded.
+<BR><BR><BR><BR>
+</BLOCKQUOTE></BLOCKQUOTE>
+<TABLE ALIGN=CENTER BGCOLOR=#E8E8E8 STYLE="padding: 12px">
+
+<TR VALIGN=TOP><TD>  <B><I>language</I></B>
+&nbsp;&nbsp;&nbsp;<TD>  <B><I>author</I></B>
+&nbsp;&nbsp;&nbsp;<TD>  <B><I>affiliation</I></B>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> <B><I>received</I></B>
+&nbsp;&nbsp;&nbsp;<TD>  <B><I>notes</I></B>
+
+<TR VALIGN=TOP><TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="c.txt">ANSI C</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:martin@tartarus.org">me</A>
+
+<TR VALIGN=TOP><TD>  <A HREF="c_thread_safe.txt">ANSI C</A> <FONT SIZE=-1>thread safe</FONT>
+&nbsp;&nbsp;&nbsp;<TD>  me
+
+<TR VALIGN=TOP><TD>  <A HREF="java.txt">java</A>
+&nbsp;&nbsp;&nbsp;<TD>  me
+
+<TR VALIGN=TOP><TD>  <A HREF="perl.txt">Perl</A>
+&nbsp;&nbsp;&nbsp;<TD>  me
+
+<TR VALIGN=TOP><TD>  <A HREF="http://www.ldc.usb.ve/~vdaniel/porter.pm">Perl</A>
+&nbsp;&nbsp;&nbsp;<TD>  Daniel van Balen
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Oct 1999
+&nbsp;&nbsp;&nbsp;<TD>  <FONT SIZE=-1>slightly faster?</FONT>
+
+<TR VALIGN=TOP><TD> <A HREF="python.txt">python</A>
+&nbsp;&nbsp;&nbsp;<TD> <A HREF="mailto:vivake@omniscia.org">Vivake Gupta</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Jan 2001
+&nbsp;&nbsp;&nbsp;<TD>   <FONT SIZE=-1>maintained, with full history at</FONT><BR>
+     <A HREF="https://github.com/omniscia/porter-stemmer">github link</A>
+
+<TR VALIGN=TOP><TD>  <A HREF="csharp.txt">Csharp</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:ahazelwood@mindspring.com">Andr&eacute; Hazelwood</A>
+&nbsp;&nbsp;&nbsp;<TD>  The Official Web Guide
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Sep 2001
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="csharp2.txt">Csharp</A> <FONT SIZE=-1>.NET compliant</FONT>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:azzo-ci0@wpmail.paisley.ac.uk">Leif Azzopardi</A>
+&nbsp;&nbsp;&nbsp;<TD>  Univerity of Paisley, Scotland
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Nov 2002
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="csharp3.txt">Csharp</A> <FONT SIZE=-1>again!</FONT>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:ratborg@gmail.com">Brad Patton</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://ratborg.blogspot.com">ratborg.blogspot.com</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Dec 2015
+&nbsp;&nbsp;&nbsp;<TD>  <FONT SIZE=-1>"more like standard<BR>
+       C# code" (Brad)</FONT>
+
+<TR VALIGN=TOP><TD>  <A HREF="csharp4.txt">Csharp</A> <FONT SIZE=-1>and again!</FONT>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:fkolnick@gmail.com">Frank Kolnick</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Jan 2021
+&nbsp;&nbsp;&nbsp;<TD>  <FONT SIZE=-1>"compacted and<BR>
+       simplified" (Frank)</FONT>
+
+<TR VALIGN=TOP><TD>  <A HREF="commonlisp.txt">Common Lisp</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:smh@franz.com">Steven M. Haflich</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.franz.com">Franz Inc</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Mar 2002
+&nbsp;&nbsp;&nbsp;<TD>
+
+<!--
+
+<TR VALIGN=TOP><TD>  <A HREF="ruby.txt">Ruby</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:raypereda@hotmail.com">Ray Pereda</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.isri.unlv.edu">ISRI, University of Nevada</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Jan 2003
+&nbsp;&nbsp;&nbsp;<TD>  <FONT SIZE=-1>submitted by <A HREF="mailto:condit@isri.unlv.edu">Allen Condit</A><BR>
+    further improvements by<BR><A HREF="mailto:dave@pragprom.com">Dave Thomas</A></FONT>
+
+-->
+
+<TR VALIGN=TOP><TD>  Ruby
+&nbsp;&nbsp;&nbsp;<TD>  Ray Pereda
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.raypereda.com/">www.raypereda.com</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Jan 2003
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="https://github.com/raypereda/stemmify">github link</A>
+
+<TR VALIGN=TOP><TD>  <A HREF="vb.txt">Visual Basic</A> <FONT SIZE=-1>VB6</FONT>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:Navonil.Mustafee@brunel.ac.uk">Navonil Mustafee</A>
+&nbsp;&nbsp;&nbsp;<TD>  Brunel University
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Apr 2003
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="delphi.txt">Delphi</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:jo.rabin@btclick.com">Jo Rabin</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Apr 2004
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="js.txt">Javascript</A>
+&nbsp;&nbsp;&nbsp;<TD>  &#x2018;Andargor&#x2019;
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.andargor.com">www.andargor.com</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Jul 2004
+&nbsp;&nbsp;&nbsp;<TD>  <FONT SIZE=-1>substantial revisions by<BR><A HREF="mailto:cmckenzie@iizuu.com">Christopher McKenzie</A><SUP><FONT SIZE=-1>
+<!--
+    <BR>(See &#x2018;Links&#x2019; below.)
+--></FONT>
+<TR VALIGN=TOP><TD>  <A HREF="vbnet.txt">Visual Basic</A><BR><FONT SIZE=-1>VB7; .NET compliant</FONT>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:christos.attikos@gmail.com">Christos Attikos</A>
+&nbsp;&nbsp;&nbsp;<TD>  University of Piraeus, Greece
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Jan 2005
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="php.txt">php</A>
+&nbsp;&nbsp;&nbsp;<TD>  Richard Heyes
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.phpguru.org">www.phpguru.org</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Feb 2005
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="prolog.txt">Prolog</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:philip.brooks@gmail.com">Philip Brooks</A>
+&nbsp;&nbsp;&nbsp;<TD>  University of Georgia
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Oct 2005
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="haskell.txt">Haskell</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:lomeo@mail.ru">Dmitry Antonyuk</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Nov 2005
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="tsql.txt">T-SQL</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:klubell@atelierdevitraux.com">Keith Lubell</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.atelierdevitraux.com">www.atelierdevitraux.com</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  May 2006
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="matlab.txt">matlab</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:LopezJC@cpmcri.org">Juan Carlos Lopez</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.cpmc.org/professionals/research/">California Pacific Medical Center<BR>Research Institute</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Sep 2006
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="tcl.txt">Tcl</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:artheo@iit.demokritos.gr">Aris Theodorakos</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.demokritos.gr/index_muk.asp">NCSR Demokritos</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT>  Nov 2006
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="d.txt">D</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:Daniel-ps@hence22.org">Daniel Truemper</A>
+&nbsp;&nbsp;&nbsp;<TD>  Humboldt-Universitaet zu Berlin
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> May 2007
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="porter.erl">erlang (1)</A>  <A HREF="conditions.erl">erlang (2)</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:alden.dima@nist.gov">Alden Dima</A>
+&nbsp;&nbsp;&nbsp;<TD>  National Institute of Standards and<BR>Technology, Gaithersburg, MD USA
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Sep 2007
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="rebol.txt">REBOL</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:daleb@digital-bear.com">Dale K Brearcliffe</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Apr 2009
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="scala.txt">Scala</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:ken.faulkner@gmail.com">Ken Faulkner</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> May 2009
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="sas.txt">sas</A>
+&nbsp;&nbsp;&nbsp;<TD>  Antoine St-Pierre
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.businessresearchers.com">Business Researchers, Inc</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Apr 2010
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="vim.txt">plugin vim script</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:mitchellbowden@gmail.com">Mitchell Bowden</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> May 2010
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://github.com/msbmsb/porter-stem.vim">github link</A>
+
+<TR VALIGN=TOP><TD>  node.js
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:jedp@jedparsons.com">Jed Parsons</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://jedparsons.com">jedparsons.com</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> May 2011
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="https://github.com/jedp/porter-stemmer">github link</A>
+
+<TR VALIGN=TOP><TD>  Google Go
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:agonopol@gmail.com">Alex Gonopolskiy</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Oct 2011
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="https://github.com/agonopol/go-stem">github link</A>
+
+<TR VALIGN=TOP><TD>  <A HREF="awk.txt">awk</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:gregory.grefenstette@3ds.com">Gregory Grefenstette</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.3ds.com/products/exalead">3ds.com/exalead</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Jul 2012
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="https://bitbucket.org/m00nlight/clojure-stemmer">clojure</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:dot.wangyushi@gmail.com">Yushi Wang</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Mar 2013
+&nbsp;&nbsp;&nbsp;<TD>  bitbucket link
+
+<TR VALIGN=TOP><TD>  <A HREF="http://github.com/mrordinaire/rust-stem">Rust</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:m@minhdo.org">Do Nhat Minh</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.ntu.edu.sg/Pages/index.aspx">Nanyang Technological University</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Aug 2013
+&nbsp;&nbsp;&nbsp;<TD>  github link
+
+<TR VALIGN=TOP><TD>  <A HREF="vala.txt">vala</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:serge.hulne@gmail.com">Serge Hulne</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Sep 2013
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="http://github.com/johnpcarty/mysql-porter-stemmer">MySQL</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:cartyjp@hotmail.com">John Carty</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.enlightenjobs.com">Enlighten Jobs</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Jan 2015
+&nbsp;&nbsp;&nbsp;<TD>  github link
+
+<TR VALIGN=TOP><TD>  <A HREF="https://github.com/mguzmann/CorpusTools/blob/master/src/PortStemmer.jl">Julia</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:mortem.dei@gmail.com">Matías Guzmán Naranjo</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> May 2015
+&nbsp;&nbsp;&nbsp;<TD>  github link
+
+<TR VALIGN=TOP><TD>  <A HREF="http://www.cs.ubbcluj.ro/~zbodo/soft/porter.flex">flex</A>
+&nbsp;&nbsp;&nbsp;<TD>  Zalán Bodó
+&nbsp;&nbsp;&nbsp;<TD>  Babes-Bolyai University
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Oct 2015
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.cs.ubbcluj.ro/~zbodo/porter_flex.html">(Zalan&#x2019;s notes)
+
+<!-- zalan confirmed in an email of 31/10/15 that this is BSD
+     licensed. I've copied his sources to flex.txt and flex.htm -->
+
+<TR VALIGN=TOP><TD>  <A HREF="R.txt">R</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:mohitmakkar02@gmail.com">Mohit Makkar</A>
+&nbsp;&nbsp;&nbsp;<TD>  Indian Institute of Technology, Delhi
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Nov 2015
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD> <A HREF="https://github.com/DDave87/codePractice/blob/master/PorterStemmer.groovy">Groovy</A>
+&nbsp;&nbsp;&nbsp;<TD> Dhaval Dave
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Jun 2016
+&nbsp;&nbsp;&nbsp;<TD>  github link
+
+<TR VALIGN=TOP><TD> <A HREF=" http://ooporter.sourceforge.net">ooRexx</A>
+&nbsp;&nbsp;&nbsp;<TD> P.O. Jonsson
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Jul 2016
+&nbsp;&nbsp;&nbsp;<TD>  sourceforge link
+
+<TR VALIGN=TOP><TD> <A HREF="https://github.com/joeytakeda/xslt-stemmer">XSLT</A>
+&nbsp;&nbsp;&nbsp;<TD> Joey Takeda
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Feb 2019
+&nbsp;&nbsp;&nbsp;<TD> github link
+
+<TR VALIGN=TOP><TD>  <A HREF="lpa-win-prolog.txt">LPA Win-Prolog</A>
+&nbsp;&nbsp;&nbsp;<TD>  Brian D Steel
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="http://www.solanum.org">solanum.org</A>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Apr 2020
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD>  <A HREF="pspp.txt">GNU PSPP</A>
+&nbsp;&nbsp;&nbsp;<TD>  <A HREF="mailto:fhouweling@email.it">Frans Houweling</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Feb 2023
+&nbsp;&nbsp;&nbsp;<TD>
+
+<TR VALIGN=TOP><TD> <A HREF="https://github.com/maxxxxxdlp/porter-stemming">TypeScript</A>
+&nbsp;&nbsp;&nbsp;<TD> <A HREF="https://max.patii.uk/">Max Patiiuk</A>
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> May 2023
+&nbsp;&nbsp;&nbsp;<TD> github link
+
+<TR VALIGN=TOP><TD> <A HREF="https://github.com/christianmce/swift_stemmer">Swift</A>
+&nbsp;&nbsp;&nbsp;<TD> Christian Mauricio Castillo Estrada
+&nbsp;&nbsp;&nbsp;<TD>
+&nbsp;&nbsp;&nbsp;<TD ALIGN=RIGHT> Jan 2026
+&nbsp;&nbsp;&nbsp;<TD> github link
+
+
+</TABLE>
+<BR><BR>
+<BLOCKQUOTE><BLOCKQUOTE>
+
+All these encodings of the algorithm can be used free of charge for any
+purpose. Questions about the algorithms should be directed to their authors,
+and not to Martin Porter (except when he is the author).
+<BR><BR>
+
+To test the programs out,
+
+here is a <B><A HREF="voc.txt">sample vocabulary</A></B> (0.19 megabytes),
+and the corresponding <B><A HREF="output.txt">output</A></B>.<BR><BR>
+
+Email <B><A HREF="mailto:martin@tartarus.org">any comments, suggestions,
+queries</A></B><BR><BR>
+</BLOCKQUOTE>
+
+<BR><FONT SIZE=+1><B>Points of difference from the published algorithm</FONT></B><BR><BR>
+<BLOCKQUOTE>
+There is an extra rule in Step 2,
+<DL><DD>
+    <I>(m>0) logi</I> &nbsp;&#x2192;&nbsp; <I>log</I>
+</DL>
+So
+<I>archaeology</I> is equated with <I>archaeological</I> etc.<BR><BR>
+
+The Step 2 rule
+<DL><DD>
+    <I>(m>0) abli</I> &nbsp;&#x2192;&nbsp; <I>able</I>
+</DL>
+is replaced by
+<DL><DD>
+    <I>(m>0) bli</I> &nbsp;&#x2192;&nbsp; <I>ble</I>
+</DL>
+So <I>possibly</I> is equated with <I>possible</I> etc.<BR><BR>
+
+The algorithm leaves alone strings of length 1 or 2. In any case a string of
+length 1 will be unchanged if passed through the algorithm, but strings of
+length 2 might lose a final <I>s</I>, so <I>as</I> goes to <I>a</I>
+and <I>is</I> to <I>i</I>.
+<BR><BR>
+
+These differences may have been present in the
+program from which the published algorithm derived. But at such a great
+distance from the original publication it is now difficult to say.<BR><BR>
+
+It must be emphasised that these differences are very small indeed compared to the
+variations that have been observed in other encodings of the algorithm.<BR><BR>
+</BLOCKQUOTE>
+
+<BR><FONT SIZE=+1><B>Status</FONT></B><BR><BR>
+<BLOCKQUOTE>
+The Porter stemmer should be regarded as &#x2018;frozen&#x2019;, that is, strictly defined,
+and not amenable to further modification. As a stemmer, it is slightly inferior
+to the Snowball
+<A HREF="http://snowball.tartarus.org/algorithms/english/stemmer.html"><I>English</I></A>
+or <I>Porter2</I> stemmer, which derives from it, and which is
+subjected to occasional improvements. For practical work, therefore, the new
+Snowball stemmer is recommended. The Porter stemmer is appropriate to IR
+research work involving stemming where the experiments need to be exactly
+repeatable.
+</BLOCKQUOTE>
+
+<BR><FONT SIZE=+1><B>Common errors</FONT></B><BR><BR>
+<BLOCKQUOTE>
+Historically, the following shortcomings have been found in other encodings of
+the stemming algorithm.
+<BR><BR>
+The algorithm clearly explains that when a set of rules of the type
+<DL><DD>
+<I>(condition)S1</I> &nbsp;&#x2192;&nbsp; <I>S2</I>
+</DL>
+are presented together, only one rule is applied,
+the one with the longest matching suffix <I>S1</I> for the given word. This
+is true whether the rule succeeds or fails (i.e. whether or not <I>S2</I>
+replaces <I>S1</I>). Despite this, the rules are sometimes simply
+applied in turn until either one of them succeeds or the list runs out.<BR><BR>
+
+This leads to small errors in various places, for example in the Step 4 rules
+<DL><DD>
+<I>(m>1)ement</I> &nbsp;&#x2192;&nbsp;<BR>
+ <I>(m>1)ment</I> &nbsp;&#x2192;&nbsp;<BR>
+<I>(m>1)ent</I> &nbsp;&#x2192;&nbsp;
+</DL>
+ to remove final
+<I>ement</I>, <I>ment</I> and <I>ent</I>.<BR><BR>
+
+Properly, <I>argument</I> stems to <I>argument</I>. The longest matching
+suffix is <I>-ment</I>. Then stem <I>argu-</I> has measure <I>m</I> equal to 1
+and so <I>-ment</I> will not be removed. End of Step 4. But if the three
+rules are applied in turn, then for suffix <I>-ent</I> the stem <I>argum-</I>
+has measure <I>m</I> equal to 2, and <I>-ent</I> gets removed.<BR><BR>
+
+The more delicate rules are liable to misinterpretation. (Perhaps
+greater care was required in explaining them.) So
+<DL><DD>
+<I>((m>1) and (*s or *t))ion</I>
+</DL>
+is taken to mean
+<DL><DD>
+<I>(m>1)(s or t)ion</I>
+</DL>
+The former means that
+taking off <I>-ion</I> leaves a stem with measure greater than 1 ending
+<I>-s</I> or <I>-t</I>; the latter means that taking off <I>-sion</I> or
+<I>-tion</I> leaves a stem of measure greater than 1. A similar confusion
+tends to arise in interpreting rule 5<I>b</I>, to reduce final double <I>L</I> to
+single <I>L</I>.<BR><BR>
+
+Occasionally cruder errors have been seen. For example the test for <I>Y</I> being
+consonant or vowel set up the wrong way round.<BR><BR>
+
+It is interesting that although the published paper explains how to do the
+tests on the strings <I>S1</I> by a program switch on the last or last but
+one letter, many encodings fail to use this technique, making them
+much slower than they need be.<BR><BR>
+</BLOCKQUOTE>
+<BR><FONT SIZE=+1><B>FAQs (frequently asked questions)</FONT></B><BR><BR>
+<BLOCKQUOTE>
+<BR><FONT SIZE=+1><B>#1. What is the licensing arrangement for this software?</FONT></B><BR><BR>
+
+This question has become very popular recently (the period 2008&#x2212;2009), despite
+the clear statment above that &#x2018;&#x2018;all these encodings of the algorithm can be used
+free of charge for any
+purpose.&#x2019;&#x2019; The problem I think is that intellectual property has become such a
+major issue that some more formal statement is expected. So to restate it:
+
+<BR><BR>
+
+The software is completely free for any purpose, unless notes at the head of the
+program text indicates otherwise (which is rare). In any case, the
+notes about licensing are never more restrictive than the BSD License.
+
+<BR><BR>
+
+In every case where the software is not written by me (Martin Porter), this
+licensing arrangement has been endorsed by the contributor, and it is therefore
+unnecessary to ask the contributor again to confirm it.
+
+<BR><BR>
+
+I have not asked any contributors (or their employers, if they have them) for
+proofs that they have the right to distribute their software in this way.
+
+<BR><BR>
+
+(For anyone taking software from the
+<A HREF="http://snowball.tartarus.org">Snowball</A>
+website, the position is similar but simpler. There, all the software is issued
+under the BSD License, and for contributions not written by Martin Porter and
+Richard Boulton, we have again not asked the authors, or the authors&#x2019;
+employers, for proofs that they have such distribution rights.)
+
+<BR><BR>
+
+<BR><FONT SIZE=+1><B>#2. Why is the stemmer not producing proper words?</FONT></B><BR><BR>
+
+It is often taken to be a crude error that a stemming algorithm does not leave a
+real word after removing the stem. But the purpose of stemming is to bring
+variant forms of a word together, not to map a word onto its &#x2018;paradigm&#x2019; form.
+
+<BR><BR>
+
+And connected with this,
+
+<BR><BR>
+
+<BR><FONT SIZE=+1><B>#3. Why are there errors?</FONT></B><BR><BR>
+
+The question normally comes in the form, why should word <I>X</I> be stemmed to
+<I>x1</I>, when one would have expected it to be stemmed to <I>x2</I>? It
+is important to remember that the stemming algorithm cannot achieve
+perfection. On balance it will (or may) improve IR performance, but in
+individual cases it may sometimes make what are, or what seem to be,
+errors. Of course, this is a different matter from suggesting an additional rule
+that might be included in the stemmer to improve its performance.
+
+<BR><BR>
+</BLOCKQUOTE>
+
+<!--
+<BR><FONT SIZE=+1><B>Links</FONT></B><BR><BR>
+<BLOCKQUOTE>
+I will add to this from time to time any noteworthy instructive or educational
+links. Suggestions welcome.
+
+<BR><BR>
+
+Phil Bewig of
+<A HREF="http://programmingpraxis.com"><I>Programming Praxis</I></A>
+has made the Porter stemmer into a
+<A HREF="http://programmingpraxis.com/2009/09/08/porter-stemming">programming example</A>
+on his site.
+
+<BR><BR>
+
+Christopher McKenzie, who contributed the Javascript stemmer, demonstrates his program
+(and therefore demonstrates the Porter stemming algorith) at
+<A HREF="http://qaa.ath.cx/porter_js_demo.html">qaa.ath.cx/porter_js_demo.html</A>
+
+<BR><BR>
+
+</BLOCKQUOTE>
+-->
+</BODY> </HTML>

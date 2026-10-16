@@ -222,7 +222,7 @@
 - MIT Shakespeare 站点 URL + 访问日期；GitHub 镜像 commit `6b82db8`；
 - 课程讲义（《Building an Inverted Index》《Compression》等）；
 - Manning《Introduction to Information Retrieval》；
-- （后续补充）Porter stemmer 来源；停用词表不使用外部来源（自有统计推导，方法写进报告）。
+- Porter stemmer：论文（Porter 1980）+ 作者 C 实现 + NLTK/Snowball 对拍基准已下载至 `reference/`（2026-10-16；URL、版本、许可见 `reference/README.md`）；停用词表不使用外部来源（自有统计推导，方法写进报告）。
 
 ---
 

@@ -166,7 +166,7 @@ CLI 统一入口（二进制在 `build/mse`，下文简写为 `./mse`）：
 
 ## 5. 词干化（Task (2) 前置）
 
-- 采用 Porter Stemmer：下载公开的参考实现（Martin Porter 的算法说明与代码），文件头写明来源，References 列出；或按论文自实现（工作量更大，二选一，默认前者）。
+- 采用 Porter Stemmer。参考材料（1980 论文、作者 C 实现、NLTK、Snowball/Porter2）已于 2026-10-16 下载至 `reference/`（来源与许可见 `reference/README.md`）。实现二选一：直接移植（快、稳妥）或按论文自实现 + 对拍（推荐——收缩后缀适配本来就要自己写；下载的实现作测试 oracle）。无论哪种，References 必须列出论文与参考实现。
 - 规范化顺序：**小写化 → 停用词过滤 → 词干化**（先滤后干更快，且避免 `is/are/being` 类词先干后不可滤）。
 - 单元测试向量：≥ 20 组（覆盖论文里的 step 1a/1b/1c/2–5 与不规则例子），存 `tests/fixtures/stem_vectors.tsv`。
 - 词典和查询必须用同一函数，否则查不到词——测试里放一条专门的后置检查。

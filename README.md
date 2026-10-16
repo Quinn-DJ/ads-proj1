@@ -50,6 +50,7 @@ proj1/
 │   ├── test_tokenizer.cpp    #   tokenizer 用例（20 条边界）
 │   └── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
 ├── tools/                    # 语料处理脚本（Python / Bash）
+├── reference/                # 词干化参考资料（Porter/Snowball/NLTK；来源与许可见其 README.md）
 ├── data/
 │   ├── raw/                  # 原始 HTML 镜像（1211 个文件，含 SOURCE.txt）
 │   ├── text/                 # 行式文本层（195 个 .txt，格式说明见其 README.md）
