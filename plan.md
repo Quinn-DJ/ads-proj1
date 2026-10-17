@@ -383,14 +383,17 @@ proj1/
     ├── CMakeLists.txt                  # CTest 用例登记（取代 run_all.sh）
     ├── fixtures/golden4/               # 讲义四文档 + 期望 posting
     ├── fixtures/stem_vectors.tsv
+    ├── vendor/catch2/                  # vendored Catch2 v3（amalgamated；仅测试可执行文件链接）
     ├── tests.md                        # 用例表（报告 Chapter 3 底稿）
-    └── test_*.cpp                      # 每个用例一个可执行文件，自校验退出码
+    └── test_*.cpp                      # 每个用例一个可执行文件（Catch2 TEST_CASE 组织，自校验退出码）
 ```
 
 - 编译：CMake ≥ 3.16 配置，默认 Release + `-std=c++17` + `-Wall -Wextra`，要求零警告
   （`-DMSE_WERROR=ON` 可把警告直接变成错误）；`ctest --test-dir build` 一键跑全部测试。
 - 注释规范：每个函数头 4 行（目的/参数/返回/复杂度）+ 关键逻辑行内注释；`tools/comment_ratio.py` 统计非空行注释率，超过 35% 才允许提交。
-- 外部代码（Porter stemmer）单独文件 + 文件头注明来源，与自写代码区分清楚。
+- 外部代码（Porter stemmer）单独文件 + 文件头注明来源，与自写代码区分清楚；测试框架 Catch2 v3
+  vendored 在 `tests/vendor/catch2/`（LICENSE/README 齐全），只被测试可执行文件链接，
+  `mse` 本体与交付二进制保持"纯标准库"（§16.4 的边界即画在这里）。
 - 提交前匿名检查：删除 `.git`、`.DS_Store`、`.vscode`，报告转 PDF，文件名按课程格式（如 `wc_2026G03_P1.pdf`），文档内不出现任何身份信息。
 
 ---
@@ -430,7 +433,7 @@ proj1/
 1. 报告语言：默认中文（讲义与课程规范均为中文），如课程要求英文再切换；
 2. 组内分工：默认按 §14 的四个模块并行（抓取/计数、索引、查询/阈值、测试/报告）；
 3. scene 级文档粒度：默认只做作品级提交，scene 级留作统计实验；
-4. 目标平台：macOS + Linux（纯标准库，无第三方依赖）。
+4. 目标平台：macOS + Linux（纯标准库，无第三方依赖；指 `mse` 交付物本身——测试基础设施用 vendored Catch2，见 §13 的边界说明）。
 
 ---
 

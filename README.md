@@ -63,7 +63,8 @@ proj1/
 │   ├── test_index.cpp        #   索引用例（黄金样例 + 往返 + 确定性）
 │   ├── test_query.cpp        #   查询用例（三形态 + 四阈值 + 停用词/词干化）
 │   ├── test_stopwords.cpp    #   停用词表用例（39 词/边界词/错误路径）
-│   └── fixtures/golden4/     #   讲义四文档黄金样例（data/manifest + 4 篇文本）
+│   ├── fixtures/golden4/     #   讲义四文档黄金样例（data/manifest + 4 篇文本）
+│   └── vendor/catch2/        #   vendored Catch2 v3（仅测试链接；mse 本体零依赖）
 ├── tools/                    # 语料处理脚本（Python / Bash）
 ├── reference/                # 词干化参考资料（Porter/Snowball/NLTK；来源与许可见其 README.md）
 ├── data/

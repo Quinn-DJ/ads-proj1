@@ -7,149 +7,162 @@
 // EE via step 1b but step 5a then removes the final E: agre). Run via
 // `ctest --test-dir build`.
 
+#include "catch_amalgamated.hpp"  // vendored Catch2 v3, single include
+
 #include "stemmer.hpp"
 
-#include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
 
-int failures = 0;
+// Assert one (word -> stem) row; the word is echoed on failure.
+void checkStem(const std::string& word, const std::string& expected) {
+    INFO("word: " << word);
+    CHECK(mse::stem(word) == expected);
+}
 
-void check(const std::string& token, const std::string& expected) {
-    const std::string got = mse::stem(token);
-    if (got == expected) {
-        std::cout << "ok    " << token << " -> " << got << "\n";
-    } else {
-        std::cout << "FAIL  " << token << " -> " << got << "  (expected "
-                  << expected << ")\n";
-        ++failures;
+void checkStems(const std::vector<std::pair<std::string, std::string>>& rows) {
+    for (const auto& [word, expected] : rows) {
+        checkStem(word, expected);
     }
 }
 
 }  // namespace
 
-int main() {
-    // Step 1a / 1b / 1c (paper examples)
-    check("caresses", "caress");
-    check("ponies", "poni");
-    check("ties", "ti");
-    check("caress", "caress");
-    check("cats", "cat");
-    check("feed", "feed");
-    check("agreed", "agre");
-    check("plastered", "plaster");
-    check("bled", "bled");
-    check("motoring", "motor");
-    check("sing", "sing");
-    check("conflated", "conflat");
-    check("troubled", "troubl");
-    check("sized", "size");
-    check("hopping", "hop");
-    check("tanned", "tan");
-    check("falling", "fall");
-    check("hissing", "hiss");
-    check("fizzed", "fizz");
-    check("failing", "fail");
-    check("filing", "file");
-    check("happy", "happi");
-    check("sky", "sky");
+TEST_CASE("step 1a/1b/1c: plurals, -ed/-ing and terminal y", "[stemmer]") {
+    checkStems({
+        {"caresses", "caress"},
+        {"ponies", "poni"},
+        {"ties", "ti"},
+        {"caress", "caress"},
+        {"cats", "cat"},
+        {"feed", "feed"},
+        {"agreed", "agre"},
+        {"plastered", "plaster"},
+        {"bled", "bled"},
+        {"motoring", "motor"},
+        {"sing", "sing"},
+        {"conflated", "conflat"},
+        {"troubled", "troubl"},
+        {"sized", "size"},
+        {"hopping", "hop"},
+        {"tanned", "tan"},
+        {"falling", "fall"},
+        {"hissing", "hiss"},
+        {"fizzed", "fizz"},
+        {"failing", "fail"},
+        {"filing", "file"},
+        {"happy", "happi"},
+        {"sky", "sky"},
+    });
+}
 
-    // Step 2
-    check("relational", "relat");
-    check("conditional", "condit");
-    check("rational", "ration");
-    check("valenci", "valenc");
-    check("hesitanci", "hesit");
-    check("digitizer", "digit");
-    check("conformabli", "conform");
-    check("radicalli", "radic");
-    check("differentli", "differ");
-    check("vileli", "vile");
-    check("analogousli", "analog");
-    check("vietnamization", "vietnam");
-    check("predication", "predic");
-    check("operator", "oper");
-    check("feudalism", "feudal");
-    check("decisiveness", "decis");
-    check("hopefulness", "hope");
-    check("callousness", "callous");
-    check("formaliti", "formal");
-    check("sensitiviti", "sensit");
-    check("sensibiliti", "sensibl");
-    check("possibli", "possibl");      // canonical's bli -> ble departure
-    check("chronologi", "chronolog");  // canonical's logi -> log departure
+TEST_CASE("step 2: double suffixes map to single ones", "[stemmer]") {
+    checkStems({
+        {"relational", "relat"},
+        {"conditional", "condit"},
+        {"rational", "ration"},
+        {"valenci", "valenc"},
+        {"hesitanci", "hesit"},
+        {"digitizer", "digit"},
+        {"conformabli", "conform"},
+        {"radicalli", "radic"},
+        {"differentli", "differ"},
+        {"vileli", "vile"},
+        {"analogousli", "analog"},
+        {"vietnamization", "vietnam"},
+        {"predication", "predic"},
+        {"operator", "oper"},
+        {"feudalism", "feudal"},
+        {"decisiveness", "decis"},
+        {"hopefulness", "hope"},
+        {"callousness", "callous"},
+        {"formaliti", "formal"},
+        {"sensitiviti", "sensit"},
+        {"sensibiliti", "sensibl"},
+        {"possibli", "possibl"},      // canonical's bli -> ble departure
+        {"chronologi", "chronolog"},  // canonical's logi -> log departure
+    });
+}
 
-    // Step 3
-    check("triplicate", "triplic");
-    check("formative", "form");
-    check("formalize", "formal");
-    check("electriciti", "electr");
-    check("electrical", "electr");
-    check("hopeful", "hope");
-    check("goodness", "good");
+TEST_CASE("step 3: -icate/-ative/-alize", "[stemmer]") {
+    checkStems({
+        {"triplicate", "triplic"},
+        {"formative", "form"},
+        {"formalize", "formal"},
+        {"electriciti", "electr"},
+        {"electrical", "electr"},
+        {"hopeful", "hope"},
+        {"goodness", "good"},
+    });
+}
 
-    // Step 4
-    check("revival", "reviv");
-    check("allowance", "allow");
-    check("inference", "infer");
-    check("airliner", "airlin");
-    check("gyroscopic", "gyroscop");
-    check("adjustable", "adjust");
-    check("defensible", "defens");
-    check("irritant", "irrit");
-    check("replacement", "replac");
-    check("adjustment", "adjust");
-    check("dependent", "depend");
-    check("adoption", "adopt");
-    check("homologou", "homolog");
-    check("communism", "commun");
-    check("activate", "activ");
-    check("angulariti", "angular");
-    check("homologous", "homolog");
-    check("effective", "effect");
-    check("bowdlerize", "bowdler");
+TEST_CASE("step 4: residual suffixes", "[stemmer]") {
+    checkStems({
+        {"revival", "reviv"},
+        {"allowance", "allow"},
+        {"inference", "infer"},
+        {"airliner", "airlin"},
+        {"gyroscopic", "gyroscop"},
+        {"adjustable", "adjust"},
+        {"defensible", "defens"},
+        {"irritant", "irrit"},
+        {"replacement", "replac"},
+        {"adjustment", "adjust"},
+        {"dependent", "depend"},
+        {"adoption", "adopt"},
+        {"homologou", "homolog"},
+        {"communism", "commun"},
+        {"activate", "activ"},
+        {"angulariti", "angular"},
+        {"homologous", "homolog"},
+        {"effective", "effect"},
+        {"bowdlerize", "bowdler"},
+    });
+}
 
-    // Step 5a / 5b
-    check("probate", "probat");
-    check("rate", "rate");
-    check("cease", "ceas");
-    check("controll", "control");
-    check("roll", "roll");
+TEST_CASE("step 5a/5b: final -e and double -ll", "[stemmer]") {
+    checkStems({
+        {"probate", "probat"},
+        {"rate", "rate"},
+        {"cease", "ceas"},
+        {"controll", "control"},
+        {"roll", "roll"},
+    });
+}
 
-    // our tokenizer's contraction forms (stage 1 of the pipeline)
-    check("who's", "who");
-    check("don't", "do");
-    check("he'll", "he");
-    check("you're", "you");
-    check("we've", "we");
-    check("is't", "is");
-    check("let's", "let");
-    check("marry'd", "marri");
-    check("o'er", "oer");
-    check("ne'er", "neer");
-    check("can't", "ca");      // documented irregularity
-    check("won't", "wo");      // documented irregularity
+TEST_CASE("our tokenizer's contraction forms", "[stemmer]") {
+    checkStems({
+        {"who's", "who"},
+        {"don't", "do"},
+        {"he'll", "he"},
+        {"you're", "you"},
+        {"we've", "we"},
+        {"is't", "is"},
+        {"let's", "let"},
+        {"marry'd", "marri"},
+        {"o'er", "oer"},
+        {"ne'er", "neer"},
+        {"can't", "ca"},  // documented irregularity
+        {"won't", "wo"},  // documented irregularity
+    });
+}
 
-    // words that must not change (short words, plain nouns)
-    check("a", "a");
-    check("is", "is");
-    check("as", "as");
-    check("us", "us");
-    check("ay", "ay");
-    check("king", "king");
-    check("love", "love");
-    check("loves", "love");
-    check("loved", "love");
-    check("loving", "love");
-    check("was", "wa");        // paper's unconditional S-rule
-    check("this", "thi");      // paper's unconditional S-rule
-
-    if (failures == 0) {
-        std::cout << "\nall stemmer tests passed\n";
-        return 0;
-    }
-    std::cout << "\n" << failures << " test(s) failed\n";
-    return 1;
+TEST_CASE("words that must not change", "[stemmer]") {
+    checkStems({
+        {"a", "a"},
+        {"is", "is"},
+        {"as", "as"},
+        {"us", "us"},
+        {"ay", "ay"},
+        {"king", "king"},
+        {"love", "love"},
+        {"loves", "love"},
+        {"loved", "love"},
+        {"loving", "love"},
+        {"was", "wa"},    // paper's unconditional S-rule
+        {"this", "thi"},  // paper's unconditional S-rule
+    });
 }

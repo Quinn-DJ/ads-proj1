@@ -3,28 +3,18 @@
 // the splay and hash dictionaries. Run via `ctest --test-dir build`
 // (working directory = project root).
 
+#include "catch_amalgamated.hpp"  // vendored Catch2 v3, single include
+
 #include "index.hpp"
 #include "stopwords.hpp"
 
 #include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
 
 namespace {
-
-int failures = 0;
-
-void report(const std::string& name, bool ok) {
-    if (ok) {
-        std::cout << "ok    " << name << "\n";
-    } else {
-        std::cout << "FAIL  " << name << "\n";
-        ++failures;
-    }
-}
 
 std::vector<std::uint8_t> readFile(const std::string& path) {
     std::ifstream in(path, std::ios::binary);
@@ -50,17 +40,24 @@ struct ExpectedPosting {
 void checkTerm(const mse::Index& index, const std::string& term,
                const std::vector<ExpectedPosting>& expected,
                const std::string& label) {
+    INFO(label << ": term '" << term << "'");
     const mse::IndexTerm* found = findTerm(index, term);
-    if (found == nullptr) {
-        report(label + ": term '" + term + "' exists", false);
-        return;
+    REQUIRE(found != nullptr);
+
+    std::vector<std::uint32_t> gotIDs;
+    std::vector<std::uint32_t> gotTfs;
+    for (const mse::Posting& posting : found->postings) {
+        gotIDs.push_back(posting.docID);
+        gotTfs.push_back(posting.tf);
     }
-    bool ok = found->postings.size() == expected.size();
-    for (std::size_t i = 0; ok && i < expected.size(); ++i) {
-        ok = found->postings[i].docID == expected[i].docID &&
-             found->postings[i].tf == expected[i].tf;
+    std::vector<std::uint32_t> wantIDs;
+    std::vector<std::uint32_t> wantTfs;
+    for (const ExpectedPosting& posting : expected) {
+        wantIDs.push_back(posting.docID);
+        wantTfs.push_back(posting.tf);
     }
-    report(label + ": '" + term + "' matches the lecture posting table", ok);
+    CHECK(gotIDs == wantIDs);
+    CHECK(gotTfs == wantTfs);
 }
 
 std::vector<std::uint32_t> positionsOf(const mse::IndexTerm& term,
@@ -105,16 +102,17 @@ bool sameIndex(const mse::Index& a, const mse::Index& b) {
 
 }  // namespace
 
-int main() {
+TEST_CASE("raw build reproduces the lecture posting table", "[index][golden]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
 
-    // 1. raw build (no stop words, no stemming) vs the lecture table.
     mse::SplayDictionary splay;
     const mse::Index raw = mse::buildIndex(corpus, mse::BuildOptions{}, splay);
-    report("raw: four documents", raw.docs.size() == 4);
-    report("raw: eleven distinct terms", raw.terms.size() == 11);
-    report("raw: token count", raw.tokenCount == 3 + 7 + 8 + 7);
+
+    CHECK(raw.docs.size() == 4);
+    CHECK(raw.terms.size() == 11);
+    CHECK(raw.tokenCount == 3 + 7 + 8 + 7);
+
     // Discrepancy found by this test: the class03 note table prints
     // a -> (2,1) (4,1) (times 2), but the example *sentences* -- verbatim
     // from the notes, and confirmed byte-for-byte in the original lecture
@@ -136,60 +134,56 @@ int main() {
     // Positions: doc 1 "Gold silver truck" -> silver at 1;
     // doc 3 "... silver ... silver ..." -> silver at 2 and 6.
     const mse::IndexTerm* silver = findTerm(raw, "silver");
-    report("raw: position slices are correct",
-           silver != nullptr &&
-               positionsOf(*silver, 0) == std::vector<std::uint32_t>{1} &&
-               positionsOf(*silver, 1) == std::vector<std::uint32_t>({2, 6}));
+    REQUIRE(silver != nullptr);
+    CHECK(positionsOf(*silver, 0) == std::vector<std::uint32_t>{1});
+    CHECK(positionsOf(*silver, 1) == std::vector<std::uint32_t>({2, 6}));
+}
 
-    // 2. determinism: the hash dictionary must give the identical index,
-    // and the serialized files must match byte for byte.
+TEST_CASE("splay and hash dictionaries build identical indexes", "[index]") {
+    const mse::Corpus corpus =
+        mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
+
+    mse::SplayDictionary splay;
+    const mse::Index raw = mse::buildIndex(corpus, mse::BuildOptions{}, splay);
     mse::HashDictionary hash;
     const mse::Index hashed = mse::buildIndex(corpus, mse::BuildOptions{}, hash);
-    report("splay vs hash: identical Index objects", sameIndex(raw, hashed));
+
+    CHECK(sameIndex(raw, hashed));
     mse::writeIndex("build/test_index_splay.bin", raw);
     mse::writeIndex("build/test_index_hash.bin", hashed);
-    report("splay vs hash: byte-identical index files",
-           readFile("build/test_index_splay.bin") ==
-               readFile("build/test_index_hash.bin"));
+    CHECK(readFile("build/test_index_splay.bin") ==
+          readFile("build/test_index_hash.bin"));
 
-    // 3. round trip: loadIndex reproduces the built index (and validates).
+    // Round trip: loadIndex reproduces the built index (and validates).
     const mse::Index loaded = mse::loadIndex("build/test_index_splay.bin");
-    report("round trip: loadIndex reproduces the built index",
-           sameIndex(raw, loaded));
+    CHECK(sameIndex(raw, loaded));
+}
 
-    // 4. stop word variant: a/of/in disappear, positions are renumbered.
+TEST_CASE("stop word variant: terms vanish, positions renumber", "[index]") {
+    const mse::Corpus corpus =
+        mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
+
     const mse::StopWords stops = mse::StopWords::load("data/stopwords.txt");
     mse::BuildOptions filtered;
     filtered.stopWords = &stops;
     mse::SplayDictionary splay2;
     const mse::Index clean = mse::buildIndex(corpus, filtered, splay2);
-    report("stopwords: eight terms remain", clean.terms.size() == 8);
-    report("stopwords: 'a'/'of'/'in' are gone",
-           findTerm(clean, "a") == nullptr && findTerm(clean, "of") == nullptr &&
-               findTerm(clean, "in") == nullptr);
-    const mse::IndexTerm* cleanSilver = findTerm(clean, "silver");
-    report("stopwords: positions renumbered in the filtered stream",
-           cleanSilver != nullptr &&
-               positionsOf(*cleanSilver, 1) == std::vector<std::uint32_t>({1, 3}));
-    report("stopwords: flag recorded", clean.flags == mse::kIndexFlagStopWords);
 
-    // 5. a corrupt file must fail loudly.
+    CHECK(clean.terms.size() == 8);
+    CHECK(findTerm(clean, "a") == nullptr);
+    CHECK(findTerm(clean, "of") == nullptr);
+    CHECK(findTerm(clean, "in") == nullptr);
+
+    const mse::IndexTerm* cleanSilver = findTerm(clean, "silver");
+    REQUIRE(cleanSilver != nullptr);
+    CHECK(positionsOf(*cleanSilver, 1) == std::vector<std::uint32_t>({1, 3}));
+    CHECK(clean.flags == mse::kIndexFlagStopWords);
+}
+
+TEST_CASE("a corrupt index file must fail loudly", "[index]") {
     {
         std::ofstream out("build/test_index_bad.bin", std::ios::binary);
         out << "this is not an index";
     }
-    bool threw = false;
-    try {
-        mse::loadIndex("build/test_index_bad.bin");
-    } catch (const std::exception&) {
-        threw = true;
-    }
-    report("corrupt file: loadIndex throws", threw);
-
-    if (failures == 0) {
-        std::cout << "\nall index tests passed\n";
-        return 0;
-    }
-    std::cout << "\n" << failures << " test(s) failed\n";
-    return 1;
+    CHECK_THROWS_AS(mse::loadIndex("build/test_index_bad.bin"), std::exception);
 }
