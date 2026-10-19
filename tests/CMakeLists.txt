@@ -30,7 +30,8 @@ set(MSE_TESTS
     test_index
     test_query
     test_stopwords
-    test_count)
+    test_count
+    test_bptree)
 
 foreach(test IN LISTS MSE_TESTS)
     add_executable(${test} ${test}.cpp)
