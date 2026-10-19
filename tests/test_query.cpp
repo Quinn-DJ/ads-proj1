@@ -29,6 +29,9 @@ bool docsAre(const mse::QueryResult& result,
 
 }  // namespace
 
+// Word-mode basics: case/punctuation normalization, score order (higher tf
+// first, then docID), an unknown term, and the deliberate rejection of a
+// multi-token --word query.
 TEST_CASE("word queries: tf score order, normalization, misses", "[query]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -38,12 +41,17 @@ TEST_CASE("word queries: tf score order, normalization, misses", "[query]") {
     mse::QueryOptions word;
     word.mode = mse::QueryMode::Word;
 
+    // Doc 3 contains silver twice (tf 2), doc 1 once (tf 1), so score order
+    // puts doc 3 first even though its docID is larger.
     CHECK(docsAre(mse::runQuery(raw, "silver", word, nullptr), {3, 1}));  // tf 2 before tf 1
     CHECK(docsAre(mse::runQuery(raw, "Silver!", word, nullptr), {3, 1}));  // case/punctuation
     CHECK(mse::runQuery(raw, "zzz", word, nullptr).hits.empty());       // unknown term
     CHECK(mse::runQuery(raw, "hello world", word, nullptr).hits.empty());  // multi-token rejected
 }
 
+// Phrase mode requires adjacency in order: "silver truck" matches, but
+// "gold truck" does not because the words are not next to each other in any
+// document. Positions come from the raw (unfiltered) index here.
 TEST_CASE("phrase queries: adjacency on the filtered stream", "[query]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -55,9 +63,13 @@ TEST_CASE("phrase queries: adjacency on the filtered stream", "[query]") {
 
     CHECK(docsAre(mse::runQuery(raw, "silver truck", phrase, nullptr), {3, 1}));
     CHECK(docsAre(mse::runQuery(raw, "gold damaged", phrase, nullptr), {2}));
+    // Both words occur in doc 4, but not next to each other, so adjacency
+    // (not mere co-occurrence) is what the phrase mode checks.
     CHECK(mse::runQuery(raw, "gold truck", phrase, nullptr).hits.empty());  // not adjacent
 }
 
+// Boolean mode: default minMatch=0 means AND; k=1 means OR. The OR result
+// order also checks the matched-then-tf-then-docID scoring rule.
 TEST_CASE("boolean queries: min-match semantics and score order", "[query]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -71,10 +83,15 @@ TEST_CASE("boolean queries: min-match semantics and score order", "[query]") {
     both.minMatch = 2;
     CHECK(docsAre(mse::runQuery(raw, "gold silver", both, nullptr), {1}));
 
+    // OR order: doc 1 matches both terms, then the one-term documents by tf
+    // and docID (doc 3 has two silvers and therefore ranks before doc 2/4).
     both.minMatch = 1;
     CHECK(docsAre(mse::runQuery(raw, "gold silver", both, nullptr), {1, 3, 2, 4}));  // OR
 }
 
+// Threshold semantics: --max-df drops a common term (truck), --min-df drops a
+// hapax (fire), and --top-x caps the ranked list. Each is checked on a fixture
+// where the expected outcome follows directly from the posting table.
 TEST_CASE("the four query thresholds drop and cap as documented", "[query]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -109,6 +126,10 @@ TEST_CASE("the four query thresholds drop and cap as documented", "[query]") {
     CHECK(docsAre(mse::runQuery(raw, "gold silver", topOne, nullptr), {1}));
 }
 
+// The same query behaves differently depending on the build flags: on a raw
+// index "of" is searchable; on a filtered index it returns an empty set plus a
+// note. The phrase "in a fire" on the filtered index degenerates to "fire",
+// which is the documented phrase-on-filtered-stream limitation.
 TEST_CASE("stop words are searchable on raw indexes, explained on filtered ones",
           "[query]") {
     const mse::Corpus corpus =
@@ -137,6 +158,9 @@ TEST_CASE("stop words are searchable on raw indexes, explained on filtered ones"
     CHECK(docsAre(mse::runQuery(clean, "in a fire", phrase, &stops), {2}));
 }
 
+// Index/query consistency: "arrive" is absent from the raw index (only
+// "arrived" occurs), but after stemming both surface forms resolve to the same
+// stem. This is the behavior that would break if the query side forgot to stem.
 TEST_CASE("stemming makes surface forms find their stem", "[query]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -156,6 +180,10 @@ TEST_CASE("stemming makes surface forms find their stem", "[query]") {
     CHECK(docsAre(mse::runQuery(stemIndex, "arrived", word, nullptr), {3, 4}));
 }
 
+// --pretty support: lineOfPosition() must recover the exact source line for a
+// stored filtered-stream position, both on a raw index and on a stop-filtered
+// index (where positions were renumbered). A wrong stop list would make the
+// second case fail, which is why the CLI warns when it is missing.
 TEST_CASE("--pretty locates the source line of a hit position", "[query]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");

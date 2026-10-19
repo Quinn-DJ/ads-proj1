@@ -24,8 +24,13 @@ std::vector<std::string> termsOf(const std::vector<mse::TermEntry*>& entries) {
     return terms;
 }
 
-// The same script runs on both dictionaries; each observation is asserted
-// with the label echoed into the failure message.
+// The same behavioural script runs on both dictionaries.
+//
+// It checks the contract the index builder relies on: missing lookups return
+// nullptr, upsert is idempotent and returns a stable reference, posting
+// updates survive further insertions, sortedEntries is sorted and complete,
+// and size() is consistent. Running literally the same assertions on splay and
+// hash is what makes their later byte-identical index output meaningful.
 void behaviourScript(mse::Dictionary& dict, const std::string& label) {
     INFO("dictionary: " << label);
     CHECK(dict.size() == 0);
@@ -61,16 +66,23 @@ void behaviourScript(mse::Dictionary& dict, const std::string& label) {
 
 }  // namespace
 
+// Primary structure: the splay tree must satisfy the same interface contract
+// as the hash baseline, including reference stability across 300 insertions.
 TEST_CASE("the behavioural script passes on the splay dictionary", "[dict]") {
     mse::SplayDictionary splay;
     behaviourScript(splay, "splay");
 }
 
+// Baseline/cross-check structure: same script, so any behavioral drift between
+// the two implementations is caught before the index build is compared.
 TEST_CASE("the behavioural script passes on the hash dictionary", "[dict]") {
     mse::HashDictionary hash;
     behaviourScript(hash, "hash");
 }
 
+// Verify the self-adjusting property directly: after accessing "zzz" it must
+// be at the root, and the rotations counter must have moved (proving the
+// structure is actually splaying rather than behaving like a plain BST).
 TEST_CASE("splay: last accessed term is the root, rotations happen", "[dict][splay]") {
     mse::SplayDictionary rootProbe;
     rootProbe.upsert("mid");
@@ -80,6 +92,8 @@ TEST_CASE("splay: last accessed term is the root, rotations happen", "[dict][spl
     CHECK(rootProbe.stats().rotations > 0);
 }
 
+// Growing past the 0.75 load factor must trigger at least one rehash; the
+// counter is part of the dictionary comparison statistics in the report.
 TEST_CASE("hash: table rehashes while growing", "[dict][hash]") {
     mse::HashDictionary rehashProbe;
     for (int i = 0; i < 300; ++i) {
@@ -88,11 +102,17 @@ TEST_CASE("hash: table rehashes while growing", "[dict][hash]") {
     CHECK(rehashProbe.stats().rehashes > 0);
 }
 
+// Cross-implementation check on a larger mixed workload (300 terms, 20k
+// upserts, deterministic LCG). Both dictionaries must end with exactly the
+// same sorted vocabulary and size. This is the dictionary-level counterpart of
+// the byte-identical index-file test in test_index.cpp.
 TEST_CASE("cross-check: splay and hash agree on a random workload", "[dict]") {
     const std::size_t vocabulary = 300;
     mse::SplayDictionary splay;
     mse::HashDictionary hash;
 
+    // Deterministic LCG so the workload is random-looking but reproducible;
+    // a real random source would make a failure impossible to replay.
     std::uint32_t state = 12345;
     const auto next = [&state]() {
         state = state * 1664525u + 1013904223u;
@@ -104,6 +124,8 @@ TEST_CASE("cross-check: splay and hash agree on a random workload", "[dict]") {
         hash.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
     }
 
+    // The two independent structures saw the same operation stream, so any
+    // divergence in vocabulary, size, or ordering is a real implementation bug.
     const std::vector<std::string> splayTerms = termsOf(splay.sortedEntries());
     const std::vector<std::string> hashTerms = termsOf(hash.sortedEntries());
     CHECK(splayTerms == hashTerms);
