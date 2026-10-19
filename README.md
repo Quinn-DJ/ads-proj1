@@ -490,8 +490,19 @@ manifest 的可选第 8 列 `format`（`marked`，缺省 | `plain`）按文档�
 | `marked` | 莎士比亚文本层：`[ACT I]` 标题 / `(舞台指示)` / `@说话人` 被分类，默认不参与切词 |
 | `plain` | 无标记纯文本：所有非 `#` 行都是正文（`(括号整行)`、`[方括号整行]` 保持可检索） |
 
-在 RFC 语料上推导停用词会得到与莎士比亚**不同**的词表（56 词，含 `rfc/page` 领域样板词），
-且 RFC 2119 关键词 `must/may/should` 因速率分布倾斜而**不**被判停用词——见 notes.md §3.12。
+在 RFC 语料上推导停用词会得到与莎士比亚**不同**的词表（本次运行 58 词，含 `rfc/page`
+领域样板词），且 RFC 2119 关键词 `must/may/should` 因速率分布倾斜而**不**被判停用词——
+见 notes.md §3.12。
+
+## 对拍与规模实验工具
+
+| 工具 | 用途 |
+|------|------|
+| `tools/check_phrases.py` | 随机短语的 brute-force 对拍（v1/v2，已进 ctest） |
+| `tools/gen_synthetic_corpus.py` | 生成 500k 文件规模的 plain 合成语料（Bonus 跑批） |
+| `tools/plot_zipf.py` | 从 `wordcount.csv` 生成 Zipf 图（SVG） |
+| `tools/plot_bptree_scale.py` | 生成 B+Tree 规模图（SVG） |
+| `tools/threshold_matrix.py` | Task 4 阈值矩阵实验 |
 
 ## 数据格式速查
 

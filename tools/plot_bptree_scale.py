@@ -23,6 +23,8 @@ MEASURED = [
     (100_000, 1_515_520, 2, 2.0),
     (1_000_000, 15_110_144, 3, 3.0),
     (10_000_000, 151_003_136, 3, 3.0),
+    (30_000_000, 452_993_024, 3, 3.0),
+    (50_000_000, 754_987_008, 4, 4.0),
 ]
 # Extrapolation: 15.1 bytes/key, height 4 (the measured fan-out predicts it).
 EXTRAPOLATED = (400_000_000, 400_000_000 * 15.1, 4, 4.0)
@@ -53,7 +55,7 @@ def main():
         f'<text x="{width/2}" y="30" text-anchor="middle" font-size="17" '
         f'font-weight="bold">B+Tree dictionary scale (4 KiB pages)</text>',
         f'<text x="{width/2}" y="50" text-anchor="middle" font-size="12" fill="#555">'
-        f'measured 100k / 1M / 10M keys; dashed point = 400M-key extrapolation</text>',
+        f'measured 100k / 1M / 10M / 30M / 50M keys; dashed point = 400M-key extrapolation</text>',
     ]
 
     # ---------------- left panel: file size ----------------
