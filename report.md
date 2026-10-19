@@ -2,19 +2,21 @@
 
 ## 基于莎士比亚全集的带词干化倒排索引
 
-> **草稿 v0.1**（2026-10-19）
+> **草稿 v0.2**（2026-10-19）
 >
-> 说明：本文件为报告初稿。第 1–3 章与第 4 章主体已完成；Bonus 章节仍在开发中，相关小节标注为“分析草案”，待实验完成后补入最终数字。提交前需按课程要求转为 PDF、补齐图表编号并做匿名检查。
+> 说明：本文件为报告初稿。第 1–3 章、第 4 章主体以及 Bonus 的实做与实验均已完成；剩余工作主要是图表编号、PDF 排版与匿名检查，见文末“待办”。
 
 ---
 
 ## 摘要
 
-本项目在《莎士比亚全集》（The Complete Works of William Shakespeare）上实现了一个迷你搜索引擎。系统以 C++17 编写，提供词频统计、停用词推导、Porter 词干化、倒排索引构建、索引持久化以及单词/短语/布尔查询能力。语料共 195 个文档、152,632 行、930,911 个空白分隔词；默认配置下切分出 866,626 个正文 token，词型 25,705 个。通过自有统计推导出 39 个停用词后，索引保留 556,866 个 token（去除 35.74%），词干化后词表降至 14,937 个词干，倒排索引含 117,704 条 posting、556,866 个位置，二进制文件约 3.5 MB。
+本项目在《莎士比亚全集》（The Complete Works of William Shakespeare）上实现了一个迷你搜索引擎。系统以 C++17 编写，提供词频统计、停用词推导、Porter 词干化、倒排索引构建、索引持久化以及单词/短语/布尔查询能力。语料共 195 个文档、152,632 行、930,911 个空白分隔词；默认配置下切分出 866,626 个正文 token，词型 25,705 个。通过自有统计推导出 39 个停用词后，索引保留 556,866 个 token（去除 35.74%），词干化后词表降至 14,937 个词干，倒排索引含 117,704 条 posting、556,866 个位置，v1 二进制文件约 3.5 MB。
 
-正确性方面，系统采用三层验证：Catch2 单元测试（28 个测试用例、246 条断言）、讲义四文档黄金样例、以及独立实现的 Python 对拍（词频 CSV 逐字节一致、全词表 brute-force 对拍 14,937 个词干全项一致）。查询侧实现四个可调阈值，并用 15 条查询 × 4 个参数共 201 次测量量化了阈值对结果集的影响。
+正确性方面，系统采用四层验证：Catch2 单元测试（46 个测试用例、85,155 条断言）、讲义四文档黄金样例、独立实现的 Python 对拍（词频 CSV 逐字节一致、全词表 brute-force 对拍 14,937 个词干全项一致），以及结构不变量检查。查询侧实现四个可调阈值，并用 15 条查询 × 4 个参数共 201 次测量量化了阈值对结果集的影响。
 
-**关键词**：倒排索引；停用词；Porter 词干化；伸展树；查询阈值；莎士比亚语料
+在 Bonus 部分，系统进一步实现了：熵驱动的停用词推导（长度归一化速率熵）、语料无关的 plain 文本格式与 RFC 第二语料、v2 差分 + 变长编码压缩（索引降至 v1 的 46.8%）、磁盘 B+Tree 词典 sidecar、SPIMI 式块式外部构建，以及 10,000,000 键的 B+Tree 规模实测。这些结果共同回答了“500,000 个文件、400,000,000 个不同词”的问题：全内存设计不可行，但构建侧与查询侧都已具备可实测的扩展路径。
+
+**关键词**：倒排索引；停用词；Porter 词干化；伸展树；B+Tree；SPIMI；索引压缩；查询阈值；莎士比亚语料
 
 ---
 
@@ -60,6 +62,15 @@
 
 默认配置（只统计正文行）切分出 **866,626 个 token**，其中不同词型 **25,705** 个，hapax（只出现一次的词）**9,753** 个。需要说明的是，930,911 是文本层的空白分隔字段数，而 866,626 是经过分词规则（标点、数字、标记行过滤）后的 token 数，两者口径不同，不能直接比较。
 
+#### 1.2.1 第二语料与语料无关性
+
+题目只要求莎士比亚语料，但引擎本身不应依赖莎士比亚。Bonus 阶段新增了两项通用化能力：
+
+- **manifest 可选第 8 列 `format`**：`marked`（默认，带 `[标题]` / `(舞台)` / `@说话人` 标记）或 `plain`（每行都是正文）。plain 语料不会被行标记规则误删括号内容。
+- **`tools/import_corpus.py`**：把任意纯文本目录转换成自包含语料（`manifest.tsv` + 文本副本，docID 按文件名稳定分配）。
+
+仓库中的 `data2/` 是第二套语料：RFC 1035（DNS）、RFC 5321（SMTP）、RFC 7231（HTTP 语义），3 个 plain 文档、9,946 行、75,250 token、4,328 个词型。第 3、4 章用它验证“零代码改动换语料”以及熵停用词规则的跨语料行为。
+
 ### 1.3 系统总体设计
 
 系统采用三层可再生成的数据流：
@@ -74,32 +85,37 @@ data/text/*.txt + data/manifest.tsv 行式文本层 + 文档表（195 个文档�
 build/index.bin                     倒排索引二进制（可加载、可 dump）
 ```
 
-C++ 程序只读取文本层，不接触 HTML；HTML 的解析、清洗与文档切分在 Python 预处理阶段一次性完成。这样每层都可以独立检查、独立重跑，任何统计数字都能从上一层重新生成。
+C++ 程序只读取文本层，不接触 HTML；HTML 的解析、清洗与文档切分在 Python 预处理阶段一次性完成。这样每层都可以独立检查、独立重跑，任何统计数字都能从上一层重新生成。同一套 C++ 管线也直接支持 `data2/` 的 plain 语料（manifest 第 8 列），无需改动引擎代码。
 
-CLI 程序 `mse` 提供六个子命令：
+CLI 程序 `mse` 提供九个子命令：
 
 | 子命令 | 作用 | 对应任务 |
 |---|---|---|
 | `stats` | 语料统计 | 前置/对拍 |
 | `tokenize` | 查看 token 流 | 调试/实验 |
-| `count` | 词频 tf/df 统计，输出 CSV | Task 1 |
-| `build` | 构建并序列化倒排索引 | Task 2 |
-| `dump` | 打印某个词的 posting | 调试/报告 |
+| `count` | 词频 tf/df/熵统计，输出 CSV | Task 1 |
+| `stopwords` | 熵驱动的三特征停用词推导 | Bonus |
+| `build` | 构建并序列化倒排索引（v1/v2） | Task 2 |
+| `build-blocks` | SPIMI 式块式外部构建 | Bonus |
+| `bptree-bench` | B+Tree 规模实测 | Bonus |
+| `dump` | 打印 posting；支持磁盘词典 | 调试/报告 |
 | `query` | 单词、短语、布尔查询与阈值 | Task 3/4 |
 
 模块划分与代码组织如下：
 
 | 模块 | 职责 |
 |---|---|
-| `corpus` | 读 manifest、读文本层、解析行标记 |
+| `corpus` | 读 manifest、读文本层（marked/plain）、解析行标记 |
 | `tokenizer` | 切词、小写化、位置编号 |
 | `stopwords` | 加载停用词表，O(1) 查询 |
 | `stemmer` | Porter 词干化与收缩词预处理 |
 | `posting` | posting 与 positions 的动态数组 |
-| `dict` | 伸展树词典（主）+ 哈希词典（基线） |
-| `index` | 构建、序列化、加载、不变量校验、dump |
+| `dict` | 伸展树（主）+ 哈希（基线）+ `std::map`（对照） |
+| `index` | 构建、v1/v2 序列化、加载、不变量、dump、懒加载 |
+| `bptree` | 页式 B+Tree（内存构建 + 磁盘页文件 + LRU 读取） |
+| `blockbuild` | SPIMI 两阶段（块内索引 → run 文件 → k 路归并） |
 | `query` | 三种查询模式与四个阈值 |
-| `count` | tf/df 统计与 CSV 输出 |
+| `count` | tf/df/熵统计、停用词规则、CSV 输出 |
 | `main` | CLI 解析与子命令分发 |
 
 ### 1.4 完成情况
@@ -108,18 +124,18 @@ CLI 程序 `mse` 提供六个子命令：
 
 | 评分项 | 状态 | 说明 |
 |---|---|---|
-| 词频统计程序（1 分） | ✅ | `mse count`，四种变体均与独立 Python 实现逐字节一致 |
-| 索引生成程序（5 分） | ✅ | `mse build`，splay/hash 输出逐字节一致，brute-force 对拍通过 |
-| 查询程序（3 分） | ✅ | 单词/短语/布尔、四阈值、`--pretty`、`--json` |
-| 索引正确性测试（2 分） | ✅ | 单元测试 + 黄金样例 + 全量对拍 |
+| 词频统计程序（1 分） | ✅ | `mse count`，四种变体均与独立 Python 实现逐字节一致；新增熵特征列 |
+| 索引生成程序（5 分） | ✅ | `mse build`，splay/hash/map 输出逐字节一致，v1/v2 两种格式均通过 brute-force 对拍 |
+| 查询程序（3 分） | ✅ | 单词/短语/布尔、四阈值、`--pretty`、`--json`、磁盘词典路径 |
+| 索引正确性测试（2 分） | ✅ | 8 个测试可执行文件、46 个 TEST_CASE、85,155 条断言；黄金样例 + 全量对拍 |
 | 查询阈值测试（2 分） | ✅ | 201 条测量的阈值矩阵 |
-| 分析评论（3 分） | ✅ | 见第 3、4 章 |
-| Bonus（+2 分） | 🚧 开发中 | 第 4.7 节为分析草案 |
-| 文档（4 分） | 🚧 初稿 | 本文件 |
+| 分析评论（3 分） | ✅ | 见第 3、4 章，含 Bonus 实测与分析 |
+| Bonus（+2 分） | ✅ | 熵停用词、RFC 第二语料、v2 压缩、B+Tree 磁盘词典、SPIMI 块式构建、1000 万键规模实测；见 4.7 |
+| 文档（4 分） | 🚧 初稿 | 本文件；剩余排版与匿名检查 |
 
 ### 1.5 报告组织
 
-第 2 章给出各模块的规格、数据结构选择与算法伪代码；第 3 章给出测试策略、测试结果与实验数据；第 4 章讨论停用词界线、Zipf 分布、词典对比、压缩机会、阈值语义、局限性与 Bonus 规模分析；附录给出构建命令、数据格式与评分对照表。
+第 2 章给出各模块的规格、数据结构选择与算法伪代码；第 3 章给出测试策略、测试结果与实验数据；第 4 章讨论停用词界线（含熵规则）、Zipf 分布、词典对比、压缩实现、阈值语义、局限性以及 Bonus 的构建/查询两侧规模分析；附录给出构建命令、数据格式与评分对照表。
 
 ---
 
@@ -157,6 +173,8 @@ constexpr std::uint32_t kIndexFlagStemmed   = 1u << 1;
 | `@BERNARDO` | 说话人标签（`<b>`） | 否（`--keep-speakers` 可开） |
 | 其他 | 台词、诗行、散文正文 | 是 |
 | `#` 开头 | 文件头注释（docID、标题、来源、URL） | 跳过 |
+
+manifest 的可选第 8 列 `format` 决定按哪种方式解释文本：`marked`（默认）使用上表；`plain` 跳过标记分类，所有非 `#` 行都是正文，适合 RFC、散文、日志等普通文本。plain 文档不会因为一行恰好以括号/方括号开头而被误判为舞台或标题。
 
 行标记的判定规则是“行首与行尾同时匹配”：只有当一行以 `[` 开头且以 `]` 结尾时才视为标题行，以 `(` 开头且以 `)` 结尾时才视为舞台行。这条规则在开发中被证明非常关键：语料里存在大量“以 `[` 开头、但其实是台词”的行，例如 `[To HELENA] The best wishes that can be forged in`；如果只按行首判断，会损失 4,340 个 token。对拍脚本最初就踩了这个坑，修正后 C++ 与 Python 才重新一致。
 
@@ -233,6 +251,29 @@ tf_share ≥ 0.1%（≥ 867 次）
 
 39 词停用表覆盖正文 **309,760 / 866,626 = 35.74%** 的 token；过滤后保留 556,866 个 token，词型从 25,705 降到 25,666（不词干化时）。报告第 3.5 节给出完整结果，第 4.1 节讨论这条线的合理性。
 
+#### 2.4.4 熵驱动的三特征规则（Bonus）
+
+静态 39 词表依赖人工审核。为了在任意语料上自动完成这一步，`mse count` 增加了三个分布特征，并实现 `mse stopwords --derive`。
+
+设文档 `d` 中词 `t` 的 tf 为 `tf(t,d)`，总 tf 为 `tf(t)`，文档长度为 `L_d`（过滤后 token 数）：
+
+- 文档分布熵：`H(t) = -Σ_d p_d log2 p_d`，其中 `p_d = tf(t,d) / tf(t)`；
+- 归一化熵：`entropyNorm = H(t) / log2(df)`；
+- 长度归一化速率熵：`rate_d = tf(t,d) / L_d`，`q_d = rate_d / Σ rate`，`entropyRateNorm = -Σ_d q_d log2 q_d / log2(df)`。
+
+**为什么必须做长度归一化**：本语料中一部剧约 3 万 token，一首十四行诗约 100 token，长度差约 300 倍。停用词的出现次数跟随文档长度（长文多、短文少），所以原始 `H` 反映的是“文档长度分布”，而不是“均匀分布”。实测 `the` 的 `entropyNorm` 只有 **0.724**，反而低于内容词 `man` 的 **0.941**——直接使用原始熵会把停用词排到内容词后面。改用速率熵后，功能词普遍落在 0.95–0.98（`the` 0.975、`and` 0.979、`it` 0.969、`is` 0.972），内容词明显更低（`love` 0.927、`sweet` 0.893、`king` 0.826、`heart` 0.831），df=1 的专名（如 `osric`）定义为 0。
+
+三特征规则要求词同时“宽”（`df_ratio ≥ r`）、“重”（`tf_share ≥ s`）、“平”（`entropyRateNorm ≥ h`）。`mse stopwords --derive` 的默认阈值是 `(0.75, 0.1%, 0.93)`，可分别用 `--min-df-ratio / --min-tf-share / --min-entropy-rate` 覆盖。阈值扫描（对照静态 39 词表）：
+
+| df 门 | 熵门 | 词数 | 与静态表重叠 | 说明 |
+|---:|---:|---:|---:|---|
+| 0.75 | 0.93 | 9 | 9/9 | 默认，保守，零误报 |
+| 0.50 | 0.95 | 23 | 23/23 | 仍零误报 |
+| 0.40 | 0.93 | 39 | 35/39 | **自动复现人工定稿的规模** |
+| 0.30 | 0.93 | 50 | 35/39 | 开始收进半功能词，过冲 |
+
+(0.40, 0.93) 的 39 词与人工表恰好互换 4 词：自动版加入 `hath o thee thou`（正是 2.4.3 节刻意保留可检索的古语功能词），漏掉 `more or than their`。差异完全可解释，没有离群误报——熵特征实质上完成了人工审核的工作。三套索引的规模对比见 3.5 节。
+
 ### 2.5 词干化
 
 #### 2.5.1 收缩词预处理
@@ -282,7 +323,7 @@ t → [ { docID: u32, posStart: u32, tf: u32 } ... ]
 
 将 positions 放在独立的 arena 中，而不是每个 posting 各带一个 `vector`，可以减少小对象和内存分配次数，也让序列化更直接。
 
-#### 2.6.2 词典结构：伸展树与哈希表
+#### 2.6.2 词典结构：伸展树、哈希表与 std::map
 
 系统定义了统一的 `Dictionary` 接口：
 
@@ -292,13 +333,15 @@ virtual TermEntry* find(const std::string& term) = 0;    // 只查找
 virtual std::vector<TermEntry*> sortedEntries() = 0;     // 字典序输出
 ```
 
-两个实现：
+三个实现：
 
 **伸展树（主结构）**：自调整二叉搜索树。每次查找/插入后把访问节点通过 zig / zig-zig / zig-zag 旋转到根。支持的操作是“只插入、不删除”；词流呈 Zipf 分布，高频词会停留在根附近；中序遍历直接得到字典序词表，正好用于冻结 term 表。构建期统计字符串比较次数与旋转次数。
 
 **哈希表（基线/互验）**：链地址法，FNV-1a 64 位哈希，负载因子超过 0.75 时翻倍 rehash。平均 O(1) 查找，但输出有序词表需要额外收集与排序。它与伸展树走完全相同的构建管线，产出的索引文件必须逐字节一致——这是独立于 Python 对拍的另一层互验。
 
-选择伸展树作为主结构的理由：本场景“只插不删”，红黑树最复杂的删除情形不存在；访问高度偏斜，splay 的自调整能利用热点；最终需要字典序输出，中序遍历免费排序。哈希表保留为速度基线与交叉验证。
+**std::map（标准库对照）**：`std::map<std::string, TermEntry>`，典型实现是红黑树。由于 `std::map` 的内部比较不可观测，`MapDictionary` 用一个带计数的严格弱序比较器包住它，使三者的“字符串比较次数”是同一口径的机器无关指标。它是 plan.md §6.5 预留的第三列实验。
+
+选择伸展树作为主结构的理由：本场景“只插不删”，红黑树最复杂的删除情形不存在；访问高度偏斜，splay 的自调整能利用热点；最终需要字典序输出，中序遍历免费排序。哈希表保留为速度基线与交叉验证，`std::map` 作为标准库对照点。三者的产出必须逐字节一致。
 
 #### 2.6.3 构建算法
 
@@ -319,14 +362,14 @@ serialize(index) → index.bin
 
 构建期同时统计 token 总数、不同词干数、posting 数、position 数、索引文件大小与构建耗时。
 
-#### 2.6.4 持久化格式（v1）
+#### 2.6.4 持久化格式（v1 与 v2）
 
-索引文件为小端、自描述、确定性序列化：
+索引文件为小端、自描述、确定性序列化。v1：
 
 ```text
 [header]
   magic        "MSE1"       4 B
-  version      u32          4 B   （v2 预留给压缩编码）
+  version      u32          4 B   （1 = v1；2 = v2 压缩）
   flags        u32          4 B   （bit0=停用词，bit1=词干化）
   docCount     u32          4 B
   termCount    u32          4 B
@@ -345,6 +388,14 @@ serialize(index) → index.bin
 
 写入前先计算所有 offset，顺序写出；读取时先读 term 表，再按 offset 跳转到各自的 postings 块。这样写入与读取共享同一份规格，`dump` 可以验证往返一致性。
 
+v2 只改变 `[postings]` 段的编码，头部、文档表、term 表布局完全不变，靠 `version = 2` 区分。每个 posting 块依次编码：
+
+- `docID` 差分（相邻 docID 的 gap，≥ 1）；
+- `tf`；
+- 文档内 positions 的相邻差分（≥ 0）。
+
+所有整数使用字节对齐变长码：首字节高 2 位表示总长度（1–4 字节），低 6 位是数值低位，后续字节各贡献 8 位；可表示 6/14/22/30 位，最大值受 30 位限制。v2 的 term 表 offset/length 指向压缩后的块，读取端按版本选择解码器。实现与结果见 4.4 节。
+
 #### 2.6.5 不变量
 
 `validateIndex()` 在加载后检查以下不变量，任一违反即抛出异常：
@@ -358,6 +409,29 @@ serialize(index) → index.bin
 - 所有 term 的 position 总数等于 `tokenCount`；
 - 所有文档的 `keptTokens` 之和等于 `tokenCount`。
 
+#### 2.6.6 磁盘 B+Tree 词典（Bonus）
+
+索引的 term 表在 400M 词规模下无法常驻内存。`build --dict-file` 在写索引的同时，把 `term → (posting offset, byte length)` 冻结成一个页式 B+Tree 文件（sidecar）：
+
+- 每个节点是一个有字节预算的页（默认 4096 B）；键是变长 term，节点按“是否还装得下下一条”分裂；
+- 叶节点用 `nextLeaf` 串成有序链，支持范围/前缀扫描；
+- 文件头页记录 magic `BPT1`、版本、页大小、页数、根、树高、叶数、键数；
+- 值把 posting 偏移和长度打包成一个 u64：`(offset << 21) | length`，因此单 term posting 最长 2 MiB，offset 可达 2^43 字节；
+- `BTreeFile` 读取端只加载根路径上的 O(height) 个页，并用 LRU 缓存（默认 8 页）减少重复读。
+
+不变量 I1–I5：节点内键严格递增；内部路由区间左闭（分隔键是真实键的副本）；非根节点满足变长键下可证的填充下界；所有叶同深且叶链按序覆盖全部键；每个键只有一个值。`BTree::validate()` 全量校验。
+
+查询侧 `LazyIndexReader` 只解析索引头和文档表，term 经 B+Tree 定位后直接 seek 到 posting 字节，词表与 postings 都不整体加载。实测见 3.6/3.7 节。
+
+#### 2.6.7 块式外部构建（SPIMI，Bonus）
+
+`build-blocks` 实现两阶段构建：
+
+1. **块内索引**：按文档流扫描，块内词典达到 `--block-terms` 预算（默认 4096）就冻结：按词排序写入临时 run 文件，然后清空词典继续；
+2. **k 路归并**：把所有 run 当成有序词流，按词归并成最终索引。
+
+因为块边界只切在文档边界，同一个词在后续块中的 posting 的 docID 一定更大，归并时只需按词拼接，位置编号也是文档内独立编号。内存占用 O(blockTerms)，与语料总词表大小无关；产物与 `buildIndex()` 逐字节一致。实测见 3.6 节。
+
 ### 2.7 查询处理
 
 #### 2.7.1 查询管线
@@ -369,7 +443,7 @@ query text → tokenize → [stop word check] → [stem] → terms
            → 词典二分查找 → posting 合并/位置验证 → 评分 → 阈值过滤 → 输出
 ```
 
-词典查找使用冻结 term 表上的二分搜索，复杂度 O(log #terms)。
+词典查找使用冻结 term 表上的二分搜索，复杂度 O(log #terms)。给出 `--dict-file` 时，单词查询改走磁盘 B+Tree：按树高 O(height) 次页读定位 term，再 seek 到 posting 字节；评分、阈值与输出仍复用同一个 `runQuery()`。
 
 #### 2.7.2 三种查询模式
 
@@ -402,9 +476,13 @@ query text → tokenize → [stop word check] → [stem] → terms
 | 词频统计 | O(token 数)，哈希平均 O(1)/词 | O(distinct 词数) |
 | 建索引（splay） | 摊还 O(log #terms)/次访问 | O(postings + positions) |
 | 建索引（hash） | 平均 O(1)/次访问 | O(postings + positions) |
-| 单词查询 | O(log #terms + df) | O(#docs) |
+| 建索引（std::map） | O(log #terms)/次访问 | O(postings + positions) |
+| 块式构建（SPIMI） | O(token 数 + 归并量) | **O(blockTerms)** |
+| 单词查询（内存表） | O(log #terms + df) | O(#docs) |
+| 单词查询（磁盘 B+Tree） | O(height) 页读 + O(df) 解码 | O(cachePages) + O(df) |
 | 短语查询 | O(df_rarest × k × log tf) | O(#docs + k) |
 | 布尔查询 | O(Σ df_i + #docs log #docs) | O(#docs) |
+| v2 posting 解码 | O(压缩块字节数) | O(df + tf) |
 
 ---
 
@@ -414,26 +492,30 @@ query text → tokenize → [stop word check] → [stem] → terms
 
 测试分为四层，覆盖“规格是否正确”和“实现是否忠实于规格”两个问题：
 
-1. **单元测试**：Catch2 v3（vendored，仅测试可执行文件链接），覆盖 tokenizer、stemmer、dict、index、query、stopwords；
+1. **单元测试**：Catch2 v3（vendored，仅测试可执行文件链接），覆盖 tokenizer、stemmer、dict、index、query、stopwords、count、bptree；
 2. **黄金样例**：讲义中的四文档例子，逐项比对 posting 表；
 3. **独立对拍**：用 Python 独立实现同一规格，与 C++ 输出逐字节或逐项比较；
-4. **不变量与边界**：索引加载校验、损坏文件、空查询、停用词查询、未知词等。
+4. **不变量与边界**：索引加载校验、损坏文件、空查询、停用词查询、未知词、B+Tree 与 `std::map` oracle 对拍等。
 
-`ctest` 注册了 6 个单元测试可执行文件，外加 `mse_stats` 冒烟测试与 `crosscheck_build` / `crosscheck_brute_force` 对拍测试（Python 可选；未安装时跳过）。
+`ctest` 注册了 8 个单元测试可执行文件，外加 `mse_stats` 冒烟测试与 `crosscheck_build` / `crosscheck_brute_force` 对拍测试（Python 可选；未安装时跳过）。
 
 ### 3.2 单元测试结果
 
-本次在 WSL2 + g++ 15.2（`-std=c++17 -O1`）下编译并运行六个测试可执行文件，全部通过：
+本次在 WSL2 + g++ 15.2（`-std=c++17 -O1`）下编译并运行八个测试可执行文件，全部通过：
 
 | 测试文件 | TEST_CASE 数 | 断言数 | 结果 |
 |---|---:|---:|---|
 | `test_tokenizer` | 2 | 24 | 通过 |
 | `test_stemmer` | 7 | 101 | 通过 |
-| `test_dict` | 5 | 34 | 通过 |
-| `test_index` | 4 | 50 | 通过 |
+| `test_dict` | 6 | 50 | 通过（新增 `std::map`） |
+| `test_index` | 8 | 248 | 通过（新增 v2/压缩链） |
 | `test_query` | 7 | 26 | 通过 |
 | `test_stopwords` | 3 | 11 | 通过 |
-| **合计** | **28** | **246** | **全部通过** |
+| `test_count` | 3 | 47 | 通过（熵特征与派生规则） |
+| `test_bptree` | 10 | 84,648 | 通过（`std::map` oracle + 文件往返） |
+| **合计** | **46** | **85,155** | **全部通过** |
+
+`test_bptree` 的 8.4 万条断言主要来自“对每个键与 `std::map` oracle 逐项比较”的三档页宽/对抗性键测试；断言数大不代表用例多，而是每个键的读/写/范围扫描都被显式核对。
 
 此外，`mse stats` 冒烟测试确认语料仍为 195 个文档；`crosscheck_brute_force` 对全词表对拍通过（见 3.4）。
 
@@ -484,8 +566,14 @@ query text → tokenize → [stop word check] → [stem] → terms
 | `wordcount.csv --stem --stop-words` | 14,937 词干 | 逐字节一致 |
 | 词典层随机工作负载 | 20,000 次操作 / 300 词 | splay 与 hash 词表完全一致 |
 | 索引文件（splay vs hash） | 3,685,655 B | **逐字节一致** |
-| `brute_force.py` 全词表对拍 | 14,937 词干 | df、tf、docID、positions 全项一致 |
+| 索引文件（splay vs std::map） | 3,685,655 B | **逐字节一致** |
+| `brute_force.py` 全词表对拍（v1） | 14,937 词干 | df、tf、docID、positions 全项一致 |
+| `brute_force.py` 全词表对拍（v2 压缩） | 14,937 词干 | 独立解析 v2 文件，全项一致 |
 | `brute_force.py` raw 版 | 25,705 词 | 全项一致（见 notes.md 记录） |
+| 块式构建 vs 内存构建 | 17 个 run / 4,166,556 B 临时 | **索引逐字节一致** |
+| 磁盘 B+Tree `dump --verify-all` | 14,937 词 | 逐词 posting 与全量加载 0 差异 |
+| 磁盘词典查询 vs 全量加载 | `osric` 单词查询 | 文本与 JSON 输出逐字节一致 |
+| RFC 语料（`data2/`）全链路 | 3 文档 / 2,660 词干 | count CSV 逐字节一致；brute-force 全项一致 |
 
 `brute_force.py` 是独立实现的第二套索引路径：它重新扫描 `data/text/`，用独立的 tokenizer/停用词表/NLTK Porter 重建 posting，同时用独立的二进制解析器读取 `index.bin`，然后逐词比较。它不是“调用 C++ 的结果再比较”，而是真正从原始数据重建期望值。
 
@@ -526,6 +614,34 @@ stop_candidate 粗筛（`df_ratio ≥ 0.75 且 tf_share ≥ 0.1%`）得到 9 个
 | `--stem` | 866,626 | 14,947 | 4,843 | 词干化合并词形 |
 | `--stem --stop-words` | 556,866 | 14,937 | 4,846 | 正式索引配置 |
 
+**熵特征与自动停用词（Bonus）**
+
+`mse count` 新增 `entropy, entropy_norm, entropy_rate_norm` 三列。代表性读数：
+
+| 词 | tf | df | entropy_norm | entropy_rate_norm | 类型 |
+|---|---:|---:|---:|---:|---|
+| the | 28,436 | 177 | 0.724 | 0.975 | 功能词 |
+| and | 25,553 | 189 | 0.721 | 0.979 | 功能词 |
+| it | 8,001 | 100 | 0.805 | 0.969 | 功能词 |
+| is | 9,508 | 137 | 0.760 | 0.972 | 功能词 |
+| love | 2,224 | 127 | 0.789 | 0.927 | 内容词 |
+| sweet | 852 | 87 | 0.838 | 0.893 | 内容词 |
+| king | 1,368 | 40 | 0.818 | 0.826 | 内容词 |
+| heart | 1,086 | 70 | 0.894 | 0.831 | 内容词 |
+| osric | 3 | 1 | 0 | 0 | 专名 |
+
+原始熵排序反直觉（`the` 0.724 < `man` 0.941），长度归一化后功能词与内容词才分开。`mse stopwords --derive --min-df-ratio 0.4 --min-entropy-rate 0.93` 自动得到 39 词，与人工表重叠 35；差异见 2.4.4 节。
+
+三套索引（均 `--stem`）：
+
+| 停用词 | tokens | terms | postings | 索引字节 |
+|---|---:|---:|---:|---:|
+| 无 | 866,626 | 14,947 | 121,903 | 4,958,598 |
+| 静态 39（`data/stopwords.txt`） | 556,866 | 14,937 | 117,704 | 3,685,655 |
+| 动态 39（derive 0.4/0.001/0.93） | 552,096 | 14,936 | 117,631 | 3,665,959 |
+
+动态表把 `thou` 等古语词判为停用词，因此 `--word thou` 在动态索引返回空 + note，在静态索引命中 123 篇；`love` 两边一致。动态索引已通过 brute-force 14,936 词全项对拍。这正是“线画在哪里”的另一种可执行答案：同一规则换阈值即可得到保守版或激进版。
+
 ### 3.6 任务 (2) 结果：索引构建
 
 同一份语料、同一构建管线，四种配置的索引规模：
@@ -548,10 +664,17 @@ stop_candidate 粗筛（`df_ratio ≥ 0.75 且 tf_share ≥ 0.1%`）得到 9 个
 
 | 词典 | 构建耗时 | 字符串比较次数 | 比较次数/访问 | 旋转 / rehash | 索引输出 |
 |---|---:|---:|---:|---:|---|
-| 伸展树（主） | 0.32 s | 6,392,724 | ≈ 11.5 | 5,850,795 次旋转 | 3,685,655 B |
-| 哈希（基线） | 0.16 s | 688,494 | ≈ 1.24 | 11 次 rehash | **逐字节相同** |
+| 伸展树（主） | 0.35 s | 6,392,724 | ≈ 11.5 | 5,850,795 次旋转 | 3,685,655 B |
+| 哈希（基线） | **0.18 s** | **688,494** | **≈ 1.24** | 11 次 rehash | **逐字节相同** |
+| std::map（对照） | 0.29 s | 8,059,804 | ≈ 14.5 | —（内部不可观测） | **逐字节相同** |
 
 说明：耗时是本机（WSL2, g++ 15.2, `-O2`）的测量，会随硬件变化；字符串比较次数、旋转次数与 rehash 次数是确定性指标，与硬件无关。
+
+**压缩（v2）**：同一索引用 `--compress` 写出 v2，大小为 **1,725,694 B**，相对 v1 的 3,685,655 B 降至 **46.8%**；构建耗时从 0.35 s 增至 0.48 s（编码开销）。`brute_force.py` 独立解析 v2 文件，14,937 词全项一致；`dump --verify-all` 也 0 差异。
+
+**磁盘 B+Tree 词典**：正式索引的 sidecar 为 **237,568 B**（58 页 × 4 KiB，高 2），占索引的 **6.4%**。冷查询 `banquo`：词典 2 页 + 索引 8,308 B ≈ 16.5 KB，是全量加载 3,685,655 B 的 **0.45%**；`--verify-all` 扫描 14,937 词，114 次页读 + 29,819 次缓存命中，0 差异。
+
+**块式构建**：`--block-terms 4096` 在本语料上产生 **17 个 run**、峰值 5,129 个活词、临时 run 共 4,166,556 B；扫描 0.36 s + 归并 0.06 s，产物与内存构建**逐字节一致**。
 
 ### 3.7 任务 (3) 结果：查询
 
@@ -567,6 +690,11 @@ stop_candidate 粗筛（`df_ratio ≥ 0.75 且 tf_share ≥ 0.1%`）得到 9 个
 | `king richard` | phrase | 7 篇 | 两个词都在索引中 |
 | `good night` | phrase | 23 篇 | 位置相邻验证 |
 | `sweet sword moon` | boolean, AND | 30 篇 | k=1 时 93 篇，k=2 时 39 篇 |
+| `smtp`（RFC 语料） | word | 3 篇 | 三个 RFC 文档全命中 |
+| `domain`（RFC 语料） | word | 3 篇 | 三个 RFC 文档全命中 |
+| `server`（RFC 语料） | word | 0 篇 | 被熵规则判为停用词，输出 note |
+
+磁盘词典路径：`mse query --dict-file build/index.bpt --word osric` 与全量加载路径的文本输出、JSON 输出均逐字节一致（3.4 节）。这验证了 `runQuery()` 的评分/阈值/输出逻辑与词典实现解耦。
 
 `--pretty` 示例：
 
@@ -641,7 +769,7 @@ term osric: df=1, tf=3
 
 ### 3.9 测试发现并修复的问题
 
-开发过程中，测试与对拍抓出了六个真实问题。它们比“全部通过”本身更能说明测试的有效性：
+开发过程中，测试与对拍抓出了十二个真实问题。它们比“全部通过”本身更能说明测试的有效性：
 
 | # | 现象 | 原因 | 处理 |
 |---:|---|---|---|
@@ -651,6 +779,12 @@ term osric: df=1, tf=3
 | 4 | 41 个词形被过度词干化（如 `agreem`） | 误以为后缀条件失败后应继续尝试更短后缀 | 改为“首个匹配说了算、条件失败即停”，与 canonical C 一致 |
 | 5 | 伸展树插入后段错误 | 插入分支保留了 `Node*&` 子指针引用，splay 旋转重接线后引用失效 | 先把新节点指针复制到局部变量，再 splay |
 | 6 | 索引加载误报 “index file is truncated” | `Reader reader(readWholeFile(path))` 中临时 vector 在整句结束后销毁，Reader 持有的引用悬垂 | 先把文件内容存入具名变量，再构造 Reader |
+| 7 | v2 压缩索引的 posting offset 全部偏移 | 计算压缩偏移时漏加了 term 表自身大小 | 复用与 v1 相同的 `computeTermOffsets()`，v2 只替换 postings 块内容 |
+| 8 | 块式构建在真实语料上报 “run 文件截断” | Windows 上 run 文件用文本模式读取，CRLF 被翻译进二进制流 | 显式 `std::ios::binary`；golden4 小样本碰巧没有 `0x0D0A` 字节对，掩盖了问题 |
+| 9 | `MapDictionary::sortedEntries()` 产出空词表 | `try_emplace` 只填 map 的键，`TermEntry::term` 未镜像 | 插入后手动设置 `entry.term`；随机对拍当场抓住 |
+| 10 | B+Tree 的 I2 区间校验误报 | 分隔键是真实键的副本，右子树最左键等于左分隔键 | I2 改为左闭区间 `[key[i-1], key[i])` |
+| 11 | 变长键下 B+Tree 的 50% 填充不变量被违反（524 B < 528 B 页） | 按条数对半分裂在键长偏斜时不保证字节下界 | 改为“合法窗口内取字节中点”分裂，I3 用可证下界 `pageSize/2 − maxEntry` |
+| 12 | 磁盘词典查询头部显示 “1 terms” | lazy 路径只把被查询词挂到内存索引，`terms.size()` 为 1 | 头部改用 sidecar 的 `keyCount()`；文本/JSON 与全量路径逐字节一致 |
 
 另外，讲义四文档的 `a` 词项差异（3.3 节）说明：黄金样例本身也需要复核，不能盲目相信参考材料中的二手表格。
 
@@ -669,6 +803,8 @@ term osric: df=1, tf=3
 
 阈值实验则回答了任务 (4)：四个参数分别从“词侧”和“结果侧”改变结果集，且不同查询类型（单词/短语/布尔/停用词）对阈值的反应不同。具体分析见第 4 章。
 
+Bonus 的验证链在同一套方法上继续扩展：熵规则与人工表对照、RFC 第二语料端到端对拍、v2 压缩/块式构建/B+Tree 三条独立对拍，结果见 3.4–3.6 节。
+
 ---
 
 ## 第 4 章 分析与讨论
@@ -680,8 +816,11 @@ term osric: df=1, tf=3
 1. **0.75 的粗筛线漏掉太多功能词**。154 首十四行诗很短，很多对话中的功能词（如 `you`、`me`、`be`）在诗歌中不出现，df_ratio 被稀释；如果只看 0.75，会得到 9 个词，过滤后仍保留大量噪声。
 2. **0.40 之后开始混入内容词**。在 0.40 档，新增词中出现了 `love`、`time`；它们虽然高频，但在文学检索中有实际意义，不应删除。把线停在 0.40、再用“结构性功能词”做人工判定，可以在“去噪”和“保留检索价值”之间取得平衡。
 3. **文档粒度会改变 df**。本项目采用“一个完整作品 = 一个文档”（195 篇）。如果把 154 首十四行诗合并成 1 篇（42 篇文档），诗歌对 df 的稀释会减弱，候选表会整体上移；这是 plan.md 中预留的粒度敏感性实验，尚未完成。报告中应明确：39 词表是针对当前 195 文档粒度推导的，不是普适常数。
+4. **熵规则把“人工审核”变成了可执行、可扫描的统计规则**。`df_ratio ≥ 0.40` 且 `entropyRateNorm ≥ 0.93` 自动得到 39 词，与人工 39 词表重叠 35；差异恰好是 4 个古语功能词（自动版加入）和 4 个通用功能词（自动版漏掉），没有离群误报。这比“拍脑袋列一张表”更可复现，也更容易换语料重跑。
 
 另一个证据是 `the` 的 df_ratio 只有 90.8%，而不是接近 100%：154 首短诗中没有出现 `the` 的篇目不少。这说明 df_ratio 的绝对值高度依赖文档粒度；跨语料比较时更稳妥的指标是 tf_share 与词性/功能类别的结合。
+
+**跨语料验证**：在 RFC 第二语料上，同一规则（0.40/0.001/0.93）推导出 **58 个词**，与莎士比亚的 9/39 个候选显著不同——这正是“没有万能停用词表”的直接证据。关键对照是 RFC 2119 的 `must / may / should`：它们 df_ratio = 1.0（三篇全覆盖），但速率分布倾斜（RFC 7231 满篇 MUST，RFC 1035 很少用），`entropyRateNorm < 0.93`，因此**没有被误判为停用词**。旧的 df+tf 两特征规则会把它们连同 `server/mail/request` 一起收进 127 词候选带；“平”这个维度在跨语料场景真实起作用。
 
 ### 4.2 Zipf 分布与 hapax
 
@@ -698,31 +837,42 @@ term osric: df=1, tf=3
 
 一个有趣的反作用：在正式配置中，最高频的词（`the/and/...`）已经被停用词表过滤掉，伸展树面对的 Zipf 偏斜被削弱了。这解释了为什么 splay 的比较次数（≈11.5 次/访问）只比平衡树理论下界 `log2(14937) ≈ 13.9` 好一点，而没有出现“热点词全部贴近根”的极端优势。
 
+熵特征从另一个角度补充了 Zipf 讨论：**词频的“量”与分布的“形状”是两件事**。`the` 的 tf 最高，但它的原始文档熵只有 0.724，因为长剧贡献了大部分出现次数；长度归一化后速率熵为 0.975，才恢复“按固定浓度撒在所有文档里”的直觉。`df`/`tf` 只能判断“宽/重”，要判断“平”必须先把文档长度因素除掉。
+
 ### 4.3 词典结构对比
 
-| 指标 | 伸展树 | 哈希 |
-|---|---|---|
-| 构建耗时 | 0.32 s | 0.16 s |
-| 字符串比较/访问 | ≈ 11.5 | ≈ 1.24 |
-| 旋转/rehash | 5,850,795 次旋转 | 11 次 rehash |
-| 有序输出 | 中序遍历，免费 | 收集后排序，O(n log n) |
-| 删除 | 不需要（只插不删） | 不需要 |
-| 索引输出 | 逐字节一致 | 逐字节一致 |
+| 指标 | 伸展树 | 哈希 | std::map（红黑树） |
+|---|---|---|---|
+| 构建耗时 | 0.35 s | **0.18 s** | 0.29 s |
+| 字符串比较/访问 | ≈ 11.5 | **≈ 1.24** | ≈ 14.5 |
+| 旋转/rehash | 5,850,795 次旋转 | 11 次 rehash | —（内部不可观测） |
+| 有序输出 | 中序遍历，免费 | 收集后排序，O(n log n) | 中序遍历，免费 |
+| 删除 | 不需要（只插不删） | 不需要 | 不需要 |
+| 索引输出 | 逐字节一致 | 逐字节一致 | 逐字节一致 |
 
-哈希在纯构建速度上明显胜出；伸展树的优势在于“冻结 term 表”时无需额外排序，且其自调整特性在热点明显的词流上更稳健。在本项目中，词表只有约 1.5 万项，两者都远未触及性能瓶颈；选择伸展树作为主结构更多是教学目的（对应 class01 的内容）与结构性理由，而不是因为它在所有指标上更优。哈希作为基线，最大的价值是提供了“两种独立实现产出同一索引文件”的交叉验证。
+哈希在纯构建速度与比较次数上明显胜出；伸展树的优势在于“冻结 term 表”时无需额外排序，且其自调整特性在热点明显的词流上更稳健。`std::map` 的比较次数最高（≈14.5/访问），但它的代价最稳定：严格 O(log n)、没有旋转/重排副作用，且实现来自标准库。在本项目中，词表只有约 1.5 万项，三者都远未触及性能瓶颈；选择伸展树作为主结构更多是教学目的（对应 class01 的内容）与结构性理由，而不是因为它在所有指标上更优。哈希与 `std::map` 作为独立实现，最大的价值是提供了“三种实现产出同一索引文件”的交叉验证。
 
 如果把规模放大到百万级词表，哈希的 O(1) 优势会更明显；但哈希无法支持前缀查询和有序遍历，需要额外的有序结构。plan.md 中“哈希 + 冻结有序表”的组合正是对讲义 §2.3 结论的呼应：哈希负责构建期的高速查找，冻结后的有序 term 表负责查询期的二分与前缀能力。
 
-### 4.4 索引压缩的机会
+### 4.4 索引压缩：v2 差分 + 变长编码
 
 当前 v1 格式直接存储 32 位整数：每个 posting 12 B（docID + tf + posStart），每个 position 4 B。正式索引 3,685,655 B 中，posting 与 positions 约 3.17 MB，term 表与头部约 0.5 MB。可压缩的空间主要来自：
 
-1. **docID 差分编码**：同一 term 的 posting 按 docID 递增，存储 gap 而不是绝对值；常见 gap 很小，可用变长字节编码（1–2 B）。
+1. **docID 差分编码**：同一 term 的 posting 按 docID 递增，存储 gap 而不是绝对值；常见 gap 很小，可用变长字节编码。
 2. **positions 差分编码**：同一 posting 内 positions 递增，存储相邻位置差；短语查询仍然可以恢复绝对位置。
 3. **term 表前端编码（front coding）**：按字典序排列的 term 共享前缀，可只存“与上一个词的最长公共前缀长度 + 后缀”。
-4. **v2 版本预留**：索引头已有 `version` 字段，v1 与 v2 可以只改变 postings 段编码，term 表/头部结构不变。
+4. **v2 版本字段**：索引头已有 `version`，v1 与 v2 只改变 postings 段编码，term 表/头部结构不变。
 
-按讲义《Compression》的思路，还可以讨论 Elias γ 与变长向量编码；本报告只做分析，不实现。plan.md 中的压缩对比实验（raw u32 vs 差分 + 字节对齐变长）尚未完成，建议作为后续工作：记录索引体积、构建耗时、加载耗时与 dump 正确性四项指标，并与当前 v1 对比。
+**实现结果**：`mse build --compress` 写出 v2。postings 块按 `docID gap → tf → position delta` 的顺序编码，每个整数使用字节对齐变长码（首字节高 2 位给长度，低 6 位是低位；1–4 字节覆盖 6/14/22/30 位）。同一份正式索引：
+
+| 编码 | 索引字节 | 相对 v1 |
+|---|---:|---:|
+| v1 原始 u32 | 3,685,655 | — |
+| v2 差分 + varint | **1,725,694** | **46.8%** |
+
+构建耗时从 0.35 s 增至 0.48 s（编码开销）。正确性通过三条独立路径验证：`brute_force.py` 独立解析 v2 文件全词表对拍、`dump --verify-all` 14,937 词 0 差异、以及 varint 边界（6/14/22/30 位各档上下界 + 截断拒绝）单元测试。
+
+为什么没有压到更小：term 表本身未压缩（约占 0.5 MB），每个 posting 的 `tf` 仍需编码，且高频词的位置差分仍有较大值。进一步的空间在 term 表前端编码、Elias γ/更紧凑的位级编码，以及按块选择编码方式；这些留作后续工作。压缩与磁盘词典 sidecar 正交：v2 索引可以配 B+Tree sidecar，两者可以叠加。
 
 ### 4.5 查询阈值的语义与权衡
 
@@ -752,142 +902,127 @@ term osric: df=1, tf=3
 3. **排序只使用 matched 与 Σtf**，没有 TF-IDF、BM25、文档长度归一化等相关性模型；对于“返回文档 ID”的任务要求已经足够，但检索质量有提升空间。
 4. **文档粒度固定为作品级**。scene 级 manifest（约 1,080 篇）只预留为实验，尚未完成；粒度会显著影响 df 与停用词候选表。
 5. **只支持 ASCII**。全语料非 ASCII 字符为 0，因此当前实现按字节处理；换语料（尤其是中文）需要重写分词与规范化。
-6. **全内存设计**。Corpus、词典、posting、positions 全部驻留内存；当前语料约 5 MB 文本、3.5 MB 索引，没有问题，但无法直接扩展到 Bonus 的规模。
-7. **无压缩、无并发、无增量更新**。v1 是只读索引；更新需要重建。
+6. **默认构建仍是全内存**。B+Tree + SPIMI 已给出扩展路径，但 500,000 文件、400,000,000 词的真实构建没有跑过；当前实现可以在单机处理百万级词表/千万级 token。
+7. **B+Tree sidecar 由内存索引 bulk-load 生成**。它解决了查询侧的词典常驻问题，但构建侧仍需要先有内存索引；完整的外部构建需要把 SPIMI 的 run 直接写成磁盘 term 表/B+Tree。
+8. **无并发、无增量更新**。索引是只读快照，更新需要重建；分布式（按文档/按词切分）目前只有分析，没有实现。
+9. **plain 导入零清洗**。RFC 分页脚注 `[Page N]` 会原样入库，`page` 因此进入候选；清理属于 producer 职责（`extract.py` 对应莎士比亚，`import_corpus.py` 对应任意语料）。
+10. **排序模型简单**、粒度实验未做、ASCII-only 等原有局限仍在。
 
 **改进方向**
 
-- 完成压缩实验（docID/position 差分 + 变长编码），量化索引体积与查询延迟的权衡；
-- 补 `std::map` 词典第三列，完成 plan.md §6.5 的词典对比；
 - 完成 scene 级粒度与“154 首合并”的敏感性实验；
 - 增加短语级 brute-force 对拍（随机短语的独立验证）；
 - 增加排序模型（TF-IDF/BM25）与 `--top-x` 结合；
-- 为 Bonus 设计外部排序/分块构建/分布式方案（见 4.7）；
+- 把 SPIMI 的 run 直接写成磁盘 term 表/B+Tree，跑一次 500,000 文件级构建；
+- term 表前端编码、Elias γ、块级自适应压缩；
+- 分布式按文档/按词切分的原型与查询合并；
 - 注释率已补齐：`src/` + `include/` 的非空行注释率约 **37.9%**（含 `tests/` 的全部 C++ 代码约 35.2%），高于课程 30% 的硬性要求与 plan.md 的 35% 目标。
 
-### 4.7 Bonus：500,000 个文件与 400,000,000 个不同单词（开发中）
+### 4.7 Bonus：500,000 个文件与 400,000,000 个不同单词
 
-> **状态说明**：本节是截至 2026-10-19 的分析草案，Bonus 的实现与实验仍在开发中。以下数字为基于当前实现特征的估算，待补入实测数据后定稿。
+#### 4.7.1 结论先行
 
-#### 4.7.1 当前设计能否工作？
+**当前的全内存实现不能直接处理这个规模。** 400M 个不同词、500k 个文件意味着：
 
-**结论：不能按当前实现直接工作。** 当前系统的核心假设是“整个语料、整个词典、整个 posting 表都能驻留内存”。在 500,000 个文件、400,000,000 个不同词的规模下，这个假设不再成立。
+- 词典项 400M：按每项 100–150 B（字符串 + 节点 + 元数据）估算就是 40–60 GB；
+- 若按当前语料外推（每篇约 4,444 token，posting/token ≈ 0.211），500k 篇约 22 亿 token、4.7 亿条 posting、22 亿个 position；posting 5.6 GB + position 8.9 GB；
+- 语料文本本身约 12.5 GB（按平均 25 KB/篇估算）；
+- 合计约 70–90 GB，尚未计 vector 容量冗余、哈希桶、构建期临时结构。
 
-按当前语料的平均值外推：
+普通工作站（16–64 GB）无法容纳，单机全内存构建的时间和内存压力也不可接受。另一个边界是 32 位字段：当前 `posStart` 是 u32，总 token 超过 `2^32 ≈ 42.9 亿` 时会溢出；本估算的 22 亿尚未越界，但更大规模应改 u64。
 
-- 当前 195 个文档约 4.9 MB 文本、866,626 个正文 token，平均每篇约 25 KB、4,444 个 token；
-- 500,000 篇 × 25 KB ≈ **12.5 GB 文本**；
-- 500,000 篇 × 4,444 token ≈ **22 亿个 token 出现**；
-- 当前配置下 posting 数 / token 数 ≈ 0.211，外推约 **4.7 亿条 posting**。
+针对这个问题，本项目实现了三块可实测的组件：构建侧的 SPIMI 块式外部构建、查询侧的磁盘 B+Tree 词典、以及 v2 posting 压缩；并用 RFC 第二语料验证语料无关性。
 
-内存估算（数量级）：
+#### 4.7.2 构建侧：SPIMI 块式外部构建
 
-| 组成部分 | 估算 | 说明 |
-|---|---:|---|
-| 词典（400M terms） | 40–60 GB | 每项按 100–150 B 估算（字符串 + 节点 + 元数据） |
-| postings（≈4.7 亿条） | 5.6 GB | 每条 12 B（docID/tf/posStart） |
-| positions（≈22 亿个） | 8.9 GB | 每个 4 B |
-| 语料文本 | 12.5 GB+ | 还有行对象与字符串开销 |
-| **合计** | **≈ 70–90 GB+** | 尚未计 vector 容量冗余与哈希桶 |
+`mse build-blocks --block-terms N` 按文档流扫描，块内词典达到 N 个 term 就排序落盘成 run 文件，最后按词 k 路归并。内存上界是 O(N)，与语料总词表无关；块边界只切在文档边界，因此同一词在后续 run 中的 docID 一定更大，归并时直接拼接 postings。
 
-这还没有算上构建期的临时结构、`std::string` 的小对象开销与内存碎片。普通工作站（16–64 GB 内存）无法容纳；即使内存足够，单机全内存构建的时间与 GC/分配压力也不可接受。
+实测（正式配置，budget 4096）：
 
-另一个限制是 32 位字段。当前 `docID` 用 `u32`（500,000 足够），`tf` 用 `u32`，`posStart` 用 `u32`。如果总 token 数超过 `2^32 ≈ 42.9 亿`，`posStart` 可能溢出；本估算的 22 亿 token 尚未越界，但更大规模时应改为 `u64`。
+| 指标 | 数值 |
+|---|---:|
+| run 数 | 17 |
+| 峰值活词 | 5,129（预算 + 单文档新增的合理超出） |
+| 临时 run 字节 | 4,166,556 B |
+| 扫描时间 | 0.36 s |
+| 归并时间 | 0.06 s |
+| 产物 | 与 `mse build` 逐字节一致 |
 
-#### 4.7.2 需要改变什么？
+这说明构建侧的内存可以被块预算控制住。把它推到 500k 文件 / 400M 词，run 数会随词表/预算增长；需要在多趟归并、磁盘吞吐和临时空间之间做工程权衡（讲义对 4 亿条三元组、40 MB 内存的估算是约 100 个 run、7 趟归并、约 20 小时、临时空间约文本的 2 倍）。本项目实现的是可运行的两阶段原型，不是 500k 文件的完整跑批。
 
-**（1）外部排序 / 分块构建（SPIMI 思路）**
+#### 4.7.3 查询侧：磁盘 B+Tree 词典
 
-不再一次性把全部 posting 放在内存，而是按内存预算分块：
+`mse build --dict-file` 把 `term → (posting offset, length)` 冻结成页式 B+Tree sidecar。查询时只加载文档表，term 经 B+Tree 的 O(height) 页读定位，再 seek 到 posting 字节；词表与 postings 不整体加载。
 
-```text
-for each block of documents that fits in memory:
-    build a local inverted index (term → postings)
-    write the local index to disk as a sorted run
-merge all runs with a k-way merge, combining postings for the same term
-```
+正式索引（14,937 词）实测：
 
-设可用内存 40 MB、每条三元组 `<termID, docID, tf>` 约 12 B，则一个块约容纳 300 万条记录。按讲义《Building an Inverted Index》的估算，4 亿条三元组、40 MB 内存约需 100 个 run、7 趟归并、约 20 小时，临时空间约为文本的 2 倍。这个估算说明：外部排序在算法上可行，但代价是磁盘 I/O 与数小时级的构建时间。
+| 指标 | 数值 |
+|---|---:|
+| sidecar 大小 | 237,568 B（58 页 × 4 KiB，高 2），占索引 6.4% |
+| 冷查询 `banquo` | 词典 2 页 + 索引 8,308 B ≈ 16.5 KB |
+| 相对全量加载 | 0.45% |
+| 全词表 `--verify-all` | 14,937 词 0 差异；114 次页读 + 29,819 次缓存命中 |
+| 查询输出 | 与全量加载文本/JSON 逐字节一致 |
 
-**（2）磁盘词典与 term ID**
+B+Tree 的设计要点：页预算与序列化布局严格对应；变长键下分裂取“合法窗口内的字节中点”，并用可证下界 `pageSize/2 − maxEntry` 作为填充不变量；分隔键是真实键的副本，因此内部路由区间左闭。`tests/test_bptree.cpp` 用 `std::map` oracle 覆盖三档页宽、对抗性同前缀键、bulk-load 与逐条插入等价、文件往返、坏魔数拒绝等 10 个用例 / 84,648 条断言。
 
-400M 个 term 不能全部放在内存哈希表。可选方案：
+#### 4.7.4 压缩：v2 差分 + 变长编码
 
-- 按字典序排列的 term 表 + 二分查找（查询 O(log 400M) ≈ 29 次比较），term 表可 mmap；
-- B+ 树（为磁盘页设计，适合持久化词典）；
-- 前端编码（front coding）压缩 term 字符串；
-- 构建期用哈希分配 term ID，最终写回有序表。
+v2 把 postings 改为 `docID gap → tf → position delta`，每个整数使用字节对齐变长码；头部/文档表/词表布局与 v1 相同，靠版本字段区分。正式索引从 3,685,655 B 降到 1,725,694 B（46.8%），构建时间 0.35→0.48 s；`brute_force.py`、`dump --verify-all` 和 varint 边界测试全部通过。压缩与 B+Tree sidecar 正交，可以叠加使用。
 
-查询时只读取目标 term 的 posting 块，而不是加载整个索引。
+#### 4.7.5 规模实测与外推
 
-**（3）压缩 posting**
+`mse bptree-bench --keys N` 用递增 base-26 合成键 bulk-load 落盘，再用缓存=1 页的读取端做随机查询：
 
-- docID 差分 + 变长字节编码；
-- positions 差分 + 变长编码；
-- 对超长 posting 做索引期 top-x 截断（讲义 §4.6）；
-- term 表前端编码。
+| 键数 | 树高 | 页数 | 文件大小 | 字节/键 | 每次查询页读 |
+|---:|---:|---:|---:|---:|---:|
+| 100,000 | 2 | 369 | 1,515,520 B | 15.16 | 2.00 |
+| 1,000,000 | 3 | 3,688 | 15,110,144 B | 15.11 | 3.00 |
+| 10,000,000 | 3 | 36,865 | 151,003,136 B | 15.10 | 3.00 |
 
-这些压缩可以把索引体积降低数倍，但会增加解码 CPU 成本；需要根据查询负载做权衡。
+体积严格线性（约 15.1 B/键），高度与扇出计算吻合。按同一公式外推：
 
-**（4）分布式构建与查询**
+- 100M 键 ≈ 1.5 GB，树高 4；
+- 400M 键 ≈ 6.0 GB（键长可能略增，取 6–6.5 GB），树高 4；
+- 单次查询 4 页 ≈ 16 KB。
 
-两种切分方式：
+也就是说，**词典无法常驻内存时，查询仍然只付 4 次页读的代价**。构建侧需要把 400M 个 term 写入这个 B+Tree（bulk-load 要求输入已排序；可以由 SPIMI 的归并输出提供），这是下一步的工程工作。
 
-| 方案 | 优点 | 缺点 |
-|---|---|---|
-| 按文档切分 | 构建负载均衡；每台机器处理一部分文档 | 每次查询需要广播到所有机器并合并结果 |
-| 按词切分 | 查询只访问包含目标词的少数机器 | 热门词造成热点；词表切分与负载均衡复杂 |
+#### 4.7.6 语料无关性验证：RFC 第二语料
 
-底层可参考 GFS 的“大文件、块复制、容错”设计。实际系统通常采用“文档切分 + 副本”或“词切分 + 热点复制”的混合策略。
+`data2/` 收录 RFC 1035/5321/7231 三篇 plain 文本（3 文档、9,946 行、75,250 token、4,328 词型）。用同一套 C++ 管线跑通：
 
-**（5）查询侧优化**
+- `stats / count / stopwords --derive / build / query / brute_force` 零代码改动；
+- count CSV 与 Python 对拍逐字节一致；
+- 熵规则推导出 58 词（与莎士比亚的 9/39 不同），`must / may / should` 因速率分布倾斜未被判为停用词；
+- 建索引 2,660 词干 / 4,594 postings / 45,370 token / 308,164 B，brute-force 全项一致；
+- `smtp`、`domain` 各命中 3 篇；`server` 被判为停用词，返回空 + note。
 
-- rare-term-first：先查 df 最小的词，缩小候选集；
-- skip pointers / block-max WAND：跳过不可能进入 top-x 的 posting 块；
-- 缓存高频词的 posting；
-- 对 `--max-df/--min-df` 做查询计划级优化，而不是逐词过滤。
+这组实验说明：引擎本身不依赖莎士比亚；换语料只需要 producer 提供 manifest + 文本层，停用词可以由规则重新推导。
 
-#### 4.7.3 当前程序的临界点
+#### 4.7.7 仍然存在的边界
 
-可以把内存需求写成：
+1. **没有真正跑 500k 文件 / 400M 词**：SPIMI 和 B+Tree 的组件级实测证明了可行性，但完整跑批需要磁盘空间、数小时级构建与多趟归并调优。
+2. **B+Tree 由内存索引 bulk-load**：查询侧已去掉常驻词典，构建侧仍需要先把索引放在内存；完整方案应让 SPIMI 归并直接产出 B+Tree 页文件。
+3. **分布式未实现**：按文档切分（构建均衡、查询广播）与按词切分（查询局部、热点词）的权衡只有分析；GFS 式的块复制/容错也没有落地。
+4. **32 位字段**：`posStart`/`tf` 在更大规模下应改 u64；`docID` 的 u32 对 500k 文件足够。
+5. **磁盘/内存成本**：400M 词的 B+Tree 约 6 GB，SPIMI 临时空间约为语料的 2 倍；这些是实际部署必须预算的。
 
-```text
-M ≈ T × c_term + P × 12 + O × 4 + C
-```
-
-其中 `T` 是不同词数，`P` 是 posting 数，`O` 是 token 出现数，`C` 是语料文本与对象开销，`c_term` 是每个词典项的平均开销（约 100–150 B）。
-
-按此公式（忽略 `C` 与 vector 冗余）粗估：
-
-| 可用内存 | 可支持的不同词数（仅词典） | 说明 |
-|---:|---:|---|
-| 64 MB | ≈ 0.4–0.6 M | 小规模实验 |
-| 1 GB | ≈ 7–10 M | 中等语料 |
-| 16 GB | ≈ 100–150 M | 大型单机 |
-| 64 GB | ≈ 400–600 M | 仅词典；postings/positions 仍需额外空间 |
-
-因此，400M 词的目标已经接近“纯词典”在 64 GB 机器上的上限；加上 22 亿 token 的 positions 与 4.7 亿条 posting，单机全内存方案不可行。当前实现可以处理“百万级词表、千万级 token”的语料，但面对 500,000 文件 / 400M 词，需要外部存储与分布式架构。
-
-#### 4.7.4 待补实验
-
-- 在当前语料上测量峰值内存与索引各段体积，校准 `c_term`、posting 与 positions 的实际系数；
-- 构造 10×/100× 的合成语料，测量构建时间与内存随规模的增长曲线；
-- 实现一个最小化的外部排序原型（分块 + 归并），验证磁盘索引的可行性；
-- 对比“文档切分”与“词切分”的查询延迟与构建负载；
-- 补入压缩前后索引体积与查询延迟的实测数据。
+**结论**：全内存版本不能直接工作；但“SPIMI 构建 + B+Tree 词典 + v2 压缩”的组合已经把构建侧和查询侧的关键瓶颈分别解决到可实测、可外推的程度。距离完整 500k/400M 跑批还差工程集成与分布式，而不是算法上的未知。
 
 ### 4.8 结论
 
-本项目完成了题目要求的四项任务：在莎士比亚全集上实现了词频统计与停用词推导、带 Porter 词干化的倒排索引、单词/短语/布尔查询，以及四个查询阈值的系统性实验。正确性通过单元测试、黄金样例、独立 Python 对拍与全量 brute-force 四层验证；正式索引为 14,937 个词干、117,704 条 posting、556,866 个位置、约 3.5 MB。
+本项目完成了题目要求的四项任务：在莎士比亚全集上实现了词频统计与停用词推导、带 Porter 词干化的倒排索引、单词/短语/布尔查询，以及四个查询阈值的系统性实验。正确性通过单元测试、黄金样例、独立 Python 对拍与全量 brute-force 四层验证；正式索引为 14,937 个词干、117,704 条 posting、556,866 个位置、v1 约 3.5 MB / v2 约 1.7 MB。Bonus 进一步实现了熵驱动停用词、RFC 第二语料、SPIMI 块式构建、磁盘 B+Tree 词典与 1000 万键规模实测。
 
 项目的主要经验是：
 
 1. **规格必须唯一且可执行**。分词、标记行判定、停用词顺序、词干化变体，任何一处模糊都会在 C++ 与 Python 对拍中放大成数字差异。
-2. **独立实现的对拍比“再跑一遍”更有价值**。`brute_force.py` 从原始文本重建 posting，抓出了多个真实 bug。
+2. **独立实现的对拍比“再跑一遍”更有价值**。`brute_force.py` 从原始文本重建 posting，抓出了多个真实 bug；v2、B+Tree、SPIMI 的对拍也各抓出了实现问题。
 3. **阈值作用于查询词，而不是结果**。这是理解 `--max-df/--min-df` 行为的关键，也是多词查询可能出现“丢词反而结果变多”的原因。
-4. **全内存设计的边界清晰**。当前语料远低于边界；Bonus 规模需要外部排序、磁盘词典、压缩与分布式架构。
+4. **“去噪”可以用统计规则表达**。长度归一化速率熵把“停用词按固定浓度撒在文档里”这一直觉变成可执行规则；换语料后阈值仍需重新扫描，但方法不再依赖人工列表。
+5. **全内存设计的边界清晰，扩展路径也已实测**。SPIMI 控制构建内存、B+Tree 控制查询侧词典内存、v2 控制索引体积；距离完整的 500k/400M 跑批还差工程集成与分布式，而不是算法上的未知。
 
-后续工作包括：完成 Bonus 的规模实验与原型、补压缩对比与词典第三列、完成粒度敏感性实验、补齐代码注释并完成最终报告排版与匿名检查。
+后续工作包括：完成 scene 级/154 首合并的粒度敏感性实验；补短语级 brute-force 对拍；把 SPIMI 的 run 直接写成磁盘 term 表/B+Tree 并跑一次 500k 文件级构建；补 term 表前端编码与更紧凑的位级压缩；完成分布式原型、图表编号、PDF 排版与匿名检查。
 
 ---
 
@@ -901,6 +1036,9 @@ M ≈ T × c_term + P × 12 + O × 4 + C
 6. 课程讲义：*Building an Inverted Index*、*Compression*、*Inverted Index Construction*、*The Google File System*.
 7. C. D. Manning, P. Raghavan, H. Schütze. *Introduction to Information Retrieval*. Cambridge University Press, 2008.
 8. G. Fowler, M. Vo, et al. *FNV-1a 64-bit hash*（FNV 规范）. <http://www.isthe.com/chongo/tech/comp/fnv/>, accessed 2026-10-19.
+9. R. Bayer, E. McCreight. *Organization and Maintenance of Large Ordered Indices*. Acta Informatica, 1:173–189, 1972.
+10. IETF. *RFC 1035 (Domain Names)*, *RFC 5321 (SMTP)*, *RFC 7231 (HTTP/1.1 Semantics)*. <https://www.rfc-editor.org/>, accessed 2026-10-19.
+11. IETF. *RFC 2119: Key words for use in RFCs to Indicate Requirement Levels*. <https://www.rfc-editor.org/rfc/rfc2119>, accessed 2026-10-19.
 
 ---
 
@@ -914,9 +1052,27 @@ ctest --test-dir build --output-on-failure
 # 词频统计（Task 1）
 ./build/mse count --csv build/wordcount.csv --top 50
 
-# 正式索引（Task 2）
+# 熵驱动停用词（Bonus）
+./build/mse stopwords --derive --min-df-ratio 0.4 --min-entropy-rate 0.93 \
+                      --compare data/stopwords.txt
+
+# 正式索引（Task 2；v1）
 ./build/mse build --index build/index.bin \
                   --stop-words data/stopwords.txt --stem
+
+# v2 压缩 + 磁盘 B+Tree 词典（Bonus）
+./build/mse build --index build/index-v2.bin \
+                  --stop-words data/stopwords.txt --stem --compress
+./build/mse build --index build/index.bin \
+                  --stop-words data/stopwords.txt --stem \
+                  --dict-file build/index.bpt
+
+# SPIMI 块式构建（Bonus）
+./build/mse build-blocks --stop-words data/stopwords.txt --stem \
+                         --block-terms 4096
+
+# B+Tree 规模实测（Bonus）
+./build/mse bptree-bench --keys 10000000 --lookups 1000
 
 # 查询（Task 3）
 ./build/mse query --index build/index.bin \
@@ -925,6 +1081,20 @@ ctest --test-dir build --output-on-failure
                   --stop-words data/stopwords.txt --phrase "my lord"
 ./build/mse query --index build/index.bin \
                   --stop-words data/stopwords.txt --words "king queen" --min-match 2
+
+# 磁盘词典查询与全词表校验（Bonus）
+./build/mse dump --index build/index.bin --dict-file build/index.bpt --term banquo
+./build/mse dump --index build/index.bin --dict-file build/index.bpt --verify-all
+
+# 第二语料 RFC（Bonus）
+./build/mse stats --manifest data2/data/manifest.tsv
+./build/mse count --manifest data2/data/manifest.tsv --csv build/rfc_wordcount.csv
+./build/mse stopwords --derive --manifest data2/data/manifest.tsv \
+                      --min-df-ratio 0.4 --min-entropy-rate 0.93 \
+                      --out build/rfc_stopwords.txt
+./build/mse build --manifest data2/data/manifest.tsv \
+                  --stop-words build/rfc_stopwords.txt --stem \
+                  --index build/rfc_index.bin
 
 # 阈值实验（Task 4）
 python3 tools/threshold_matrix.py
@@ -940,9 +1110,11 @@ python3 tools/brute_force.py --stop-words data/stopwords.txt --stem
 `data/manifest.tsv`（制表符分隔，首行表头）：
 
 ```text
-docid  kind  category  title  text  source  url
+docid  kind  category  title  text  source  url  [format]
 30     play  Tragedy   Hamlet data/text/0030_hamlet.txt  data/raw/hamlet/full.html  http://shakespeare.mit.edu/hamlet/full.html
 ```
+
+第 8 列 `format` 可选：`marked`（默认，标记层）或 `plain`（每行都是正文）。`data2/` 的 RFC 语料使用 `plain`。
 
 `data/text/*.txt` 行标记：
 
@@ -954,19 +1126,21 @@ docid  kind  category  title  text  source  url
 | 其他 | 正文 | 保留 |
 | `#` | 文件头注释 | 跳过 |
 
-索引文件 v1：见 2.6.4 节；magic `MSE1`，小端，version 1。
+索引文件 v1/v2：见 2.6.4 节；magic `MSE1`，小端，version 1（原始 u32 postings）或 version 2（差分 + varint postings）。头部、文档表、term 表布局相同。
+
+磁盘 B+Tree 词典 sidecar：见 2.6.6 节；magic `BPT1`，4 KiB 页，页 0 为头部，其后是树页。
 
 ## 附录 C 评分对照
 
 | 评分项 | 分值 | 本报告对应位置 |
 |---|---:|---|
 | Word counting 程序 | 1 | 2.4、3.5；代码 `src/count.cpp` |
-| Index generation 程序 | 5 | 2.6、3.6；代码 `src/index.cpp`、`src/dict.cpp` |
+| Index generation 程序 | 5 | 2.6、3.6；代码 `src/index.cpp`、`src/dict.cpp`、`src/bptree.cpp`、`src/blockbuild.cpp` |
 | Query processing 程序 | 3 | 2.7、3.7；代码 `src/query.cpp` |
 | 倒排索引正确性测试 | 2 | 3.2–3.4、3.9 |
 | 查询阈值测试 | 2 | 3.8 |
 | 分析与评论 | 3 | 第 4 章 |
-| Bonus | +2 | 4.7（开发中） |
+| Bonus | +2 | 4.7（熵停用词、RFC 第二语料、v2 压缩、B+Tree、SPIMI、1000 万键实测） |
 | 文档第 1 章 | 1 | 第 1 章 |
 | 文档第 2 章 | 2 | 第 2 章 |
 | 整体文档风格 | 1 | 全文结构、表格、术语统一；待补图表编号与 PDF 排版 |
@@ -975,10 +1149,11 @@ docid  kind  category  title  text  source  url
 
 ### 待办 / 写作备注（提交前删除）
 
-- [ ] 补入 Bonus 实测数据（4.7 节）；
-- [ ] 补入压缩实验（4.4 节）与 `std::map` 第三列（4.3 节）；
-- [ ] 补入粒度敏感性实验（4.1 节）；
-- [ ] 把 `build/threshold_matrix.svg` 与 Zipf 图插入第 3.8 节；
+- [x] 补入 Bonus 实测数据（4.7 节）；
+- [x] 补入压缩实验（4.4 节）与 `std::map` 第三列（4.3 节）；
+- [ ] 补入粒度敏感性实验（4.1 节，scene 级 / 154 首合并）；
+- [ ] 补短语级 brute-force 对拍（可选增强）；
+- [ ] 把 `build/threshold_matrix.svg`、Zipf 图与 B+Tree 规模图插入正文；
 - [ ] 统一图表编号与交叉引用；
 - [ ] 检查全文无姓名、学号、昵称、组号等身份信息；
 - [ ] 按课程要求转 PDF，文件名使用课程格式；
