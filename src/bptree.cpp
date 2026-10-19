@@ -447,10 +447,19 @@ BTree BTree::bulkLoad(const std::vector<std::pair<std::string, std::uint64_t>>& 
                 next.pop_back();
             } else {
                 while (tree.nodeBytes(last) < pageSize / 2) {
+                    // Move prevInner's last child to the front of `last`.
+                    // The separator between the moved child and `last`'s old
+                    // first child is the OLD first key of `last` (the boundary
+                    // that lived in the parent), not the moved child's own
+                    // first key. Using the moved key would place a separator
+                    // equal to that subtree's minimum, so routing would send
+                    // the subtree's keys to its right sibling (I2 violation,
+                    // found by the 30M-key scale run).
                     const std::uint32_t child = prevInner.children.back();
-                    const std::string* sep = tree.firstKeyOfSubtree(child);
+                    const std::string* boundary =
+                        tree.firstKeyOfSubtree(last.children.front());
                     last.keys.insert(last.keys.begin(),
-                                     sep ? *sep : std::string());
+                                     boundary ? *boundary : std::string());
                     last.children.insert(last.children.begin(), child);
                     prevInner.keys.pop_back();
                     prevInner.children.pop_back();

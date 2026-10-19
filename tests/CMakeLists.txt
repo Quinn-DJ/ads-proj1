@@ -87,6 +87,20 @@ if(Python3_Interpreter_FOUND)
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_INDEX
         TIMEOUT 300)
+    # Phrase-level check: sample phrases from the corpus, scan the normalized
+    # token stream in Python, and compare the document sets with
+    # `mse query --phrase` on the same v1 index.
+    add_test(NAME crosscheck_phrases
+             COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/check_phrases.py
+                     --binary $<TARGET_FILE:mse>
+                     --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
+                     --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
+                     --stem --queries 300)
+    set_tests_properties(crosscheck_phrases PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_INDEX
+        TIMEOUT 300)
     # Disk-dictionary cross-check: every term resolved through the B+Tree
     # sidecar must parse identical to a full index load (the B3 gate).
     add_test(NAME crosscheck_dictfile
@@ -130,6 +144,18 @@ if(Python3_Interpreter_FOUND)
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_V2
         PASS_REGULAR_EXPRESSION "0 mismatches"
+        TIMEOUT 300)
+    # Same phrase sweep on the v2 (compressed) index.
+    add_test(NAME crosscheck_compress_phrases
+             COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/check_phrases.py
+                     --binary $<TARGET_FILE:mse>
+                     --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
+                     --stem --queries 300)
+    set_tests_properties(crosscheck_compress_phrases PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_V2
         TIMEOUT 300)
 else()
     message(STATUS "Python3 not found: skipping the cross-check tests")
