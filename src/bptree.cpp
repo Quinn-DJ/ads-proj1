@@ -631,4 +631,245 @@ BTreeStats BTree::stats() const {
     return out;
 }
 
+// ---------------------------------------------------------------------------
+// B2: page-file serialization + the caching reader
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Little-endian fixed-width writers/readers shared by header and nodes.
+void putU16(std::string& out, std::uint16_t value) {
+    out.push_back(static_cast<char>(value & 0xFF));
+    out.push_back(static_cast<char>(value >> 8));
+}
+void putU32(std::string& out, std::uint32_t value) {
+    for (int shift = 0; shift < 32; shift += 8) {
+        out.push_back(static_cast<char>((value >> shift) & 0xFF));
+    }
+}
+void putU64(std::string& out, std::uint64_t value) {
+    for (int shift = 0; shift < 64; shift += 8) {
+        out.push_back(static_cast<char>((value >> shift) & 0xFF));
+    }
+}
+std::uint16_t getU16(const char* in) {
+    return static_cast<std::uint16_t>(
+        static_cast<std::uint8_t>(in[0]) |
+        (static_cast<std::uint16_t>(static_cast<std::uint8_t>(in[1])) << 8));
+}
+std::uint32_t getU32(const char* in) {
+    std::uint32_t value = 0;
+    for (int i = 0; i < 4; ++i) {
+        value |= static_cast<std::uint32_t>(static_cast<std::uint8_t>(in[i]))
+                 << (8 * i);
+    }
+    return value;
+}
+std::uint64_t getU64(const char* in) {
+    std::uint64_t value = 0;
+    for (int i = 0; i < 8; ++i) {
+        value |= static_cast<std::uint64_t>(static_cast<std::uint8_t>(in[i]))
+                 << (8 * i);
+    }
+    return value;
+}
+
+}  // namespace
+
+void BTree::writeFile(const std::string& path) const {
+    // The tree must be self-consistent before it is frozen to disk.
+    validate();
+
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    if (!out) {
+        throw std::runtime_error("cannot create B+Tree file: " + path);
+    }
+
+    // Header page (page 0): magic, version, shape.
+    std::string header;
+    header += "BPT1";
+    putU32(header, 1);                                  // version
+    putU32(header, pageSize_);
+    putU32(header, static_cast<std::uint32_t>(pages_.size()));
+    putU32(header, root_);
+    putU32(header, stats().height);
+    putU64(header, static_cast<std::uint64_t>(leafCount_));
+    putU64(header, static_cast<std::uint64_t>(keyCount_));
+    header.resize(pageSize_, '\0');
+    out.write(header.data(), static_cast<std::streamsize>(pageSize_));
+
+    // Tree page i lives at file page i+1 (page 0 is the header).
+    for (const Node& node : pages_) {
+        // Reuse the node serializer through a light adapter: nodes and
+        // NodeViews share the field layout the format defines.
+        const std::string page = [this, &node]() {
+            std::string bytes;
+            bytes.push_back(node.leaf ? 1 : 0);
+            putU16(bytes, static_cast<std::uint16_t>(node.keys.size()));
+            putU32(bytes, node.nextLeaf);
+            if (node.leaf) {
+                for (const std::uint64_t value : node.values) {
+                    putU64(bytes, value);
+                }
+            } else {
+                for (const std::uint32_t child : node.children) {
+                    putU32(bytes, child);
+                }
+            }
+            for (const std::string& key : node.keys) {
+                bytes.push_back(static_cast<char>(key.size()));
+                bytes += key;
+            }
+            if (bytes.size() > pageSize_) {
+                throw std::runtime_error("BTree node overflows its page");
+            }
+            bytes.resize(pageSize_, '\0');
+            return bytes;
+        }();
+        out.write(page.data(), static_cast<std::streamsize>(pageSize_));
+    }
+    out.flush();
+    if (!out) {
+        throw std::runtime_error("error while writing B+Tree file: " + path);
+    }
+}
+
+BTreeFile::BTreeFile(const std::string& path, std::size_t cachePages)
+    : path_(path), cachePages_(std::max<std::size_t>(cachePages, 1)) {
+    file_.open(path, std::ios::binary);
+    if (!file_) {
+        throw std::runtime_error("cannot open B+Tree file: " + path);
+    }
+    std::string page(4096, '\0');  // header fits in any legal page size
+    file_.read(page.data(), static_cast<std::streamsize>(page.size()));
+    // A shorter file only sets failbit; gcount() tells the real story
+    // (the header needs 40 bytes, anything beyond is not read here).
+    if (file_.gcount() < 40) {
+        throw std::runtime_error("B+Tree file is truncated: " + path);
+    }
+    if (page.compare(0, 4, "BPT1") != 0) {
+        throw std::runtime_error("bad magic (not a B+Tree file): " + path);
+    }
+    if (getU32(page.data() + 4) != 1) {
+        throw std::runtime_error("unsupported B+Tree file version: " + path);
+    }
+    header_.pageSize = getU32(page.data() + 8);
+    header_.pageCount = getU32(page.data() + 12);
+    header_.rootId = getU32(page.data() + 16);
+    header_.height = getU32(page.data() + 20);
+    header_.leafCount = getU64(page.data() + 24);
+    header_.keyCount = getU64(page.data() + 32);
+    if (header_.pageSize < 128) {
+        throw std::runtime_error("implausible page size in B+Tree file: " + path);
+    }
+}
+
+const BTreeFile::NodeView& BTreeFile::load(std::uint32_t id) const {
+    const auto hit = lruIndex_.find(id);
+    if (hit != lruIndex_.end()) {
+        lru_.splice(lru_.begin(), lru_, hit->second);  // promote to front
+        ++cacheHits_;
+        return hit->second->second;
+    }
+    // Miss: read file page id+1 (page 0 holds the header) and parse it.
+    file_.clear();
+    file_.seekg(static_cast<std::streamoff>(id + 1) * header_.pageSize);
+    std::string raw(header_.pageSize, '\0');
+    file_.read(raw.data(), static_cast<std::streamsize>(raw.size()));
+    if (!file_ || file_.gcount() != static_cast<std::streamsize>(header_.pageSize)) {
+        throw std::runtime_error("failed to read B+Tree page " +
+                                 std::to_string(id) + " from " + path_);
+    }
+    ++pageReads_;
+
+    NodeView view;
+    view.leaf = raw[0] != 0;
+    const std::size_t count = getU16(raw.data() + 1);
+    view.nextLeaf = getU32(raw.data() + 3);
+    std::size_t offset = kNodeHeaderBytes;
+    if (view.leaf) {
+        view.values.resize(count);
+        for (std::size_t i = 0; i < count; ++i) {
+            view.values[i] = getU64(raw.data() + offset);
+            offset += kValueBytes;
+        }
+    } else {
+        view.children.resize(static_cast<std::size_t>(count) + 1);
+        for (std::size_t i = 0; i <= count; ++i) {
+            view.children[i] = getU32(raw.data() + offset);
+            offset += kChildBytes;
+        }
+    }
+    view.keys.resize(count);
+    for (std::size_t i = 0; i < count; ++i) {
+        const std::size_t len =
+            static_cast<std::uint8_t>(raw[offset]);
+        ++offset;
+        view.keys[i].assign(raw, offset, len);
+        offset += len;
+    }
+
+    lru_.emplace_front(id, std::move(view));
+    lruIndex_[id] = lru_.begin();
+    if (lru_.size() > cachePages_) {
+        lruIndex_.erase(lru_.back().first);
+        lru_.pop_back();
+    }
+    return lru_.front().second;
+}
+
+std::optional<std::uint64_t> BTreeFile::findValue(const std::string& key) const {
+    std::uint32_t id = header_.rootId;
+    while (true) {
+        const NodeView& node = load(id);
+        const auto it =
+            std::lower_bound(node.keys.begin(), node.keys.end(), key);
+        const std::size_t at =
+            static_cast<std::size_t>(it - node.keys.begin());
+        if (node.leaf) {
+            if (it == node.keys.end() || *it != key) {
+                return std::nullopt;
+            }
+            return node.values[at];
+        }
+        // Same routing as the in-memory tree: first separator > key.
+        const std::size_t slot =
+            static_cast<std::size_t>(std::upper_bound(node.keys.begin(),
+                                                      node.keys.end(), key) -
+                                     node.keys.begin());
+        id = node.children[slot];
+    }
+}
+
+std::vector<std::pair<std::string, std::uint64_t>> BTreeFile::rangeScan(
+    const std::string& lo, const std::string& hi) const {
+    std::vector<std::pair<std::string, std::uint64_t>> out;
+    std::uint32_t id = header_.rootId;
+    while (!load(id).leaf) {
+        const NodeView& node = load(id);
+        const std::size_t slot =
+            static_cast<std::size_t>(std::upper_bound(node.keys.begin(),
+                                                      node.keys.end(), lo) -
+                                     node.keys.begin());
+        id = node.children[slot];
+    }
+    while (true) {
+        const NodeView& node = load(id);
+        for (std::size_t i = 0; i < node.keys.size(); ++i) {
+            if (node.keys[i] < lo) {
+                continue;
+            }
+            if (!(node.keys[i] < hi)) {
+                return out;
+            }
+            out.emplace_back(node.keys[i], node.values[i]);
+        }
+        if (node.nextLeaf == 0) {
+            break;
+        }
+        id = node.nextLeaf;
+    }
+    return out;
+}
+
 }  // namespace mse

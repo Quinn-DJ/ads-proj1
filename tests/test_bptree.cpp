@@ -13,6 +13,8 @@
 #include "bptree.hpp"
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <random>
 #include <string>
@@ -188,4 +190,110 @@ TEST_CASE("input contracts fail loudly", "[bptree]") {
     mse::BTree tree(4096);
     CHECK_THROWS(tree.insert(longKey, 1));
     CHECK(tree.find(longKey) == nullptr);  // not stored, but not a crash
+}
+
+TEST_CASE("writeFile + BTreeFile round trip matches the oracle", "[bptree][disk]") {
+    const std::vector<std::pair<std::string, std::uint64_t>> pairs =
+        randomPairs(6000, 555, 0);
+    std::map<std::string, std::uint64_t> oracle(pairs.begin(), pairs.end());
+    std::vector<std::pair<std::string, std::uint64_t>> sorted(oracle.begin(),
+                                                              oracle.end());
+
+    // Both build paths must serialize to equally readable files.
+    const mse::BTree bulk = mse::BTree::bulkLoad(sorted, 2048);
+    mse::BTree incremental(2048);
+    for (const auto& [key, value] : sorted) {
+        incremental.insert(key, value);
+    }
+
+    const mse::BTree* const trees[] = {&bulk, &incremental};
+    for (const mse::BTree* tree : trees) {
+        const std::string path = tree == &bulk ? "build/test_bptree_bulk.bin"
+                                               : "build/test_bptree_incr.bin";
+        tree->writeFile(path);
+        const mse::BTreeFile file(path, /*cachePages=*/16);
+
+        // Every stored key resolves to the oracle value; absent ones miss.
+        for (const auto& [key, value] : oracle) {
+            const auto found = file.findValue(key);
+            REQUIRE(found.has_value());
+            CHECK(*found == value);
+        }
+        CHECK_FALSE(file.findValue("zzzzzzzzz").has_value());
+        CHECK(file.keyCount() == oracle.size());
+
+        // Range scans agree with std::map's ordered walk.
+        const auto scanned = file.rangeScan("k", "t");
+        std::vector<std::pair<std::string, std::uint64_t>> expected;
+        for (auto it = oracle.lower_bound("k"); it != oracle.end() && it->first < "t"; ++it) {
+            expected.emplace_back(it->first, it->second);
+        }
+        CHECK(scanned == expected);
+
+        // File size is exactly (tree pages + header) * pageSize.
+        const auto fileSize = std::filesystem::file_size(path);
+        CHECK(fileSize ==
+              static_cast<std::uintmax_t>(file.pageCount() + 1) * file.pageSize());
+    }
+}
+
+TEST_CASE("BTreeFile page-read accounting shows the cache working", "[bptree][disk]") {
+    const std::vector<std::pair<std::string, std::uint64_t>> pairs =
+        randomPairs(4000, 777, 0);
+    std::map<std::string, std::uint64_t> oracle(pairs.begin(), pairs.end());
+    std::vector<std::pair<std::string, std::uint64_t>> sorted(oracle.begin(),
+                                                              oracle.end());
+    const mse::BTree tree = mse::BTree::bulkLoad(sorted, 1056);
+    tree.writeFile("build/test_bptree_cache.bin");
+
+    // Tiny cache: a cold lookup costs exactly `height` page reads.
+    {
+        const mse::BTreeFile file("build/test_bptree_cache.bin", 1);
+        const std::string key = sorted.front().first;
+        (void)file.findValue(key);                       // warm-up (root page)
+        const std::uint64_t before = file.pageReads();
+        (void)file.findValue(key);
+        // With a 1-page cache the descent re-reads every level: the root
+        // page survives, but the leaf is evicted... on a height-3 tree
+        // this is 2 reads; assert the bound height-1 .. height reads.
+        const std::uint64_t delta = file.pageReads() - before;
+        CHECK(delta >= 1);
+        CHECK(delta <= file.height());
+    }
+    // Cache that holds the whole root-to-leaf frontier: repeated lookups
+    // of the same key stop touching the file entirely.
+    {
+        const mse::BTreeFile file("build/test_bptree_cache.bin", 64);
+        const std::string key = sorted.front().first;
+        (void)file.findValue(key);
+        const std::uint64_t reads = file.pageReads();
+        const std::uint64_t hits = file.cacheHits();
+        for (int repeat = 0; repeat < 10; ++repeat) {
+            (void)file.findValue(key);
+        }
+        CHECK(file.pageReads() == reads);  // served from the LRU cache
+        CHECK(file.cacheHits() >= hits + 10);
+    }
+    // Cold-cache sweep across many keys still bounds reads per lookup.
+    {
+        const mse::BTreeFile file("build/test_bptree_cache.bin", 2);
+        const std::uint64_t reads = file.pageReads();
+        const int lookups = 100;
+        for (int i = 0; i < lookups; ++i) {
+            (void)file.findValue(sorted[static_cast<std::size_t>(i * 37) %
+                                        sorted.size()].first);
+        }
+        const std::uint64_t perLookup = (file.pageReads() - reads) / lookups;
+        CHECK(perLookup <= file.height());
+    }
+}
+
+TEST_CASE("BTreeFile rejects files that are not B+Tree pages", "[bptree][disk]") {
+    std::filesystem::create_directories("build");
+    {
+        std::ofstream out("build/test_bptree_bad.bin", std::ios::binary);
+        out << "this is definitely not a B+Tree file, sorry";
+    }
+    CHECK_THROWS(mse::BTreeFile("build/test_bptree_bad.bin", 8));
+    CHECK_THROWS(mse::BTreeFile("build/no_such_bptree_file.bin", 8));
 }

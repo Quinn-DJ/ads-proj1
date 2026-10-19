@@ -38,8 +38,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <list>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -96,6 +99,10 @@ public:
     // disk-backed variant would pay for that lookup.
     std::size_t lastFindPageReads() const { return lastFindPageReads_; }
 
+    // Serialize the whole tree into a freshly created page file (B2; the
+    // layout is documented next to BTreeFile). Throws on any I/O error.
+    void writeFile(const std::string& path) const;
+
 private:
     static constexpr std::uint32_t kMaxKeyLen = 255;
 
@@ -139,6 +146,83 @@ private:
     mutable BTreeStats cached_;        // extremes refreshed by validate()
     mutable bool validated_ = false;
     mutable std::size_t lastFindPageReads_ = 0;
+};
+
+// ---------------------------------------------------------------------------
+// B2: the on-disk form -- a page file plus a caching reader.
+//
+// File layout (little-endian; the same sizes nodeBytes() budgets against):
+//   page 0 (header): magic "BPT1" | version u32 | pageSize u32 |
+//                    pageCount u32 (= tree pages) | rootId u32 |
+//                    height u32 | leafCount u64 | keyCount u64
+//   page i+1: tree page i, nodeBytes() payload padded with zeros:
+//     leaf u8 | keyCount u16 | nextLeaf u32 |
+//     leaf  : values u64[count]            | blobs[count]
+//     inner : children u32[count+1]        | blobs[count]
+//     blob  : length u8 | bytes
+//
+// BTree::writeFile() turns a built tree into that file; BTreeFile answers
+// queries from it, loading only O(height) pages per lookup through an LRU
+// cache -- the resident-memory dictionary is no longer needed at query
+// time, which is the whole point of the bonus scenario (400M terms).
+// ---------------------------------------------------------------------------
+
+// Read-side dictionary over a page file. Values are returned by copy: a
+// cached page can be evicted at any load, so no references escape.
+class BTreeFile {
+public:
+    // Opens the file and reads the header page only. `cachePages` bounds
+    // the LRU cache (>= 1); the sweep experiment varies it.
+    explicit BTreeFile(const std::string& path, std::size_t cachePages = 8);
+
+    // Point lookup: nullopt when the key is absent.
+    std::optional<std::uint64_t> findValue(const std::string& key) const;
+
+    // All (key, value) with lo <= key < hi, walking the leaf chain.
+    std::vector<std::pair<std::string, std::uint64_t>> rangeScan(
+        const std::string& lo, const std::string& hi) const;
+
+    // Shape + I/O counters (pageReads counts actual file reads; hits are
+    // answered from the cache).
+    std::uint32_t pageCount() const { return header_.pageCount; }
+    std::uint32_t pageSize() const { return header_.pageSize; }
+    std::uint32_t height() const { return header_.height; }
+    std::uint64_t keyCount() const { return header_.keyCount; }
+    std::uint64_t pageReads() const { return pageReads_; }
+    std::uint64_t cacheHits() const { return cacheHits_; }
+
+private:
+    struct NodeView {
+        bool leaf = true;
+        std::uint32_t nextLeaf = 0;
+        std::vector<std::string> keys;
+        std::vector<std::uint32_t> children;
+        std::vector<std::uint64_t> values;
+    };
+
+    struct Header {
+        std::uint32_t pageSize = 0;
+        std::uint32_t pageCount = 0;
+        std::uint32_t rootId = 0;
+        std::uint32_t height = 0;
+        std::uint64_t leafCount = 0;
+        std::uint64_t keyCount = 0;
+    };
+
+    // Load one tree page through the LRU cache.
+    const NodeView& load(std::uint32_t id) const;
+
+    Header header_;
+    std::string path_;
+    std::size_t cachePages_;
+    mutable std::ifstream file_;
+    mutable std::uint64_t pageReads_ = 0;
+    mutable std::uint64_t cacheHits_ = 0;
+    // LRU: front = most recently used; map for O(1) lookup.
+    mutable std::list<std::pair<std::uint32_t, NodeView>> lru_;
+    mutable std::unordered_map<std::uint32_t,
+                               std::list<std::pair<std::uint32_t, NodeView>>::iterator>
+        lruIndex_;
 };
 
 }  // namespace mse
