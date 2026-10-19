@@ -15,6 +15,7 @@
 #include "count.hpp"
 #include "index.hpp"
 #include "query.hpp"
+#include "stemmer.hpp"
 #include "stopwords.hpp"
 #include "tokenizer.hpp"
 
@@ -83,11 +84,17 @@ void printUsage(const char* program) {
         << "  --dict <name>        build dictionary: splay | hash (default: splay)\n"
         << "  --stop-words <path>  drop these tokens (recorded in the index flags)\n"
         << "  --stem               Porter-stem the tokens (recorded in the flags)\n"
+        << "  --dict-file <path>   also write the term->postings B+Tree sidecar\n"
+        << "                       (disk dictionary; query with --dict-file)\n"
         << "\n"
         << "dump options:\n"
         << "  --index <path>       index file (default: build/index.bin)\n"
         << "  --term <word>        term to dump (the indexed form)\n"
         << "  --limit <n>          max postings printed (default: 20)\n"
+        << "  --dict-file <path>   resolve the term via the B+Tree sidecar\n"
+        << "                       (loads no term table; needs --index too)\n"
+        << "  --verify-all         with --dict-file: re-parse every term's\n"
+        << "                       postings and compare against a full load\n"
         << "\n"
         << "query options:\n"
         << "  --word <w>           single-word query\n"
@@ -100,6 +107,8 @@ void printUsage(const char* program) {
         << "  --top-x <n>          keep at most n result docs (0 = all, default)\n"
         << "  --stop-words <path>  stop word list used by the build (explains skips;\n"
         << "                       needed for correct --pretty positions)\n"
+        << "  --dict-file <path>   resolve the term via the B+Tree sidecar\n"
+        << "                       (word queries only; no term table loaded)\n"
         << "  --pretty             print the source line of each match\n"
         << "  --json               machine-readable output (for scripts/tests)\n"
         << "\n"
@@ -416,6 +425,7 @@ int commandBuild(int argc, char** argv) {
     const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
     const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
     const std::string dictName = optionValue(argc, argv, "--dict", "splay");
+    const std::string dictFilePath = optionValue(argc, argv, "--dict-file", "");
 
     mse::StopWords stopWords;
     mse::BuildOptions options;
@@ -441,6 +451,10 @@ int commandBuild(int argc, char** argv) {
     const mse::Index index = mse::buildIndex(corpus, options, *dictionary);
     mse::validateIndex(index);
     mse::writeIndex(indexPath, index);
+    if (!dictFilePath.empty()) {
+        // Disk dictionary sidecar: term -> posting byte range (plan.md 11).
+        mse::writeDictFile(index, dictFilePath);
+    }
     const double seconds = std::chrono::duration<double>(
                                std::chrono::steady_clock::now() - started)
                                .count();
@@ -461,8 +475,13 @@ int commandBuild(int argc, char** argv) {
               << "postings   : " << postings << "\n"
               << "positions  : " << positions << "\n"
               << "index      : " << indexPath << " ("
-              << std::filesystem::file_size(indexPath) << " bytes)\n"
-              << "build time : " << std::fixed << std::setprecision(2)
+              << std::filesystem::file_size(indexPath) << " bytes)\n";
+    if (!dictFilePath.empty()) {
+        std::cout << "dict-file  : " << dictFilePath << " ("
+                  << std::filesystem::file_size(dictFilePath)
+                  << " bytes, b+tree)\n";
+    }
+    std::cout << "build time : " << std::fixed << std::setprecision(2)
               << seconds << " s\n";
     std::cout.unsetf(std::ios::fixed);
     std::cout << "invariants : OK\n";
@@ -472,12 +491,91 @@ int commandBuild(int argc, char** argv) {
 int commandDump(int argc, char** argv) {
     const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
     const std::string term = optionValue(argc, argv, "--term", "");
+    const std::string dictFilePath = optionValue(argc, argv, "--dict-file", "");
+    const bool verifyAll = hasFlag(argc, argv, "--verify-all");
     int limit = intOption(argc, argv, "--limit", "20");
-    if (term.empty()) {
-        throw std::runtime_error("dump needs --term <word>");
-    }
     if (limit < 0) {
         limit = 0;
+    }
+
+    // Disk-dictionary path: resolve the term through the B+Tree sidecar
+    // and read only its posting bytes (the term table is never loaded).
+    if (!dictFilePath.empty()) {
+        const mse::LazyIndexReader lazy(indexPath, dictFilePath);
+        std::cout << "index      : " << indexPath << "  (" << lazy.docs().size()
+                  << " docs, " << lazy.termCount() << " terms, "
+                  << lazy.tokenCount() << " tokens)\n";
+        std::cout << "dict-file  : " << dictFilePath << "  (height "
+                  << lazy.dictHeight() << ", reads " << lazy.dictPageReads()
+                  << ")\n";
+        std::cout << "flags      :" << indexFlagsToString(lazy.flags()) << "\n";
+
+        if (verifyAll) {
+            // Reference: a full load; the sweep must agree on every term.
+            const mse::Index full = mse::loadIndex(indexPath);
+            std::size_t checked = 0;
+            std::size_t mismatches = 0;
+            for (const auto& [name, packed] : lazy.allTerms()) {
+                (void)packed;
+                mse::IndexTerm lazyTerm;
+                if (!lazy.readTerm(name, lazyTerm)) {
+                    ++mismatches;
+                    std::cout << "  missing via dict: " << name << "\n";
+                    continue;
+                }
+                const mse::IndexTerm* ref = mse::findIndexTerm(full, name);
+                bool same = ref != nullptr &&
+                            lazyTerm.postings.size() == ref->postings.size() &&
+                            lazyTerm.positions.size() == ref->positions.size();
+                if (same) {
+                    for (std::size_t i = 0; i < lazyTerm.postings.size() && same; ++i) {
+                        same = lazyTerm.postings[i].docID == ref->postings[i].docID &&
+                               lazyTerm.postings[i].tf == ref->postings[i].tf;
+                    }
+                    same = same && lazyTerm.positions == ref->positions;
+                }
+                ++checked;
+                if (!same) {
+                    ++mismatches;
+                    if (mismatches <= 5) {
+                        std::cout << "  mismatch: " << name << "\n";
+                    }
+                }
+            }
+            std::cout << "verified   : " << checked << " terms, "
+                      << mismatches << " mismatches\n"
+                      << "dict reads : " << lazy.dictPageReads()
+                      << " page reads, " << lazy.dictCacheHits()
+                      << " cache hits\n";
+            return mismatches == 0 ? 0 : 1;
+        }
+
+        if (term.empty()) {
+            throw std::runtime_error("dump needs --term <word> (or --verify-all)");
+        }
+        // One-term dump: reuse dumpTerm over a single-term view.
+        mse::IndexTerm lazyTerm;
+        if (!lazy.readTerm(term, lazyTerm)) {
+            std::cout << "term not found: " << term << "\n";
+            return 0;
+        }
+        mse::Index view;
+        view.flags = lazy.flags();
+        view.tokenCount = lazy.tokenCount();
+        view.docs = lazy.docs();
+        view.terms = {std::move(lazyTerm)};
+        mse::dumpTerm(view, term, static_cast<std::size_t>(limit), std::cout);
+        std::cout << "dict reads : " << lazy.dictPageReads()
+                  << " page reads, " << lazy.dictCacheHits()
+                  << " cache hits\n"
+                  << "index read: " << lazy.bytesRead()
+                  << " bytes (vs " << std::filesystem::file_size(indexPath)
+                  << " for a full load)\n";
+        return 0;
+    }
+
+    if (term.empty()) {
+        throw std::runtime_error("dump needs --term <word>");
     }
 
     const mse::Index index = mse::loadIndex(indexPath);
@@ -498,6 +596,7 @@ int commandQuery(int argc, char** argv) {
     const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
     const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
     const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
+    const std::string dictFilePath = optionValue(argc, argv, "--dict-file", "");
     const bool pretty = hasFlag(argc, argv, "--pretty");
 
     const std::string wordArg = optionValue(argc, argv, "--word", "");
@@ -508,6 +607,9 @@ int commandQuery(int argc, char** argv) {
     if (modeCount != 1) {
         throw std::runtime_error(
             "query needs exactly one of --word / --phrase / --words");
+    }
+    if (!dictFilePath.empty() && wordArg.empty()) {
+        throw std::runtime_error("--dict-file supports --word queries only");
     }
 
     mse::QueryOptions options;
@@ -538,7 +640,38 @@ int commandQuery(int argc, char** argv) {
         stopPtr = &stopWords;
     }
 
-    const mse::Index index = mse::loadIndex(indexPath);
+    // Normal path: load the whole index (term table included). Disk-
+    // dictionary path: load only the doc table, resolve the (single) word
+    // through the B+Tree sidecar and attach just its posting list -- the
+    // runQuery() logic, thresholds and output are shared unchanged.
+    mse::Index index;
+    std::unique_ptr<mse::LazyIndexReader> lazy;
+    if (!dictFilePath.empty()) {
+        lazy = std::make_unique<mse::LazyIndexReader>(indexPath, dictFilePath);
+        index.flags = lazy->flags();
+        index.tokenCount = lazy->tokenCount();
+        index.docs = lazy->docs();
+        mse::Tokenizer tokenizer;  // default options, like the query side
+        std::vector<mse::Token> queryTokens;
+        tokenizer.tokenizeText(wordArg, 0, queryTokens);
+        if (!queryTokens.empty()) {
+            std::string normalized = queryTokens.front().text;
+            const bool filtered =
+                (index.flags & mse::kIndexFlagStopWords) != 0 && stopPtr != nullptr &&
+                stopPtr->contains(normalized);
+            if (!filtered) {
+                if ((index.flags & mse::kIndexFlagStemmed) != 0) {
+                    normalized = mse::stem(normalized);
+                }
+                mse::IndexTerm termRow;
+                if (lazy->readTerm(normalized, termRow)) {
+                    index.terms = {std::move(termRow)};
+                }
+            }
+        }
+    } else {
+        index = mse::loadIndex(indexPath);
+    }
     const mse::QueryResult result = mse::runQuery(index, queryText, options, stopPtr);
 
     const char* modeName = options.mode == mse::QueryMode::Word     ? "word"

@@ -49,6 +49,8 @@ proj1/
 │   ├── posting.hpp           #   倒排记录表：docID/tf/positions
 │   ├── dict.hpp              #   词典接口：伸展树（主）+ 哈希（基线）
 │   ├── index.hpp             #   索引构建/序列化/加载/不变量/ dump
+│   │                         #   + B+Tree 词典 sidecar 与 LazyIndexReader
+│   ├── bptree.hpp           #   页式 B+Tree（磁盘词典，Bonus 实做）
 │   ├── query.hpp             #   查询：word/phrase/boolean + 四个阈值
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
@@ -320,6 +322,7 @@ only in derived: hath o thee thou (4)
 ```bash
 ./build/mse build [--manifest data/manifest.tsv] [--index build/index.bin]
                   [--dict splay|hash] [--stop-words data/stopwords.txt] [--stem]
+                  [--dict-file build/index.bpt]
 ```
 
 ```text
@@ -341,10 +344,16 @@ invariants : OK
 python3 tools/brute_force.py --stop-words data/stopwords.txt --stem
 ```
 
+`--dict-file` 额外写出一个 **B+Tree 词典 sidecar**（term → posting 字节区，见
+[磁盘 B+Tree 词典](#磁盘-btree-词典bonus-实做)）。
+
 ### `mse dump` — 查看某个词的 posting
 
 ```bash
 ./build/mse dump --index build/index.bin --term osric [--limit 20]
+# 磁盘词典路径（不加载词表）：
+./build/mse dump --index build/index.bin --dict-file build/index.bpt --term osric
+./build/mse dump --index build/index.bin --dict-file build/index.bpt --verify-all
 ```
 
 ```text
@@ -376,13 +385,33 @@ results    : 1 documents
       > Osric, who brings back to him that you attend him in
 ```
 
-查询与建索引共用同一条管线（按索引头 flags 自动启用停用词/词干化）；短语在"过滤后 token 流"上匹配，停用词会被 note 行提示（如 `--phrase "my lord"` 退化为查 `lord`）。
+查询与建索引共用同一条管线（按索引头 flags 自动启用停用词/词干化）；短语在"过滤后 token 流"上匹配，停用词会被 note 行提示（如 `--phrase "my lord"` 退化为查 `lord`）。加 `--dict-file` 可让单词查询走磁盘词典路径（输出与全载一致，见下节）。
 
 `--json` 输出供脚本消费；阈值矩阵实验（Task 4）：
 
 ```bash
 python3 tools/threshold_matrix.py    # → build/threshold_matrix.csv + .svg（15 查询 × 4 参数）
 ```
+
+### 磁盘 B+Tree 词典（Bonus 实做）
+
+"50 万文件 / 4 亿词"的瓶颈在**词典无法常驻内存**。`build --dict-file` 把词表冻结成一个页式
+B+Tree 文件（4KB/页，term → posting 字节区，叶链支持范围/前缀扫描）；查询侧
+`LazyIndexReader` 只加载文档表，term 经 B+Tree（O(树高) 页读 + LRU 缓存）定位后直接 seek
+对应 posting 字节——**词表与 postings 永不整体加载**：
+
+```text
+$ ./build/mse dump --index build/index.bin --dict-file build/index.bpt --term banquo
+dict-file  : build/index.bpt  (height 2, reads 0)
+term banquo: df=1, tf=27
+  doc 33 "Macbeth"  tf=27  positions: 195 662 663 1256 1376 3500 ...
+dict reads : 2 page reads, 0 cache hits
+index read: 8308 bytes (vs 3685655 for a full load)
+```
+
+实测（莎士比亚索引，14 937 词）：sidecar 237KB（6.4%）;冷查询 ~16.5KB I/O（全量加载的
+0.45%）;`--verify-all` 全词表双路径对拍 0 差异（已进 ctest）。4 亿词外推：树高 4、单查询 4 页
+（见 notes.md §3.13）。`mse query --dict-file`（单词模式）与全载路径输出逐字节一致。
 
 ### 规划中的命令
 

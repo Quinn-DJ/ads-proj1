@@ -71,6 +71,7 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME crosscheck_build
              COMMAND mse build
                      --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-index.bpt
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem)
     set_tests_properties(crosscheck_build PROPERTIES
@@ -85,6 +86,18 @@ if(Python3_Interpreter_FOUND)
     set_tests_properties(crosscheck_brute_force PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_INDEX
+        TIMEOUT 300)
+    # Disk-dictionary cross-check: every term resolved through the B+Tree
+    # sidecar must parse identical to a full index load (the B3 gate).
+    add_test(NAME crosscheck_dictfile
+             COMMAND mse dump
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-index.bpt
+                     --verify-all)
+    set_tests_properties(crosscheck_dictfile PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_INDEX
+        PASS_REGULAR_EXPRESSION "0 mismatches"
         TIMEOUT 300)
 else()
     message(STATUS "Python3 not found: skipping the cross-check tests")

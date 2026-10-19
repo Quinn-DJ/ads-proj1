@@ -47,6 +47,25 @@ std::uint64_t postingsBytesOf(const IndexTerm& term) {
            static_cast<std::uint64_t>(term.positions.size()) * 4;
 }
 
+// Byte offset of each term's postings block inside the file (the layout
+// writeIndex() writes and the term table records). Shared by the file
+// writer and the dictionary sidecar so both always agree.
+std::vector<std::uint64_t> computeTermOffsets(const Index& index) {
+    std::uint64_t offset = kHeaderBytes;
+    for (const IndexDoc& doc : index.docs) {
+        offset += 12 + doc.title.size();  // docID + keptTokens + length + title
+    }
+    for (const IndexTerm& term : index.terms) {
+        offset += 28 + term.term.size();  // len + term + df + tf + offset + bytes
+    }
+    std::vector<std::uint64_t> termOffsets(index.terms.size());
+    for (std::size_t i = 0; i < index.terms.size(); ++i) {
+        termOffsets[i] = offset;
+        offset += postingsBytesOf(index.terms[i]);
+    }
+    return termOffsets;
+}
+
 // ---------------------------------------------------------------------------
 // little-endian reader with bounds checks (the load side of the spec)
 // ---------------------------------------------------------------------------
@@ -94,6 +113,9 @@ public:
         }
         pos_ = static_cast<std::size_t>(offset);
     }
+
+    // Bytes left in the buffer (a postings block parses until it hits 0).
+    std::size_t remaining() const { return data_.size() - pos_; }
 
 private:
     void require(std::size_t bytes) {
@@ -180,18 +202,7 @@ Index buildIndex(const Corpus& corpus, const BuildOptions& options,
 void writeIndex(const std::string& path, const Index& index) {
     // Pre-compute every offset so the file is written sequentially and
     // deterministically (no pointer fix-ups, same bytes for the same input).
-    std::uint64_t offset = kHeaderBytes;
-    for (const IndexDoc& doc : index.docs) {
-        offset += 12 + doc.title.size();  // docID + keptTokens + length + title
-    }
-    for (const IndexTerm& term : index.terms) {
-        offset += 28 + term.term.size();  // len + term + df + tf + offset + bytes
-    }
-    std::vector<std::uint64_t> termOffsets(index.terms.size());
-    for (std::size_t i = 0; i < index.terms.size(); ++i) {
-        termOffsets[i] = offset;
-        offset += postingsBytesOf(index.terms[i]);
-    }
+    const std::vector<std::uint64_t> termOffsets = computeTermOffsets(index);
 
     std::ofstream out(path, std::ios::binary);
     if (!out) {
@@ -404,6 +415,143 @@ bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostin
         out << "  ... (+" << (entry->postings.size() - shown) << " more postings)\n";
     }
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// disk dictionary sidecar (B-series)
+// ---------------------------------------------------------------------------
+
+void writeDictFile(const Index& index, const std::string& path,
+                   std::uint32_t pageSize) {
+    // index.terms is sorted by construction; the packed value keeps the
+    // posting byte range, so the reader can seek without the term table.
+    const std::vector<std::uint64_t> offsets = computeTermOffsets(index);
+    std::vector<std::pair<std::string, std::uint64_t>> pairs;
+    pairs.reserve(index.terms.size());
+    for (std::size_t i = 0; i < index.terms.size(); ++i) {
+        const std::uint64_t len = postingsBytesOf(index.terms[i]);
+        if (len >= (1ull << kDictLenBits)) {
+            throw std::runtime_error("term '" + index.terms[i].term +
+                                     "' postings exceed the 2 MiB pack limit");
+        }
+        pairs.emplace_back(index.terms[i].term, (offsets[i] << kDictLenBits) | len);
+    }
+    BTree::bulkLoad(pairs, pageSize).writeFile(path);
+}
+
+LazyIndexReader::LazyIndexReader(const std::string& indexPath,
+                                 const std::string& dictPath,
+                                 std::size_t cachePages)
+    : indexPath_(indexPath), dict_(dictPath, cachePages) {
+    // Parse only the header and the doc table. The buffer grows in chunks
+    // until the doc table is complete, so a lazy open reads just a few KiB
+    // regardless of how large the term table + postings are (the point of
+    // the sidecar: those regions are only touched per query term).
+    file_.open(indexPath_, std::ios::binary);
+    if (!file_) {
+        throw std::runtime_error("cannot open index file: " + indexPath_);
+    }
+    constexpr std::size_t kChunk = 8192;
+    std::vector<std::uint8_t> buffer;
+    char chunk[kChunk];
+    const auto grow = [&]() {
+        file_.read(chunk, static_cast<std::streamsize>(kChunk));
+        const std::streamsize got = file_.gcount();
+        bytesRead_ += static_cast<std::uint64_t>(got);
+        buffer.insert(buffer.end(), chunk, chunk + got);
+        return got > 0;
+    };
+    grow();
+
+    // First pass: header. termCount is cross-checked against the sidecar
+    // so a mismatched pair cannot silently serve wrong postings.
+    std::uint32_t docCount = 0;
+    {
+        Reader headerReader(buffer);
+        headerReader.expectMagic();
+        if (headerReader.u32() != kIndexVersion) {
+            throw std::runtime_error("unsupported index version in " + indexPath_);
+        }
+        flags_ = headerReader.u32();
+        docCount = headerReader.u32();
+        const std::uint32_t termCount = headerReader.u32();
+        if (termCount != dict_.keyCount()) {
+            throw std::runtime_error("dictionary/index mismatch: " +
+                                     std::to_string(termCount) + " terms in " +
+                                     indexPath_ + " vs " +
+                                     std::to_string(dict_.keyCount()) +
+                                     " in the dictionary");
+        }
+        tokenCount_ = headerReader.u64();
+    }
+
+    // Second pass: doc rows, re-parsing (cheaply, the table is small) as
+    // the buffer grows past rows that ran out of bytes.
+    while (docs_.size() < docCount) {
+        try {
+            Reader row(buffer);
+            row.seek(kHeaderBytes);
+            docs_.clear();
+            for (std::uint32_t i = 0; i < docCount; ++i) {
+                IndexDoc doc;
+                doc.docID = row.u32();
+                doc.keptTokens = row.u32();
+                doc.title = row.string();
+                docs_.push_back(std::move(doc));
+            }
+        } catch (const std::runtime_error&) {
+            if (!grow()) {  // out of file before the table completed
+                throw std::runtime_error("index file is truncated or corrupt: " +
+                                         indexPath_);
+            }
+        }
+    }
+    // Rewind to the start: readTerm() seeks per term anyway.
+    file_.clear();
+    file_.seekg(0);
+}
+
+bool LazyIndexReader::readTerm(const std::string& term, IndexTerm& out) const {
+    const auto packed = dict_.findValue(term);
+    if (!packed.has_value()) {
+        return false;
+    }
+
+    // Read exactly this term's posting block and parse it in place. The
+    // stream is opened once and reused (mutable: readTerm is const).
+    const std::uint64_t offset = *packed >> kDictLenBits;
+    const std::uint64_t length = *packed & ((1ull << kDictLenBits) - 1);
+    std::vector<std::uint8_t> block(static_cast<std::size_t>(length));
+    file_.clear();
+    file_.seekg(static_cast<std::streamoff>(offset));
+    file_.read(reinterpret_cast<char*>(block.data()),
+               static_cast<std::streamsize>(length));
+    if (!file_ || file_.gcount() != static_cast<std::streamsize>(length)) {
+        throw std::runtime_error("index file is truncated or corrupt: " +
+                                 indexPath_);
+    }
+    bytesRead_ += length;
+    Reader reader(block);
+    out.term = term;
+    out.postings.clear();
+    out.positions.clear();
+    while (reader.remaining() > 0) {
+        Posting posting;
+        posting.docID = reader.u32();
+        posting.tf = reader.u32();
+        posting.posStart =
+            static_cast<std::uint32_t>(out.positions.size());
+        for (std::uint32_t k = 0; k < posting.tf; ++k) {
+            out.positions.push_back(reader.u32());
+        }
+        out.postings.push_back(posting);
+    }
+    return true;
+}
+
+std::vector<std::pair<std::string, std::uint64_t>> LazyIndexReader::allTerms()
+    const {
+    return dict_.rangeScan("", "\xff\xff\xff\xff");
 }
 
 }  // namespace mse

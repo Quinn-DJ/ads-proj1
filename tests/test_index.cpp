@@ -187,3 +187,48 @@ TEST_CASE("a corrupt index file must fail loudly", "[index]") {
     }
     CHECK_THROWS_AS(mse::loadIndex("build/test_index_bad.bin"), std::exception);
 }
+
+TEST_CASE("B+Tree sidecar serves every term without loading the table",
+          "[index][dict]") {
+    const mse::Corpus corpus =
+        mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
+    mse::SplayDictionary splay;
+    const mse::Index index = mse::buildIndex(corpus, mse::BuildOptions{}, splay);
+
+    mse::writeIndex("build/test_index_lazy.bin", index);
+    mse::writeDictFile(index, "build/test_index_lazy.bpt");
+
+    const mse::LazyIndexReader lazy("build/test_index_lazy.bin",
+                                    "build/test_index_lazy.bpt");
+    CHECK(lazy.docs().size() == index.docs.size());
+    CHECK(lazy.termCount() == index.terms.size());
+    CHECK(lazy.flags() == index.flags);
+    CHECK(lazy.tokenCount() == index.tokenCount);
+
+    // Every term resolves and parses identical to the loaded form.
+    for (const mse::IndexTerm& reference : index.terms) {
+        mse::IndexTerm viaDict;
+        REQUIRE(lazy.readTerm(reference.term, viaDict));
+        CHECK(viaDict.postings.size() == reference.postings.size());
+        CHECK(viaDict.positions == reference.positions);
+        for (std::size_t i = 0; i < reference.postings.size(); ++i) {
+            CHECK(viaDict.postings[i].docID == reference.postings[i].docID);
+            CHECK(viaDict.postings[i].tf == reference.postings[i].tf);
+        }
+    }
+    // Absent terms report absent; the dictionary side is a real lookup.
+    mse::IndexTerm missing;
+    CHECK_FALSE(lazy.readTerm("zzzznotaterm", missing));
+    CHECK(lazy.dictHeight() >= 1);
+
+    // A dictionary from a DIFFERENT index must be rejected up front (the
+    // term-count cross-check in the constructor).
+    mse::SplayDictionary other;
+    mse::Index shifted = index;
+    shifted.terms.pop_back();  // one term fewer -> different term count
+    mse::writeIndex("build/test_index_shifted.bin", shifted);
+    mse::writeDictFile(shifted, "build/test_index_shifted.bpt");
+    CHECK_THROWS_AS((mse::LazyIndexReader{"build/test_index_lazy.bin",
+                                          "build/test_index_shifted.bpt"}),
+                    std::exception);
+}

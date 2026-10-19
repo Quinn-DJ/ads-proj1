@@ -347,6 +347,12 @@ v1 先不做压缩（清晰优先）；索引与查询跑通后做一轮**对比
    - 查询侧：rare-term-first，避开超长 posting。
 3. **我们程序的临界点**：给出"可用内存 M 下能撑多大语料"的估算公式与表格（M=64MB / 1GB / 16GB 分别对应多大规模），说明边界在哪里。
 
+> **2026-10-17 实做升级（B 系列）**：查询侧的"词典常驻内存"假设已移除——`build --dict-file` 把
+> 词表冻结为页式 B+Tree（`include/bptree.hpp`），`LazyIndexReader` + `mse query/dump --dict-file`
+> 只读 O(树高) 页即可定位任意词的 postings。实测：14 937 词 sidecar 237KB，冷查询 I/O 为全量
+> 加载的 0.45%，`--verify-all` 双路径全量对拍 0 差异；4 亿词外推树高 4、单查询 4 页（数据与
+> 推导见 notes.md §3.13）。构建侧外部化（BSBI/SPIMI）仍留作分析引用。
+
 ---
 
 ## 12. 文档产出与报告映射
@@ -412,7 +418,7 @@ proj1/
 | M3（D9–D11） | 阈值模块 + 阈值矩阵 + 性能数据 + 索引压缩对比（§6.4）+ 词典对比（§6.5） | `threshold_matrix.csv` + 两张对比表 |
 | M4（D12–D14） | 报告四章 + 注释率检查 + 匿名打包 | 评审清单逐项过一遍 |
 
-进度（截至 2026-10-17）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词）、C++ 存储层（`src/corpus`）、tokenizer（20 条单测 + 逐文档对拍）、word count（过滤前/中/后三版 CSV 均逐字节一致，含熵三列）、停用词表（39 词）、Porter 词干化（约 100 条单测，全词表与 NLTK 逐字节一致）、词典层（伸展树主 + 哈希基线，跨实现互验）、**倒排索引主体**（`src/index`：构建/序列化/加载/不变量/dump；黄金样例 6/6 测试；splay 与 hash 索引逐字节一致；`tools/brute_force.py` 全词表独立对拍 OK——14 937 词 + raw 版 25 705 词全项一致）、**查询程序**（Task 3：word/phrase/boolean + 四阈值，21 条单测 + `--json`）与**阈值矩阵实验**（Task 4 首轮：15 查询 × 4 参数 = 201 条测量）均已完成；**熵驱动停用词推导**（E 系列：count 熵三列 + `mse stopwords --derive` 三特征规则 + 三套索引对比实验，见 notes.md §3.11）已完成。当前进行：通用化重构（G 系列）与磁盘 B+Tree 索引（B 系列，Bonus 实做）。
+进度（截至 2026-10-17）：语料抓取（1211 个 HTML，commit `6b82db8`）、文本层 + manifest（195 个文档、152 632 行、930 911 词）、C++ 存储层（`src/corpus`）、tokenizer（20 条单测 + 逐文档对拍）、word count（过滤前/中/后三版 CSV 均逐字节一致，含熵三列）、停用词表（39 词）、Porter 词干化（约 100 条单测，全词表与 NLTK 逐字节一致）、词典层（伸展树主 + 哈希基线，跨实现互验）、**倒排索引主体**（`src/index`：构建/序列化/加载/不变量/dump；黄金样例 6/6 测试；splay 与 hash 索引逐字节一致；`tools/brute_force.py` 全词表独立对拍 OK——14 937 词 + raw 版 25 705 词全项一致）、**查询程序**（Task 3：word/phrase/boolean + 四阈值，21 条单测 + `--json`）与**阈值矩阵实验**（Task 4 首轮：15 查询 × 4 参数 = 201 条测量）均已完成；**熵驱动停用词推导**（E 系列：count 熵三列 + `mse stopwords --derive` 三特征规则 + 三套索引对比实验，见 notes.md §3.11）已完成；**通用化重构**（G 系列：plain 文本格式 + 通用导入器 + RFC 第二语料端到端零代码改动，见 notes.md §3.12）已完成；**磁盘 B+Tree 词典**（B 系列：页式 B+Tree + LazyIndexReader + verify-all 全量对拍 + I/O 实测，见 notes.md §3.13）已完成。剩余：M4 报告写作与打包（含把 E/G/B 三系列实验整理进 Chapter 3/4）。
 
 ---
 

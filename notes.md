@@ -250,6 +250,36 @@
 - **熵规则跨语料验证**（报告素材）：RFC 语料推导出 56 词表（与莎士比亚的 9/39 不同），含 `rfc/page` 等领域样板词；关键对照——**RFC 2119 关键词 `must/may/should` 未被判停用词**：df_ratio=1.0（三篇全覆盖）但速率分布倾斜（7231 满篇 MUST，1035 少用）→ entropy_rate_norm < 0.93 被拒；而旧两特征规则把它们连同 `server/mail/request` 一起收进 127 词候选带。"平"维度在跨语料场景真实起作用，也是"没有万能停用词表"的直接证据。
 - 已知局限（报告可讲）：plain 导入零处理，RFC 分页脚注 `[Page N]` 入库（`page` 进停用词候选）；清理属于 producer 职责（extract.py 之于莎士比亚 = import 脚本之于 RFC），引擎不必知情。
 
+### 3.13 磁盘 B+Tree 词典（2026-10-17，B 系列，Bonus 实做）
+
+**结构**（`include/bptree.hpp` + `src/bptree.cpp`）：页式 B+Tree，变长键（term），值 = posting 字节区
+`(offset << 21 | len)`。页预算与序列化布局严格对应（header 7B + 槽 + 长度前缀键），"内存装得下"
+与"磁盘页装得下"是同一个判据。不变量 I1–I5 由 `validate()` 全量校验；两个实现期发现：
+
+1. **分隔键是真实键的副本**：右子树最左键等于其左分隔键，I2 区间必须左闭（严格小于会误报）；
+2. **变长键下 50% 填充不可无条件保证**：计数对半分裂在键长偏斜时违反 I3（实测 524B < 528B 页），
+   改为"合法窗口内取字节中点"分裂，I3 用可证下界 `pageSize/2 − 最大条目(264B)`（真实 term 键
+   远高于下界，min/max fill 由 stats 报告）。
+
+**验证**：`tests/test_bptree.cpp` 7 用例 / 5.2 万断言对 `std::map` oracle（三档页宽、对抗性同前缀键、
+bulk-load 与逐条插入内容等价、文件往返、缓存命中计数、坏魔数拒绝）；真实语料
+`dump --verify-all`：**14 937 词经 B+Tree 解析的 postings 与全量加载逐项一致，0 差异**（已进 ctest，
+13/13）；`query --dict-file` 与全载路径输出（含 JSON）逐字节一致。
+
+**实测 I/O（B4，语料级）**：
+
+| 指标 | 数值 |
+|------|------|
+| 词典 sidecar | 237 568 B（58 页 × 4096B，高 2）= 索引的 6.4% |
+| 冷单词查询（banquo） | 词典 2 页 + 索引 8 308 B（文档表前缀 + 116B postings）≈ **16.5KB，为全量加载 3 685 655 B 的 0.45%** |
+| 全词表扫描（verify-all） | 114 页读 / 29 819 缓存命中（叶链顺序访问对 LRU 极友好） |
+| 查询逻辑复用 | runQuery 阈值/评分/输出与全载路径共用，仅词典查找换成 B+Tree |
+
+**Bonus 外推（报告 Chapter 4）**：4 096B 页、term 均值 ~7.6 字符 → 叶容量 ≈246 词条、内部扇出
+≈325。4 亿词 → 词典 ≈6.6GB、叶 ≈1.63M、**树高 4，单次查询 4 页 = 16KB**——内存装不下词典的
+场景下查询仍然廉价；这正是"词典常驻内存"假设被移除后的答案（对照 plan §11 的纸面估算，现在有
+实测结构背书）。构建侧仍为内存构建 + bulk-load 落盘；外部构建（BSBI/SPIMI）留作分析引用。
+
 ---
 
 ## 4. 验证记录
@@ -277,6 +307,9 @@
 | 动态停用词索引全量对拍（`derive(0.4, 0.001, 0.93)` 39 词 + `--stem` 后 `brute_force.py`） | OK：14 936 词 df/tf/docID/positions 全项一致 |
 | plain2 fixture（plain+marked 混排 manifest，标记形行保持可检索） | 全过（test_count 第 3 用例） |
 | RFC 第二语料端到端（stats/count/build/query/brute_force，零代码改动） | 全通；count CSV 逐字节一致；索引 2 695 词全项一致；ctest rfc_stats 过 |
+| B+Tree 单元测试（std::map oracle，三档页宽/对抗键/文件往返/缓存计数） | 全过（test_bptree 10 用例 8.4 万断言） |
+| 磁盘词典全量对拍（B+Tree 逐词解析 vs 全量加载，14 937 词 × df/tf/docID/positions） | 0 差异（ctest crosscheck_dictfile 过） |
+| `query --dict-file` 与全载路径输出一致性（osric pretty / love JSON） | 逐字节一致 |
 
 ### 4.2 测试与对拍抓出的六个真问题（数字闭环）
 
