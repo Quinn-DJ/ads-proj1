@@ -123,6 +123,8 @@ cmake --build build --target clean           # 清理构建产物（或直接删
   `CMakeLists.txt` 里 `mse_core` 的源文件列表（新测试同理，登记到 `tests/CMakeLists.txt` 的 `MSE_TESTS`）。
 - `tests/fixtures/golden4/` 是讲义四文档示例的黄金样例。注意其中 `a` 一行与讲义表格
   有一处已知差异（以示例句子为准，见 `notes.md` §3.8）。
+- 测试证据拆成四份独立报告（单元测试、正确性对拍、阈值实验、规模测试），见
+  `reports/README.md`；`bash reports/build.sh` 可重新生成 `reports/pdf/` 下的 PDF。
 
 ## 命令参考
 

@@ -31,6 +31,11 @@ void checkStems(const std::vector<std::pair<std::string, std::string>>& rows) {
 
 }  // namespace
 
+// Vectors from Porter's paper. The expected values are the *final* outputs of
+// the whole pipeline (steps 1a-5b), not the local effect printed in the paper's
+// example column; e.g. "agreed" -> "agre" because step 5a removes the final E
+// after step 1b produced "agree". Each value was verified against NLTK's
+// ORIGINAL_ALGORITHM mode.
 TEST_CASE("step 1a/1b/1c: plurals, -ed/-ing and terminal y", "[stemmer]") {
     checkStems({
         {"caresses", "caress"},
@@ -59,6 +64,9 @@ TEST_CASE("step 1a/1b/1c: plurals, -ed/-ing and terminal y", "[stemmer]") {
     });
 }
 
+// Step 2 exercises longest-suffix-first matching and the author's canonical
+// departures: POSSIBLI -> POSSIBL (bli -> ble) and CHRONOLOGI -> CHRONOLOG
+// (logi -> log). Agreement/most other suffixes are covered in the next cases.
 TEST_CASE("step 2: double suffixes map to single ones", "[stemmer]") {
     checkStems({
         {"relational", "relat"},
@@ -87,6 +95,8 @@ TEST_CASE("step 2: double suffixes map to single ones", "[stemmer]") {
     });
 }
 
+// Step 3 suffixes, including the deleting rules (ATIVE, NESS, FUL) where the
+// replacement is the empty string.
 TEST_CASE("step 3: -icate/-ative/-alize", "[stemmer]") {
     checkStems({
         {"triplicate", "triplic"},
@@ -99,6 +109,8 @@ TEST_CASE("step 3: -icate/-ative/-alize", "[stemmer]") {
     });
 }
 
+// Step 4 requires m > 1 and includes the special ION rule: ADOPTION -> ADOPT
+// (preceded by T), while a word whose ION is not preceded by S/T keeps it.
 TEST_CASE("step 4: residual suffixes", "[stemmer]") {
     checkStems({
         {"revival", "reviv"},
@@ -123,6 +135,8 @@ TEST_CASE("step 4: residual suffixes", "[stemmer]") {
     });
 }
 
+// Step 5a (final E with the *o exception) and 5b (final double L after m > 1).
+// RATE keeps its E because the stem is cvc, while PROBATE loses it.
 TEST_CASE("step 5a/5b: final -e and double -ll", "[stemmer]") {
     checkStems({
         {"probate", "probat"},
@@ -133,6 +147,9 @@ TEST_CASE("step 5a/5b: final -e and double -ll", "[stemmer]") {
     });
 }
 
+// Tokenizer output forms (internal apostrophes). These verify the contraction
+// pre-pass before the Porter rules, including the documented irregular results
+// can't -> ca and won't -> wo, and elisions such as o'er -> oer.
 TEST_CASE("our tokenizer's contraction forms", "[stemmer]") {
     checkStems({
         {"who's", "who"},
@@ -150,6 +167,9 @@ TEST_CASE("our tokenizer's contraction forms", "[stemmer]") {
     });
 }
 
+// Guard against over-stemming. The two letter/guard cases (is, as, us, ay)
+// exercise the canonical length rule; was/this are the paper's unconditional
+// S-rule quirks, kept intentionally and cross-checked with the oracle.
 TEST_CASE("words that must not change", "[stemmer]") {
     checkStems({
         {"a", "a"},

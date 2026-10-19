@@ -1,0 +1,276 @@
+\input{style}
+
+\begin{document}
+
+\reportheader{测试报告 01：单元测试}{Catch2 单元测试与 CTest 集成测试}{1.0}
+\hypersetup{pdftitle={测试报告 01：单元测试}}
+
+\begin{center}\small
+\begin{tabularx}{0.92\linewidth}{@{}l X@{}}
+  报告编号 & TR-01 \\
+  被测对象 & 迷你搜索引擎（C++17，\code{mse}） \\
+  被测版本 & 分支 \code{test/reports}，基于 \code{origin/main} 加注释与测试改动 \\
+  测试环境 & WSL2（Linux 6.18），g++ 15.2，CMake 3.31.6，Release \\
+  测试日期 & 2026-10-19 \\
+  总体结论 & 8 个单元测试可执行文件、18 项 CTest 全部通过 \\
+\end{tabularx}
+\end{center}
+
+\section{目标与范围}
+
+本报告覆盖项目的\textbf{单元测试}与 \textbf{CTest 集成测试}，回答两个问题：
+
+\begin{enumerate}
+  \item 每个模块的行为是否符合第 2 章规格（分词、词干化、词典、索引、查询、停用词、计数、B+Tree）；
+  \item 把模块组合成完整管线后，索引构建、v1/v2 序列化、磁盘词典与独立对拍是否仍能通过。
+\end{enumerate}
+
+不包含：阈值实验的统计结果（见 TR-03）、大规模语料的性能与外推（见 TR-04）、以及独立 Python 对拍的逐项数据（见 TR-02）。三份报告合起来构成完整测试证据链。
+
+\section{测试环境与构建}
+
+\begin{lstlisting}[language=bash]
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+\end{lstlisting}
+
+单元测试使用项目内 vendored 的 Catch2 v3（amalgamated 单文件）。Catch2 只链接测试可执行文件，不进入 \code{mse} 交付二进制；测试代码启用与主代码相同的警告选项。
+
+\begin{table}[H]
+  \centering
+  \caption{测试环境}
+  \label{tab:env}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
+    \toprule
+    项目 & 值 \\
+    \midrule
+    操作系统 & WSL2，Linux 6.18.54.1-microsoft-standard-WSL2 \\
+    编译器 & g++ 15.2，\code{-std=c++17} \\
+    构建系统 & CMake 3.31.6，Release \\
+    测试框架 & Catch2 v3（vendored） \\
+    测试驱动 & CTest 3.31.6 \\
+    语料 & \code{data/}（莎士比亚，195 文档）与 \code{data2/}（RFC，3 文档） \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{单元测试结果}
+
+八个测试可执行文件共 \textbf{46 个 TEST\_CASE}、\textbf{85,155 条断言}，全部通过。断言数最多的是 \code{test_bptree}，因为它对每个键与 \code{std::map} oracle 逐项比较；断言数大不代表用例多，而是每个键的读、写、范围扫描都被显式核对。
+
+\begin{table}[H]
+  \centering
+  \caption{单元测试汇总}
+  \label{tab:unit-summary}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l r r X@{}}
+    \toprule
+    测试文件 & TEST\_CASE & 断言数 & 结果 \\
+    \midrule
+    \code{test_tokenizer} & 2 & 24 & 通过 \\
+    \code{test_stemmer} & 7 & 101 & 通过 \\
+    \code{test_dict} & 6 & 50 & 通过 \\
+    \code{test_index} & 8 & 248 & 通过 \\
+    \code{test_query} & 7 & 26 & 通过 \\
+    \code{test_stopwords} & 3 & 11 & 通过 \\
+    \code{test_count} & 3 & 47 & 通过 \\
+    \code{test_bptree} & 10 & 84,648 & 通过 \\
+    \midrule
+    合计 & 46 & 85,155 & 全部通过 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{各套件覆盖内容}
+
+\subsection{分词器（test\_tokenizer）}
+
+两个用例分别覆盖纯文本分词与整文档分词：
+
+\begin{itemize}
+  \item 标点、数字、撇号与连字符的切分边界；
+  \item 标题行、舞台指示行、说话人行的识别，以及 \code{--keep-headings} / \code{--keep-speakers} / \code{--keep-stage} 三个开关；
+  \item 位置编号从 0 开始、只对保留 token 递增；
+  \item 文本层中“以 \code{[} 开头但实为台词”的行不会被误判为标题行。
+\end{itemize}
+
+\subsection{词干化（test\_stemmer）}
+
+七个用例按 Porter 算法的步骤组织：
+
+\begin{itemize}
+  \item 步骤 1a/1b/1c：复数、\code{-ed}/\code{-ing}、词尾 \code{y}；
+  \item 步骤 2：双后缀映射为单后缀；
+  \item 步骤 3：\code{-icate}/\code{-ative}/\code{-alize}；
+  \item 步骤 4：残余后缀；
+  \item 步骤 5a/5b：词尾 \code{-e} 与双 \code{-ll}；
+  \item 收缩词预处理（\code{isn't}、\code{you'll} 等）；
+  \item 不应变化的词（短词、专名、已被词干化的形式）。
+\end{itemize}
+
+与 canonical C 实现和 NLTK \code{MARTIN_EXTENSIONS} 的逐词对拍不在本报告，见 TR-02；本套件只验证单元级规则。
+
+\subsection{词典（test\_dict）}
+
+六个用例覆盖三种实现（伸展树、哈希、\code{std::map}）：
+
+\begin{itemize}
+  \item 伸展树：最后访问的词位于根，插入触发旋转；
+  \item 哈希：增长过程中发生 rehash，桶数按预期变化；
+  \item 三套“行为脚本”对同一条操作序列给出一致结果；
+  \item 20,000 次随机插入/查询工作负载下，splay 与 hash 的词表完全一致。
+\end{itemize}
+
+\subsection{索引（test\_index）}
+
+八个用例覆盖构建、序列化和不变量：
+
+\begin{itemize}
+  \item 讲义四文档黄金样例的 posting 表；
+  \item splay 与 hash 构建出的索引文件逐字节一致；
+  \item v1 序列化往返、加载校验、损坏文件必须报错；
+  \item v2 压缩索引往返、体积下降、独立解码；
+  \item varint 的 6/14/22/30 位四个长度档及截断拒绝；
+  \item 停用词版本中词项消失、positions 重新编号；
+  \item 块式构建与内存构建逐字节一致；
+  \item B+Tree sidecar 能解析全部词项而不加载 term 表。
+\end{itemize}
+
+\subsection{查询（test\_query）}
+
+七个用例覆盖三种查询模式与四个阈值：
+
+\begin{itemize}
+  \item 单词查询的 tf 排序、归一化、未命中；
+  \item 短语查询在过滤后 token 流上的相邻性；
+  \item 布尔查询的 \code{--min-match} 语义与得分排序；
+  \item \code{--max-df}/\code{--min-df}/\code{--top-x} 的丢弃与截断；
+  \item 停用词查询：原始索引可查，过滤索引返回空并给出 note；
+  \item 词干化使不同词形命中同一词干；
+  \item \code{--pretty} 能把命中 position 映射回源行。
+\end{itemize}
+
+\subsection{停用词（test\_stopwords）}
+
+三个用例覆盖：
+
+\begin{itemize}
+  \item 39 个结构词全部在表中；
+  \item 内容词与古语词保留，不被误删；
+  \item 缺失文件时报错并打印路径。
+\end{itemize}
+
+\subsection{计数与熵（test\_count）}
+
+三个用例覆盖：
+
+\begin{itemize}
+  \item golden4 上按公式手算的熵值与程序输出一致；
+  \item \code{deriveStopWords} 的三特征规则在边界上的取舍；
+  \item plain 格式文档中“看起来像标记行”的文本仍可检索。
+\end{itemize}
+
+\subsection{B+Tree（test\_bptree）}
+
+十个用例覆盖内存树与磁盘页文件：
+
+\begin{itemize}
+  \item 与 \code{std::map} oracle 逐键比较（三档页宽、对抗性同前缀键）；
+  \item 单条插入与 bulk-load 的查询结果一致；
+  \item 重复键的 upsert 语义（覆盖值、不增键）；
+  \item 空树、单元素树、范围扫描、叶链顺序；
+  \item \code{writeFile} + \code{BTreeFile} 往返、缓存计数、坏魔数拒绝；
+  \item 输入契约（未排序输入、超长键）必须报错。
+\end{itemize}
+
+\section{CTest 集成结果}
+
+CTest 注册 18 项测试：8 个单元测试、2 个语料冒烟测试、8 个对拍/压缩/磁盘词典测试。全部通过，本次运行总耗时 44.1 秒（完整输出见 \code{data/ctest.log}）。
+
+{\small
+\begin{longtable}{@{}r l >{\raggedright\arraybackslash}p{0.52\linewidth} l@{}}
+  \caption{CTest 测试清单与结果}\label{tab:ctest} \\
+  \toprule
+  \# & 名称 & 内容 & 结果 \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \# & 名称 & 内容 & 结果 \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+  1 & \code{test_tokenizer} & 分词器单元测试 & 通过 \\
+  2 & \code{test_stemmer} & Porter 词干化单元测试 & 通过 \\
+  3 & \code{test_dict} & 三种词典实现 & 通过 \\
+  4 & \code{test_index} & 索引构建/序列化/不变量 & 通过 \\
+  5 & \code{test_query} & 查询模式与阈值 & 通过 \\
+  6 & \code{test_stopwords} & 停用词表 & 通过 \\
+  7 & \code{test_count} & tf/df/熵与派生规则 & 通过 \\
+  8 & \code{test_bptree} & 内存树与磁盘页文件 & 通过 \\
+  9 & \code{mse_stats} & 语料仍为 195 文档 & 通过 \\
+  10 & \code{rfc_stats} & 第二语料仍为 3 文档 & 通过 \\
+  11 & \code{crosscheck_build} & 构建 v1 + B+Tree sidecar & 通过 \\
+  12 & \code{crosscheck_brute_force} & Python 全词表对拍 v1 & 通过 \\
+  13 & \code{crosscheck_phrases} & 303 条短语对拍 v1 & 通过 \\
+  14 & \code{crosscheck_dictfile} & 磁盘词典全词表校验 & 通过 \\
+  15 & \code{crosscheck_compress_build} & 构建 v2 + sidecar & 通过 \\
+  16 & \code{crosscheck_compress} & Python 全词表对拍 v2 & 通过 \\
+  17 & \code{crosscheck_compress_dictfile} & v2 磁盘词典校验 & 通过 \\
+  18 & \code{crosscheck_compress_phrases} & 303 条短语对拍 v2 & 通过 \\
+\end{longtable}
+}
+
+\section{单元测试发现的问题}
+
+单元测试与集成测试在开发过程中抓出了多个实现问题，其中与模块行为直接相关的代表性问题如下（完整清单见 TR-02 第 6 节）：
+
+\begin{table}[H]
+  \centering
+  \caption{单元/集成测试发现并修复的问题}
+  \label{tab:unit-bugs}
+  \small
+  \begin{tabularx}{\linewidth}{@{}r X X@{}}
+    \toprule
+    \# & 问题 & 修复 \\
+    \midrule
+    1 & 伸展树插入分支保留 \code{Node*&} 引用，旋转后引用悬垂，插入后段错误 & 先把新节点指针复制到局部变量，再 splay \\
+    2 & \code{Reader} 构造时传入临时 vector，整句结束后引用悬垂，加载误报截断 & 先把文件内容存入具名变量 \\
+    3 & \code{MapDictionary::sortedEntries()} 只填 map 键，\code{TermEntry::term} 为空 & 插入后同步 \code{term} 字段；随机对拍抓住 \\
+    4 & B+Tree 内层借用插入错误的分隔键，30M/50M 键时报 I2 违反 & 用原 \code{last} 的首键作为边界 \\
+    5 & B+Tree 变长键按条数分裂，50\% 字节填充不变量被破坏 & 改为合法窗口内的字节中点分裂 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+这些问题说明：仅靠“跑通主流程”不够，必须让结构不变量和跨实现对拍主动失败，才能暴露悬垂引用、分隔键语义和字节预算这类边界错误。
+
+\section{复现方式}
+
+\begin{lstlisting}[language=bash]
+# 全部测试
+ctest --test-dir build --output-on-failure
+
+# 单个套件
+./build/test_bptree
+./build/test_index
+./build/test_query --list-tests
+
+# 只跑 Python 对拍
+ctest --test-dir build -R crosscheck --output-on-failure
+\end{lstlisting}
+
+若系统没有 Python 3，CMake 会跳过 8 项对拍测试，但 8 个单元测试与 2 个冒烟测试仍会执行。
+
+\section{结论}
+
+\begin{itemize}
+  \item 8 个模块、46 个 TEST\_CASE、85,155 条断言全部通过；
+  \item 18 项 CTest 全部通过，覆盖单元行为、语料冒烟、v1/v2 对拍、磁盘词典与短语查询；
+  \item 测试发现的 5 类代表性问题均已修复并有回归用例；
+  \item 单元测试只证明模块行为，跨实现正确性证据见 TR-02，阈值与规模证据见 TR-03/TR-04。
+\end{itemize}
+
+\end{document}

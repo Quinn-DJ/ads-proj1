@@ -25,6 +25,11 @@ std::vector<std::string> textsOf(const std::vector<mse::Token>& tokens) {
 
 }  // namespace
 
+// Tokenizer spec from plan.md 3.4. Each checkText() call asserts the exact
+// token sequence -- not merely that tokenization does not crash -- so a change
+// in separator or apostrophe handling shows up immediately. The sections cover
+// the cases that actually occur in the Shakespeare corpus plus the documented
+// edge behaviors (digits, leading/trailing apostrophes, hyphens).
 TEST_CASE("text tokenization covers the plan.md 3.4 edge cases", "[tokenizer]") {
     const mse::Tokenizer tokenizer;
 
@@ -36,6 +41,8 @@ TEST_CASE("text tokenization covers the plan.md 3.4 edge cases", "[tokenizer]") 
         CHECK(textsOf(tokens) == expected);
     };
 
+    // Apostrophes between letters belong to the token; this is what makes
+    // "don't" and "o'er" survive as single units for the stemmer.
     SECTION("contraction apostrophes stay inside words") {
         checkText("Who's there?", {"who's", "there"});
         checkText("don't", {"don't"});
@@ -49,6 +56,8 @@ TEST_CASE("text tokenization covers the plan.md 3.4 edge cases", "[tokenizer]") 
         checkText("'Tis now struck twelve;", {"tis", "now", "struck", "twelve"});
         checkText("friends'", {"friends"});
         checkText("'sblood,", {"sblood"});
+        // Two adjacent apostrophes: the first ends the token "don" (trailing),
+        // the second is a leading apostrophe and is skipped, leaving "t".
         checkText("don''t", {"don", "t"});
     }
 
@@ -57,8 +66,11 @@ TEST_CASE("text tokenization covers the plan.md 3.4 edge cases", "[tokenizer]") 
         checkText("well--well", {"well", "well"});
     }
 
+    // Digits are separators, which is why "1660s" yields only "s" -- a known
+    // edge case documented in notes.md rather than a desired word.
     SECTION("digits are not tokens") {
         checkText("5,000", {});
+        // The digits 1660 are separators; only the trailing letter survives.
         checkText("1660s", {"s"});
     }
 
@@ -67,13 +79,18 @@ TEST_CASE("text tokenization covers the plan.md 3.4 edge cases", "[tokenizer]") 
         checkText("", {});
     }
 
+    // Case folding must be ASCII-only and deterministic across platforms.
     SECTION("case folding") {
         checkText("To be, or not to be: that is the question.",
                   {"to", "be", "or", "not", "to", "be", "that", "is", "the", "question"});
+        // Uppercase input and trailing punctuation are both normalized away.
         checkText("KING.", {"king"});
     }
 }
 
+// Document-level filtering. The default must include only Body lines; the
+// three keep-* flags must include their line kind. Token::line is also checked
+// because --pretty relies on it to map a position back to a source line.
 TEST_CASE("document tokenization honours the line-kind options", "[tokenizer]") {
     mse::Document doc;
     doc.lines = {

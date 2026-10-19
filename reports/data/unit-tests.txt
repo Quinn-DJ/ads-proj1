@@ -1,0 +1,8 @@
+test_tokenizer   =============================================================================== All tests passed (24 assertions in 2 test cases)  
+test_stemmer     =============================================================================== All tests passed (101 assertions in 7 test cases)  
+test_dict        =============================================================================== All tests passed (50 assertions in 6 test cases)  
+test_index       =============================================================================== All tests passed (248 assertions in 8 test cases)  
+test_query       =============================================================================== All tests passed (26 assertions in 7 test cases)  
+test_stopwords   =============================================================================== All tests passed (11 assertions in 3 test cases)  
+test_count       =============================================================================== All tests passed (47 assertions in 3 test cases)  
+test_bptree      =============================================================================== All tests passed (84648 assertions in 10 test cases)  

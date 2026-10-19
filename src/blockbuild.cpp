@@ -65,6 +65,11 @@ std::string getString(std::istream& in) {
 }
 
 // One term's slice of a block run, as parsed by the merge cursors.
+//
+// A BlockTerm owns its postings and a flat position arena. During parsing,
+// every Posting::posStart is rewritten to an offset into `positions` rather
+// than keeping the absolute token position: the run is self-contained, so the
+// merge phase can copy the slice without consulting the original index.
 struct BlockTerm {
     std::string term;
     std::vector<Posting> postings;
@@ -73,6 +78,17 @@ struct BlockTerm {
 
 // Sequential reader over a block run: hands out BlockTerms in the sorted
 // order phase 1 wrote them.
+//
+// Run file layout (all integers little-endian u32):
+//   termCount
+//   repeated termCount times:
+//     stringLength, stringBytes
+//     postingCount
+//     repeated postingCount times:
+//       docID, tf, then tf absolute positions
+//
+// The u32 count prefix lets the cursor detect truncation before allocating a
+// huge vector; getString/getU32 already reject short reads.
 class RunCursor {
 public:
     explicit RunCursor(const std::string& path) : path_(path), file_(path, std::ios::binary) {
@@ -88,6 +104,11 @@ public:
     const std::string& path() const { return path_; }
 
     // Move to the next term of this run.
+    //
+    // `remaining_` is decremented before reading so a corrupt count cannot
+    // make the loop run forever. Each posting's positions are appended to the
+    // per-term arena in read order; posStart is therefore assigned from the
+    // current arena size, not read from disk (the run stores tf positions).
     void advance() {
         current_ = BlockTerm{};
         if (remaining_ == 0) {
@@ -120,6 +141,11 @@ private:
 };
 
 // Write one block run: terms sorted, postings in v1 encoding.
+//
+// `sorted` borrows PostingList pointers from the live dictionary, so the
+// caller must not mutate or clear that dictionary until this returns. We flush
+// explicitly and test the stream afterwards: a full disk must fail the build
+// rather than silently produce a short run that the merge would trust.
 std::uint64_t writeRun(const std::string& path,
                        const std::vector<std::pair<std::string, const PostingList*>>& sorted) {
     std::ofstream out(path, std::ios::binary | std::ios::trunc);
@@ -147,6 +173,30 @@ std::uint64_t writeRun(const std::string& path,
 
 }  // namespace
 
+// SPIMI-style external build.
+//
+// Why this exists: the in-memory builder keeps one dictionary entry per
+// distinct term, so its peak memory grows with the vocabulary, not with the
+// block budget. At 400M distinct terms that is tens of GB. This builder bounds
+// the dictionary to roughly `blockTerms` entries: whenever the live map
+// crosses the budget, it is sorted and spilled to a run file, then cleared.
+//
+// Invariants that make the merge a simple concatenation:
+//   * A spill happens only between documents. Therefore no docID appears in
+//     two runs for the same term, and docIDs in later runs are strictly larger
+//     than docIDs in earlier runs.
+//   * Within a run, terms are unique and sorted (std::sort over the map keys).
+//   * Within a term, postings are appended in document order, so docIDs are
+//     strictly increasing and positions within one posting are increasing.
+// The merge below relies on all three: equal terms are concatenated in run
+// order, and posStart is rebuilt rather than reused.
+//
+// Complexity: phase 1 tokenizes every document once and performs one sort per
+// spill, O(totalTokens + R * B log B) where B is the block budget and R the
+// number of runs. Phase 2 performs a linear scan of the live cursors for each
+// output term: O(T * R) term comparisons and O(totalPostings) copying, with
+// O(R) cursor memory. R grows with vocabulary/B, which is why a larger budget
+// trades memory for fewer merge passes.
 Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
                         BlockBuildStats& stats) {
     if (options.blockTerms == 0) {
@@ -160,6 +210,10 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
     // ------------------------------------------------------------------
     const Tokenizer tokenizer(options.build.tokenizer);
     std::vector<Token> tokens;
+    // Stemming is pure but comparatively expensive, and the same surface form
+    // recurs constantly ("the", "lord", ...). Caching surface -> stem keeps
+    // phase 1 proportional to distinct forms rather than total tokens; the
+    // cache is released when this function returns.
     std::unordered_map<std::string, std::string> stemCache;  // see count.cpp
     const auto stemmed = [&stemCache](const std::string& word) -> const std::string& {
         auto it = stemCache.find(word);
@@ -173,12 +227,16 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
     index.flags = (options.build.stopWords != nullptr ? kIndexFlagStopWords : 0u) |
                   (options.build.stem ? kIndexFlagStemmed : 0u);
 
+    // The bounded dictionary. `live.size()` is the memory knob: each entry
+    // owns a PostingList whose vectors grow with occurrences in this block.
     std::unordered_map<std::string, PostingList> live;  // the bounded dictionary
     std::vector<std::string> runPaths;
     const auto spill = [&]() {
         if (live.empty()) {
             return;
         }
+        // Copy pointers into a sortable vector; the map itself stays untouched
+        // until writeRun has consumed every pointer.
         std::vector<std::pair<std::string, const PostingList*>> sorted;
         sorted.reserve(live.size());
         for (const auto& entry : live) {
@@ -190,6 +248,8 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
                                  std::to_string(runPaths.size()) + ".bin";
         stats.blockBytes += writeRun(path, sorted);
         runPaths.push_back(path);
+        // clear() keeps the bucket array; that is fine because the next block
+        // reuses the same budget and avoids rehashing from scratch.
         live.clear();
     };
 
@@ -197,6 +257,9 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
         const Document& doc = corpus[i];
         tokens.clear();
         tokenizer.tokenize(doc, tokens);
+        // Position counts only tokens that survive the stop-word filter, so a
+        // phrase match sees the same numbering as the final index. Filtered
+        // tokens are skipped before `position` is incremented.
         std::uint32_t position = 0;  // offset in the document's filtered stream
         for (const Token& token : tokens) {
             if (options.build.stopWords != nullptr &&
@@ -207,10 +270,16 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
             live[term].append(static_cast<std::uint32_t>(doc.id), position);
             ++position;
         }
+        // IndexDoc::tokenCount records the filtered length. Phrase matching
+        // and future length-normalized scoring use it, so it must agree with
+        // the position counter above rather than with tokens.size().
         index.docs.push_back(IndexDoc{static_cast<std::uint32_t>(doc.id), doc.title, position});
         index.tokenCount += position;
         // Spill only at document boundaries: a term split across blocks must
         // never carry the same docID twice (docIDs rise with document order).
+        // The check is >= because one document can push the dictionary past
+        // the budget by its own distinct terms; that overshoot is bounded by
+        // the largest document, not by the corpus vocabulary.
         if (live.size() >= options.blockTerms) {
             stats.maxLiveTerms = std::max(stats.maxLiveTerms, live.size());
             spill();
@@ -227,12 +296,20 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
     // ------------------------------------------------------------------
     // phase 2: k-way merge over the run streams (terms ascend per run, so
     // repeatedly taking the minimum current term yields global order)
+    //
+    // The merge is O(T * R) where T is the number of distinct terms and R the
+    // number of runs: for each output term we scan all cursors once. A heap
+    // would reduce this to O(T log R), but with R in the hundreds and terms
+    // compared as short strings, the constant-factor difference is small and
+    // the linear scan keeps the code and the failure modes simple.
     // ------------------------------------------------------------------
     std::vector<std::unique_ptr<RunCursor>> cursors;
     cursors.reserve(runPaths.size());
     for (const std::string& path : runPaths) {
         cursors.push_back(std::make_unique<RunCursor>(path));
     }
+    // Track non-empty cursors so the outer loop stops as soon as every run is
+    // exhausted, without rescanning all cursors forever on an empty tail.
     std::size_t alive = 0;
     for (const auto& cursor : cursors) {
         if (!cursor->done()) {
@@ -241,7 +318,8 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
     }
 
     while (alive > 0) {
-        // Find the smallest term across the live cursors.
+        // Find the smallest term across the live cursors. Ties are expected:
+        // that is exactly how a term spread over several runs is detected.
         std::size_t minAt = cursors.size();
         for (std::size_t c = 0; c < cursors.size(); ++c) {
             if (cursors[c]->done()) {
@@ -255,6 +333,8 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
         // Concatenate this term's postings from every run holding it, in
         // run order == document order: docIDs stay strictly increasing and
         // each posting's posStart is rebuilt against the merged arena.
+        // We must copy the Posting: its posStart refers to the run-local
+        // position arena, not to `merged.positions`.
         IndexTerm merged;
         merged.term = cursors[minAt]->current().term;
         for (std::size_t c = 0; c < cursors.size(); ++c) {
@@ -283,6 +363,8 @@ Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
 
     // Runs are an implementation detail; remove them once the cursors (and
     // their open streams) are gone -- Windows refuses to delete open files.
+    // Cleanup failures are deliberately ignored: a leftover temp file is
+    // harmless, while throwing here would discard a fully built index.
     cursors.clear();
     for (const std::string& path : runPaths) {
         std::filesystem::remove(path);
