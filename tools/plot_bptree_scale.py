@@ -104,7 +104,7 @@ def main():
                  f'stroke="#d62728" stroke-width="1.5" stroke-dasharray="6 5"/>')
     parts.append(f'<circle cx="{ex_x:.1f}" cy="{ex_y:.1f}" r="4" fill="none" '
                  f'stroke="#d62728" stroke-width="2"/>')
-    parts.append(f'<text x="{ex_x-8:.1f}" y="{ex_y-8:.1f}" text-anchor="end" font-size="10" '
+    parts.append(f'<text x="{ex_x-8:.1f}" y="{ex_y-18:.1f}" text-anchor="end" font-size="10" '
                  f'fill="#d62728">400M: ~6.0 GB (h=4)</text>')
     parts.append(f'<text x="{x0+12}" y="{y0+h-12}" font-size="11" fill="#555">'
                  f'measured slope: ~15.1 bytes/key</text>')
@@ -148,7 +148,7 @@ def main():
                  f'y2="{ex_y2:.1f}" stroke="#d62728" stroke-width="1.5" stroke-dasharray="6 5"/>')
     parts.append(f'<circle cx="{ex_x2:.1f}" cy="{ex_y2:.1f}" r="4" fill="none" '
                  f'stroke="#d62728" stroke-width="2"/>')
-    parts.append(f'<text x="{ex_x2-8:.1f}" y="{ex_y2-8:.1f}" text-anchor="end" font-size="10" '
+    parts.append(f'<text x="{ex_x2-8:.1f}" y="{ex_y2-18:.1f}" text-anchor="end" font-size="10" '
                  f'fill="#d62728">400M: 4 pages</text>')
 
     parts.append("</svg>")

@@ -4,7 +4,7 @@
 
 > **草稿 v0.2**（2026-10-19）
 >
-> 说明：本文件为报告初稿。第 1–3 章、第 4 章主体以及 Bonus 的实做与实验均已完成；剩余工作主要是图表编号、PDF 排版与匿名检查，见文末“待办”。
+> 说明：本文件为报告初稿。第 1–3 章、第 4 章主体以及 Bonus 的实做与实验均已完成；LaTeX 源（`report.tex`）与 PDF（`report.pdf`）已生成，剩余工作主要是匿名打包、按课程格式重命名与最终检查，见文末“待办”。
 
 ---
 
@@ -37,7 +37,7 @@
 
 ### 1.2 语料与规模
 
-语料来自 MIT 的 Shakespeare 站点（<http://shakespeare.mit.edu/>）。为便于复现，项目使用该站点的官方 GitHub 镜像 `TheMITTech/shakespeare`，固定 commit `6b82db852c7322dd33e95db347f0ddfc812c6409`，抓取日期 2026-10-10，共 1,211 个 HTML 文件。
+语料来自 MIT 的 Shakespeare 站点（<http://shakespeare.mit.edu/>）。为便于复现，项目使用该站点的官方 GitHub 镜像 `TheMITTech/shakespeare`，固定 commit `6b82db8`（完整哈希见参考文献），抓取日期 2026-10-10，共 1,211 个 HTML 文件。
 
 文档集合严格以站点首页 `index.html` 的四栏分类为准，共 **195 个文档**：
 
@@ -131,7 +131,7 @@ CLI 程序 `mse` 提供九个子命令：
 | 查询阈值测试（2 分） | ✅ | 201 条测量的阈值矩阵 |
 | 分析评论（3 分） | ✅ | 见第 3、4 章，含 Bonus 实测与分析 |
 | Bonus（+2 分） | ✅ | 熵停用词、RFC 第二语料、v2 压缩、B+Tree 磁盘词典、SPIMI 块式构建、500k 文件跑批、5000 万键规模实测；见 4.7 |
-| 文档（4 分） | 🚧 初稿 | 本文件；剩余排版与匿名检查 |
+| 文档（4 分） | 🚧 进行中 | LaTeX 源与 PDF 已生成；剩余匿名检查与按课程格式重命名 |
 
 ### 1.5 报告组织
 
@@ -959,7 +959,7 @@ Bonus 的验证链在同一套方法上继续扩展：熵规则与人工表对�
 | 归并时间 | 0.06 s |
 | 产物 | 与 `mse build` 逐字节一致 |
 
-这说明构建侧的内存可以被块预算控制住。为了验证“500k 文件”这一侧，`tools/gen_synthetic_corpus.py` 生成了一套 plain 合成语料：500,000 个文档、每篇 40 token、词表上限 5,000,000。`mse build-blocks --block-terms 50000` 的实测：
+这说明构建侧的内存可以被块预算控制住。为了验证“500k 文件”这一侧，`gen_synthetic_corpus.py` 生成了一套 plain 合成语料：500,000 个文档、每篇 40 token、词表上限 5,000,000。`mse build-blocks`（预算 50000）的实测：
 
 | 指标 | 数值 |
 |---|---:|
@@ -1175,15 +1175,15 @@ docid  kind  category  title  text  source  url  [format]
 | 评分项 | 分值 | 本报告对应位置 |
 |---|---:|---|
 | Word counting 程序 | 1 | 2.4、3.5；代码 `src/count.cpp` |
-| Index generation 程序 | 5 | 2.6、3.6；代码 `src/index.cpp`、`src/dict.cpp`、`src/bptree.cpp`、`src/blockbuild.cpp` |
+| Index generation 程序 | 5 | 2.6、3.6；代码 `src/index.cpp` 等（含 `bptree` / `blockbuild`） |
 | Query processing 程序 | 3 | 2.7、3.7；代码 `src/query.cpp` |
 | 倒排索引正确性测试 | 2 | 3.2–3.4、3.9 |
 | 查询阈值测试 | 2 | 3.8 |
 | 分析与评论 | 3 | 第 4 章 |
-| Bonus | +2 | 4.7（熵停用词、RFC 第二语料、v2 压缩、B+Tree、SPIMI、500k 文件跑批、5000 万键实测） |
+| Bonus | +2 | 4.7（熵停用词、RFC、v2 压缩、B+Tree、SPIMI、500k 文件、50M 键） |
 | 文档第 1 章 | 1 | 第 1 章 |
 | 文档第 2 章 | 2 | 第 2 章 |
-| 整体文档风格 | 1 | 全文结构、表格、术语统一；待补图表编号与 PDF 排版 |
+| 整体文档风格 | 1 | 全文结构、表格、术语统一；LaTeX/PDF 已生成，匿名检查待做 |
 
 ---
 
@@ -1197,6 +1197,6 @@ docid  kind  category  title  text  source  url  [format]
 - [x] 500k 文件合成跑批与 50M 键 B+Tree 实测；
 - [ ] 粒度敏感性实验（暂不做，留作未来工作；见 4.1 节）；
 - [ ] 检查全文无姓名、学号、昵称、组号等身份信息；
-- [x] 生成 PDF（Edge headless 输出 `D:\Download\ads-proj1-report.pdf`）；提交前按课程格式重命名；
+- [x] 生成 LaTeX 源 `report.tex` 与 `report.pdf`（`bash tools/build_report.sh`）；提交前按课程格式重命名；
 - [ ] 匿名打包：删 `.git`，把 `report.pdf` 与 `figures/` 一起放入提交 zip；
 - [x] 代码注释率补齐到 ≥ 30%（`src/` + `include/` 约 37.9%，全部 C++ 约 35.2%）。

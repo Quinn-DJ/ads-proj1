@@ -124,6 +124,20 @@ cmake --build build --target clean           # 清理构建产物（或直接删
 - `tests/fixtures/golden4/` 是讲义四文档示例的黄金样例。注意其中 `a` 一行与讲义表格
   有一处已知差异（以示例句子为准，见 `notes.md` §3.8）。
 
+## 报告编译（LaTeX）
+
+报告正文以 `report.md` 为源；`report.tex` 与 `report.pdf` 由脚本生成：
+
+```bash
+bash tools/build_report.sh
+```
+
+依赖：Pandoc ≥ 3、TinyTeX/TeX Live（`xelatex`、`latexmk`、`ctex`、`fandol`、`fvextra`）。
+中文字体由 ctex/Fandol 提供；拉丁正文与代码使用 DejaVu 字体（Linux 通常已安装，Windows 可安装
+DejaVu Sans / DejaVu Sans Mono，或修改 `tools/latex-header.tex` 的 `\setmainfont`/`\setmonofont`）。
+脚本会把 `figures/*.svg` 对应的 PNG 渲染图用于 XeLaTeX、给宽表加 `p{}` 换行列，
+然后生成 `report.tex` 并编译出 `report.pdf`。`figures/README.md` 记录了图的生成命令。
+
 ## 命令参考
 
 ### `mse stats` — 语料统计

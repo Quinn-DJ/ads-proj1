@@ -6,7 +6,12 @@ All figures are generated from committed data; nothing here is hand-edited.
 |------|-----------|-------------|
 | `zipf.svg` | `tools/plot_zipf.py` | `build/wordcount.csv` (`mse count`) |
 | `threshold_matrix.svg` | `tools/threshold_matrix.py` | `build/index.bin` + 15 fixed queries |
-| `bptree_scale.svg` | `tools/plot_bptree_scale.py` | `mse bptree-bench` runs (100k / 1M / 10M keys) |
+| `bptree_scale.svg` | `tools/plot_bptree_scale.py` | `mse bptree-bench` runs (100k / 1M / 10M / 30M / 50M keys) |
+| `*.png` | 2x rasterization of the SVGs (Edge headless) | used by XeLaTeX via `tools/build_report.sh` |
+
+The PNGs are only needed because XeLaTeX cannot include SVG directly. Regenerate
+them with a 2x device scale factor (see `tools/build_report.sh` / the wrapper
+HTML in `build/fig-*.html`); the SVGs remain the source of truth for the HTML preview.
 
 Regenerate:
 
