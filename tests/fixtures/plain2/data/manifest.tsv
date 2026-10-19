@@ -1,0 +1,4 @@
+docid	kind	category	title	text	source	url	format
+1	notes	fixture	Field Notes	data/text/0001_notes.txt	plain2/doc1.txt	-	plain
+2	letter	fixture	A Letter	data/text/0002_letter.txt	plain2/doc2.txt	-	plain
+3	play	fixture	Marked Contrast	data/text/0003_marked.txt	plain2/doc3.txt	-	marked

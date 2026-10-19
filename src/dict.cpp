@@ -351,4 +351,43 @@ void HashDictionary::destroyChain(Node* node) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// MapDictionary (std::map + counting comparator; plan.md 6.5 third column)
+// ---------------------------------------------------------------------------
+
+bool MapDictionary::CountingCompare::operator()(const std::string& a,
+                                                const std::string& b) const {
+    if (stats != nullptr) {
+        ++stats->stringComparisons;  // the metric the other two report too
+    }
+    return a < b;  // strict weak ordering, identical semantics to the others
+}
+
+TermEntry& MapDictionary::upsert(const std::string& term) {
+    // try_emplace reports insertion, so size_ stays exact; map nodes are
+    // stable, hence the returned reference stays valid forever. The key is
+    // a private copy, so the entry's own `term` mirror is filled here --
+    // callers (sortedEntries consumers, the index freeze) read TermEntry.
+    const auto [entry, inserted] = map_.try_emplace(term);
+    if (inserted) {
+        entry->second.term = term;
+        ++size_;
+    }
+    return entry->second;
+}
+
+TermEntry* MapDictionary::find(const std::string& term) {
+    const auto it = map_.find(term);
+    return it == map_.end() ? nullptr : &it->second;
+}
+
+std::vector<TermEntry*> MapDictionary::sortedEntries() {
+    std::vector<TermEntry*> out;
+    out.reserve(size_);
+    for (auto& entry : map_) {
+        out.push_back(&entry.second);
+    }
+    return out;  // map iteration IS the sorted order -- no extra sort pass
+}
+
 }  // namespace mse

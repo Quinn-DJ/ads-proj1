@@ -29,7 +29,9 @@ set(MSE_TESTS
     test_dict
     test_index
     test_query
-    test_stopwords)
+    test_stopwords
+    test_count
+    test_bptree)
 
 foreach(test IN LISTS MSE_TESTS)
     add_executable(${test} ${test}.cpp)
@@ -49,6 +51,15 @@ set_tests_properties(mse_stats PROPERTIES
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     PASS_REGULAR_EXPRESSION "documents: 195")
 
+# Smoke test: the second corpus (generic plain-format RFC documents,
+# imported with tools/import_corpus.py) loads through the same engine with
+# zero code differences -- the genericity demo of plan.md section G.
+add_test(NAME rfc_stats
+         COMMAND mse stats --manifest ${PROJECT_SOURCE_DIR}/data2/data/manifest.tsv)
+set_tests_properties(rfc_stats PROPERTIES
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    PASS_REGULAR_EXPRESSION "documents: 3")
+
 # Independent cross-check of the whole indexing path (plan.md 10): `mse`
 # builds the stemmed, stop-filtered index once (the CROSSCHECK_INDEX
 # fixture), then brute_force.py re-derives every term's postings from the
@@ -60,6 +71,7 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME crosscheck_build
              COMMAND mse build
                      --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-index.bpt
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem)
     set_tests_properties(crosscheck_build PROPERTIES
@@ -74,6 +86,50 @@ if(Python3_Interpreter_FOUND)
     set_tests_properties(crosscheck_brute_force PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_INDEX
+        TIMEOUT 300)
+    # Disk-dictionary cross-check: every term resolved through the B+Tree
+    # sidecar must parse identical to a full index load (the B3 gate).
+    add_test(NAME crosscheck_dictfile
+             COMMAND mse dump
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-index.bpt
+                     --verify-all)
+    set_tests_properties(crosscheck_dictfile PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_INDEX
+        PASS_REGULAR_EXPRESSION "0 mismatches"
+        TIMEOUT 300)
+    # Compression cross-check (plan.md 6.4): the v2 gap+varint index must
+    # agree with the independent Python scanner AND with the disk
+    # dictionary -- same gates as v1, second encoding.
+    add_test(NAME crosscheck_compress_build
+             COMMAND mse build
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-v2.bpt
+                     --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
+                     --stem --compress)
+    set_tests_properties(crosscheck_compress_build PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_SETUP CROSSCHECK_V2)
+    add_test(NAME crosscheck_compress
+             COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/brute_force.py
+                     --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
+                     --stem)
+    set_tests_properties(crosscheck_compress PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_V2
+        TIMEOUT 300)
+    add_test(NAME crosscheck_compress_dictfile
+             COMMAND mse dump
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-v2.bpt
+                     --verify-all)
+    set_tests_properties(crosscheck_compress_dictfile PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_V2
+        PASS_REGULAR_EXPRESSION "0 mismatches"
         TIMEOUT 300)
 else()
     message(STATUS "Python3 not found: skipping the cross-check tests")

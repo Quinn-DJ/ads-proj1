@@ -1,0 +1,7 @@
+Second corpus: IETF RFC plain-text documents (genericity demo, G3).
+Downloaded from https://www.rfc-editor.org/rfc/ on 2026-10-17.
+Imported with: python3 tools/import_corpus.py --input data2/raw --root data2 --kind rfc --category IETF
+Files (sha256):
+rfc1035.txt  d14ae809fc9b41bbcae26bb38c937c9515808b944f3252b00de9fe0e95f4fdfb
+rfc5321.txt  7d560eddff1b213c17d4e1e5f95005728b2f05bc2b3947f0fcc91717c6707634
+rfc7231.txt  a83d026937f6f7929a0e53f8a9bfec4104285f0f89d6dbabd3927c4208a715b2

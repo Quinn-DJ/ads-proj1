@@ -1,0 +1,6 @@
+# docID: 2
+# title: A Letter
+# plain-format fixture
+
+Dear friend (if I may still call you that),
+[postscript] the garden is overgrown.

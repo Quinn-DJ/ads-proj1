@@ -63,10 +63,12 @@ std::vector<std::string> splitLines(const std::string& data) {
 
 // Split one manifest row on tabs.
 //
-// Titles may contain spaces but never a tab (tools/extract.py guarantees
-// this), so a plain split is sufficient; unlike a CSV parser we deliberately
-// do not support quoting or escaped tabs. The trailing empty field is kept,
-// because the caller checks the exact field count.
+// Titles may contain spaces but never a tab (the manifest producers
+// -- tools/extract.py and tools/import_corpus.py -- guarantee this), so a
+// plain split is sufficient; unlike a CSV parser we deliberately do not
+// support quoting or escaped tabs. The trailing empty field is kept, because
+// the caller checks the exact field count (the optional 8th column is the
+// text format).
 std::vector<std::string> splitTab(const std::string& line) {
     std::vector<std::string> fields;
     std::string current;
@@ -98,11 +100,13 @@ std::string joinPaths(const std::string& dir, const std::string& rel) {
     return dir + "/" + rel;
 }
 
-// Directory part of a POSIX-style path: "a/b/c" -> "a/b", "c" -> ".",
-// "/c" -> "/". Used twice in Corpus::load() to recover the project root from
-// <root>/data/manifest.tsv; no normalization or symlink resolution is needed.
+// Directory part of a path: "a/b/c" -> "a/b", "c" -> ".", "/c" -> "/".
+// Both '/' and '\' are accepted so Windows-style paths passed on the command
+// line also resolve. Used twice in Corpus::load() to recover the project root
+// from <root>/data/manifest.tsv; no normalization or symlink resolution is
+// needed because the manifest stores plain relative paths.
 std::string dirName(const std::string& path) {
-    const std::size_t pos = path.find_last_of('/');
+    const std::size_t pos = path.find_last_of("/\\");
     if (pos == std::string::npos) {
         return ".";
     }
@@ -151,13 +155,39 @@ const char* toString(LineKind kind) {
     return "unknown";
 }
 
+const char* toString(TextFormat format) {
+    switch (format) {
+        case TextFormat::Marked: return "marked";
+        case TextFormat::Plain:  return "plain";
+    }
+    return "unknown";
+}
+
+// Parse the optional 8th manifest column. Absent means "marked", so every
+// existing manifest (including the golden4 fixture) keeps working unchanged.
+TextFormat parseTextFormat(const std::string& value, const std::string& where) {
+    if (value == "marked") {
+        return TextFormat::Marked;
+    }
+    if (value == "plain") {
+        return TextFormat::Plain;
+    }
+    throw std::runtime_error(where + ": unknown text format '" + value +
+                             "' (expected marked|plain)");
+}
+
 // Load the manifest and every text file it references.
 //
 // The loader is intentionally strict: the manifest header is part of the
-// contract with tools/extract.py, docIDs must be dense (1..N) because byID()
-// indexes directly, and every referenced text file must exist. Any violation
-// throws std::runtime_error with the offending file/row, which is far more
-// useful than silently producing a partially loaded corpus.
+// contract with the manifest producers, docIDs must be dense (1..N) because
+// byID() indexes directly, and every referenced text file must exist. Any
+// violation throws std::runtime_error with the offending file/row, which is
+// far more useful than silently producing a partially loaded corpus.
+//
+// The optional 8th manifest column selects the text format: "marked" (the
+// Shakespeare layer, with [heading]/(stage)/@speaker markers) or "plain"
+// (one Body line per line, used by the generic corpus importer and the RFC
+// demo). Omitting the column preserves the original Shakespeare behavior.
 //
 // Complexity: O(total bytes) time and memory. The whole corpus stays resident
 // (about 5 MB of text for the Shakespeare set); the scaling discussion lives
@@ -173,8 +203,15 @@ Corpus Corpus::load(const std::string& manifestPath) {
     // Refuse a mismatched header early: the parser reads columns by position,
     // so a header mismatch would otherwise turn into confusing field errors.
     const std::string expectedHeader = "docid\tkind\tcategory\ttitle\ttext\tsource\turl";
-    if (rows.empty() || rows.front() != expectedHeader) {
+    if (rows.empty() || rows.front().compare(0, expectedHeader.size(), expectedHeader) != 0) {
         throw std::runtime_error("unexpected manifest header in " + manifestPath);
+    }
+    // Optional 8th column "format" (marked|plain); anything else is rejected
+    // so a typo cannot silently fall back to the default.
+    const bool hasFormatColumn = rows.front() == expectedHeader + "\tformat";
+    if (!hasFormatColumn && rows.front() != expectedHeader) {
+        throw std::runtime_error("unexpected manifest header in " + manifestPath +
+                                 " (optional 8th column must be 'format')");
     }
 
     Corpus corpus;
@@ -187,8 +224,11 @@ Corpus Corpus::load(const std::string& manifestPath) {
         const std::string where = manifestPath + " row " + std::to_string(i + 1);
 
         const std::vector<std::string> fields = splitTab(rows[i]);
-        if (fields.size() != 7) {
-            throw std::runtime_error(where + ": expected 7 tab-separated fields, got " +
+        const std::size_t expectedFields = hasFormatColumn ? 8 : 7;
+        if (fields.size() != expectedFields) {
+            throw std::runtime_error(where + ": expected " +
+                                     std::to_string(expectedFields) +
+                                     " tab-separated fields, got " +
                                      std::to_string(fields.size()));
         }
 
@@ -207,6 +247,9 @@ Corpus Corpus::load(const std::string& manifestPath) {
         doc.textPath = fields[4];
         doc.sourcePath = fields[5];
         doc.url = fields[6];
+        if (hasFormatColumn) {
+            doc.format = parseTextFormat(fields[7], where);
+        }
 
         // docIDs must be dense and ordered 1..N: byID() computes docs_[id-1],
         // and the index format assumes docs[i].docID == i+1. Rejecting gaps
@@ -217,14 +260,21 @@ Corpus Corpus::load(const std::string& manifestPath) {
                                      std::to_string(corpus.docs_.size() + 1) + ")");
         }
 
-        // Load the line-based text. '#' lines are generator header comments
+        // Load the line-based text. '#' lines are producer header comments
         // (docID/title/source) and empty lines carry no text; both are skipped
         // so that Document::lines contains only searchable/annotated units.
+        // Marked documents get marker classification; plain documents skip it
+        // entirely, so "(a remark)" or "[note]" in ordinary prose stays
+        // searchable instead of being mistaken for a stage/heading marker.
         // The line index inside Document::lines is what --pretty later maps a
         // filtered-stream position back to.
         const std::string textFile = joinPaths(root, doc.textPath);
         for (const std::string& line : splitLines(readFile(textFile))) {
             if (line.empty() || line.front() == '#') {
+                continue;
+            }
+            if (doc.format == TextFormat::Plain) {
+                doc.lines.push_back(TextLine{LineKind::Body, line});
                 continue;
             }
             std::string content;

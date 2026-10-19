@@ -1,6 +1,6 @@
-// test_dict.cpp -- unit tests for the dictionary layer (splay + hash).
+// test_dict.cpp -- unit tests for the dictionary layer (splay + hash + map).
 //
-// Both implementations are checked against the same behavioural script, then
+// All implementations are checked against the same behavioural script, then
 // against each other on a mixed insert/lookup workload: their vocabularies
 // must agree exactly. Run via `ctest --test-dir build`.
 
@@ -80,6 +80,14 @@ TEST_CASE("the behavioural script passes on the hash dictionary", "[dict]") {
     behaviourScript(hash, "hash");
 }
 
+// Third dictionary: std::map (typically a red-black tree), used as the
+// standard-library comparison point in the report. It must satisfy the same
+// interface contract as splay and hash.
+TEST_CASE("the behavioural script passes on the std::map dictionary", "[dict]") {
+    mse::MapDictionary map;
+    behaviourScript(map, "map");
+}
+
 // Verify the self-adjusting property directly: after accessing "zzz" it must
 // be at the root, and the rotations counter must have moved (proving the
 // structure is actually splaying rather than behaving like a plain BST).
@@ -110,6 +118,7 @@ TEST_CASE("cross-check: splay and hash agree on a random workload", "[dict]") {
     const std::size_t vocabulary = 300;
     mse::SplayDictionary splay;
     mse::HashDictionary hash;
+    mse::MapDictionary map;
 
     // Deterministic LCG so the workload is random-looking but reproducible;
     // a real random source would make a failure impossible to replay.
@@ -122,13 +131,17 @@ TEST_CASE("cross-check: splay and hash agree on a random workload", "[dict]") {
         const std::string term = "w" + std::to_string(next() % vocabulary);
         splay.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
         hash.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
+        map.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
     }
 
     // The two independent structures saw the same operation stream, so any
     // divergence in vocabulary, size, or ordering is a real implementation bug.
     const std::vector<std::string> splayTerms = termsOf(splay.sortedEntries());
     const std::vector<std::string> hashTerms = termsOf(hash.sortedEntries());
+    const std::vector<std::string> mapTerms = termsOf(map.sortedEntries());
     CHECK(splayTerms == hashTerms);
+    CHECK(splayTerms == mapTerms);
     CHECK(splay.size() == hash.size());
-    CHECK(hash.size() == vocabulary);
+    CHECK(map.size() == vocabulary);
+    CHECK(map.stats().stringComparisons > 0);  // comparator is instrumented
 }

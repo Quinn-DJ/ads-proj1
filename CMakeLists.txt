@@ -88,7 +88,9 @@ add_library(mse_core STATIC
     src/index.cpp
     src/query.cpp
     src/count.cpp
-    src/stopwords.cpp)
+    src/stopwords.cpp
+    src/bptree.cpp
+    src/blockbuild.cpp)
 
 # PUBLIC: everything linking mse_core may also `#include "corpus.hpp"`.
 target_include_directories(mse_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

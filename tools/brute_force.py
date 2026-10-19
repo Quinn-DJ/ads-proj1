@@ -24,8 +24,9 @@ import struct
 import sys
 from collections import defaultdict
 
-from check_wordcount import (line_kind, load_reference_porter,
-                             normalize_contractions, tokenize)
+from check_wordcount import (line_kind, load_manifest,
+                             load_reference_porter, normalize_contractions,
+                             tokenize)
 
 
 class Cursor:
@@ -58,6 +59,21 @@ class Cursor:
         self.pos += length
         return text
 
+    def varint(self):
+        """Byte-aligned code of the Compression lecture (index.hpp): the
+        first byte's top two bits give the total length, its low six bits
+        are the value's least significant bits."""
+        self.require(1)
+        first = self.data[self.pos]
+        count = {0x40: 1, 0x80: 2, 0xC0: 3}.get(first & 0xC0, 4)
+        self.require(count)
+        value = first & 0x3F
+        self.pos += 1
+        for i in range(1, count):
+            value |= self.data[self.pos] << (6 + 8 * (i - 1))
+            self.pos += 1
+        return value
+
     def seek(self, offset):
         if offset > len(self.data):
             raise ValueError("index file is truncated or corrupt")
@@ -71,7 +87,7 @@ def parse_index(path):
     cursor = Cursor(data)
     cursor.pos = 4
     version = cursor.u32()
-    if version != 1:
+    if version not in (1, 2):
         sys.exit(f"{path}: unsupported index version {version}")
     flags = cursor.u32()
     doc_count = cursor.u32()
@@ -99,11 +115,24 @@ def parse_index(path):
         cursor.seek(offset)
         postings = []
         total = 0
+        previous_doc = 0
         for _ in range(df):
-            doc_id = cursor.u32()
-            posting_tf = cursor.u32()
-            positions = tuple(cursor.u32() for _ in range(posting_tf))
-            postings.append((doc_id, posting_tf, positions))
+            if version == 2:  # gap + varint postings (plan.md 6.4)
+                doc_id = previous_doc + cursor.varint()
+                previous_doc = doc_id
+                posting_tf = cursor.varint()
+            else:
+                doc_id = cursor.u32()
+                posting_tf = cursor.u32()
+            if version == 2:
+                positions = []
+                previous_pos = 0
+                for _ in range(posting_tf):
+                    previous_pos += cursor.varint()
+                    positions.append(previous_pos)
+            else:
+                positions = tuple(cursor.u32() for _ in range(posting_tf))
+            postings.append((doc_id, posting_tf, tuple(positions)))
             total += posting_tf
         if total != tf:
             sys.exit(f"{path}: corrupt: tf mismatch for term {term!r}")
@@ -130,17 +159,19 @@ def expected_terms(manifest_path, stop_path, stem_flag):
             cache[token] = porter.stem(normalize_contractions(token))
         return cache[token]
 
-    rows = list(csv.reader(open(manifest_path, encoding="utf-8"), delimiter="\t"))
+    rows = load_manifest(manifest_path)
     terms = defaultdict(list)  # term -> [(docID, positions...)]
-    for row in rows[1:]:
-        doc_id = int(row[0])
+    for row in rows:
+        doc_id = int(row["docid"])
+        plain = row["format"] == "plain"  # no markers: everything is body
         per_doc = defaultdict(list)  # term -> positions in the filtered stream
         position = 0
-        with open(row[4], encoding="utf-8") as handle:
+        with open(row["text"], encoding="utf-8") as handle:
             for line in handle.read().splitlines():
                 if not line or line.startswith("#"):
                     continue
-                if line_kind(line) != "body":
+                kind = "body" if plain else line_kind(line)
+                if kind != "body":
                     continue
                 for token in tokenize(line):
                     if token in stop:

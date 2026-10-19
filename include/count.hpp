@@ -11,6 +11,21 @@
 // The flag is deliberately coarse: the final stop-word list comes out of the
 // manual review step of the candidate zone (see plan.md 4.2).
 //
+// Document-distribution entropy (the third stop-word feature, notes.md 3.6):
+// with p_d = tf(t,d) / tf(t) over the documents d that contain the term,
+//   entropy         = H(t) = -sum_d p_d * log2(p_d)      (bits)
+//   entropyNorm     = H(t) / log2(df)                    (0..1, 1 = uniform)
+// On a corpus whose documents differ wildly in length (a play has ~30k
+// tokens, a sonnet ~100), a stop word's occurrences follow the *document
+// length*, so raw H(t) ranks content words above stop words and entropyNorm
+// alone does not discriminate. The fix is to normalize by length first:
+// with rate_d = tf(t,d) / keptTokens(d) and q_d = rate_d / sum(rate),
+//   entropyRateNorm = -sum_d q_d*log2(q_d) / log2(df)
+// A term sprinkled at a constant *rate* (classic stop-word behaviour) has
+// entropyRateNorm near 1; a topical word (rate concentrated where it is
+// about) and a one-document name (df == 1, defined 0) sit far below.
+// deriveStopWords() below combines width/mass/flatness into one rule.
+//
 // The token pipeline applied by countWords():
 //   token -> [stop word filter] -> [Porter stemmer] -> count
 // Both stages are optional; the number of tokens dropped by the stop word
@@ -39,6 +54,9 @@ struct TermRow {
     double dfRatio = 0.0;        // df / documents
     double tfShare = 0.0;        // tf / tokens
     bool stopCandidate = false;  // dfRatio >= 0.75 && tfShare >= 0.001
+    double entropy = 0.0;        // raw H(t) in bits (see file header)
+    double entropyNorm = 0.0;    // H(t) / log2(df); 0 when df == 1
+    double entropyRateNorm = 0.0;  // length-normalized variant (see header)
 };
 
 struct WordCount {
@@ -61,6 +79,24 @@ struct CountOptions {
 // when `options.stem` is set the surviving tokens are stemmed with the
 // Porter algorithm before counting, so index and query stay consistent.
 WordCount countWords(const Corpus& corpus, const CountOptions& options);
+
+// Three-feature stop-word rule (the entropy-based extension of plan.md 4.2):
+// a term is a *derived* stop word when it is
+//   wide -- dfRatio         >= minDfRatio        (spread over most documents)
+//   heavy-- tfShare         >= minTfShare        (carries real token mass)
+//   flat -- entropyRateNorm >= minEntropyRateNorm (constant rate per document)
+// The defaults reproduce the spirit of the hand-reviewed 39-word list; the
+// thresholds exist so the sensitivity can be swept experimentally.
+struct StopWordRule {
+    double minDfRatio = 0.75;
+    double minTfShare = 0.001;
+    double minEntropyRateNorm = 0.93;
+};
+
+// Apply the rule to a counted table. Returns the matching terms in the
+// table's order (tf descending, term ascending); deterministic and pure.
+std::vector<std::string> deriveStopWords(const WordCount& count,
+                                         const StopWordRule& rule);
 
 // Write the table as CSV (header included, ratios as fixed 6 decimals).
 // Creates parent directories if needed; throws std::runtime_error on failure.
