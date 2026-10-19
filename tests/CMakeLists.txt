@@ -50,6 +50,15 @@ set_tests_properties(mse_stats PROPERTIES
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     PASS_REGULAR_EXPRESSION "documents: 195")
 
+# Smoke test: the second corpus (generic plain-format RFC documents,
+# imported with tools/import_corpus.py) loads through the same engine with
+# zero code differences -- the genericity demo of plan.md section G.
+add_test(NAME rfc_stats
+         COMMAND mse stats --manifest ${PROJECT_SOURCE_DIR}/data2/data/manifest.tsv)
+set_tests_properties(rfc_stats PROPERTIES
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    PASS_REGULAR_EXPRESSION "documents: 3")
+
 # Independent cross-check of the whole indexing path (plan.md 10): `mse`
 # builds the stemmed, stop-filtered index once (the CROSSCHECK_INDEX
 # fixture), then brute_force.py re-derives every term's postings from the

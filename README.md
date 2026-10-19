@@ -1,12 +1,19 @@
 # proj1 — 迷你搜索引擎（Mini Search Engine）
 
-在莎士比亚全集上实现倒排索引搜索引擎（数据结构课程项目）。
+一个**语料无关**的倒排索引搜索引擎（数据结构课程项目），主语料为莎士比亚全集，
+另附 RFC 文档第二语料验证通用性。
 
 - 题目要求：[problem.md](problem.md)（中文翻译见 [problem_zh.md](problem_zh.md)）
 - 设计文档与进度：[plan.md](plan.md)
 - 开发笔记（坑与发现，报告素材）：[notes.md](notes.md)
-- 语料：The Complete Works of William Shakespeare（[shakespeare.mit.edu](http://shakespeare.mit.edu/)
+- 主语料：The Complete Works of William Shakespeare（[shakespeare.mit.edu](http://shakespeare.mit.edu/)
   的官方 GitHub 镜像，commit `6b82db8`，见 `data/raw/SOURCE.txt`）
+- 第二语料：IETF RFC 1035 / 5321 / 7231 纯文本（`data2/`，通用导入器产物，见 `data2/raw/SOURCE.txt`）
+
+**引擎与语料解耦**：C++ 程序只读 manifest 与行式文本层，`kind/category` 等字段按不透明字符串
+处理；"莎士比亚性"全部在数据与生产工具层（`tools/extract.py`），"任意纯文本"由
+`tools/import_corpus.py` 导入（manifest 可选第 8 列 `format=plain` 跳过行标记分类）。两个语料
+共用同一套引擎与测试设施（见[第二语料与通用导入器](#第二语料与通用导入器)）。
 
 ## 环境要求
 
@@ -67,12 +74,18 @@ proj1/
 │   ├── fixtures/golden4/     #   讲义四文档黄金样例（data/manifest + 4 篇文本）
 │   └── vendor/catch2/        #   vendored Catch2 v3（仅测试链接；mse 本体零依赖）
 ├── tools/                    # 语料处理脚本（Python / Bash）
+│   ├── fetch_corpus.sh       #   莎士比亚镜像抓取（data/raw/）
+│   ├── extract.py            #   莎士比亚 HTML → 文本层 + manifest（marked）
+│   └── import_corpus.py      #   通用导入器：任意 .txt 目录 → 语料（plain）
 ├── reference/                # 词干化参考资料（Porter/Snowball/NLTK；来源与许可见其 README.md）
 ├── data/
 │   ├── raw/                  # 原始 HTML 镜像（1211 个文件，含 SOURCE.txt）
 │   ├── text/                 # 行式文本层（195 个 .txt，格式说明见其 README.md）
 │   ├── manifest.tsv          # 文档表：docid ↔ 标题/路径/URL
 │   └── stopwords.txt         # 停用词表（39 词，由语料统计推导；见文件头注释）
+├── data2/                    # 第二语料（RFC 1035/5321/7231，通用导入器产物）
+│   ├── raw/                  #   下载的原始 .txt + SOURCE.txt（URL 与 sha256）
+│   └── data/                 #   manifest.tsv（format=plain）+ text/ 副本
 ├── build/                    # CMake 二进制目录 + 生成物（gitignore，删掉即可）
 ├── CMakeLists.txt            # 构建入口：cmake -S . -B build / ctest
 └── problem.md / problem_zh.md / plan.md / notes.md
@@ -378,7 +391,7 @@ python3 tools/threshold_matrix.py    # → build/threshold_matrix.csv + .svg（1
 
 ## 工具脚本（重建语料时才需要）
 
-日常开发不需要运行这些：`data/` 的内容已随仓库提交且可复现。
+日常开发不需要运行这些：`data/` 与 `data2/` 的内容已随仓库提交且可复现。
 
 ```bash
 bash tools/fetch_corpus.sh [--force]   # ① 从 GitHub 镜像下载 HTML 到 data/raw/（需要联网）
@@ -388,6 +401,31 @@ python3 tools/extract.py               # ② 生成 data/text/ + data/manifest.t
 - `--force` 用于重新抓取：旧目录会先备份为 `data/raw.bak.<时间戳>`，不会直接删除。
 - 抓取结果在 `data/raw/SOURCE.txt` 记录仓库地址、commit、抓取日期与文件数。
 - `extract.py` 的输入输出路径均可用 `--raw / --text / --manifest` 覆盖。
+
+## 第二语料与通用导入器
+
+引擎不认识莎士比亚——它只读 manifest + 文本层。任何纯文本目录都能变成可索引语料：
+
+```bash
+python3 tools/import_corpus.py --input <txt目录> --root <语料根目录> \
+       [--kind text] [--category General] [--format plain]
+./build/mse stats  --manifest <根>/data/manifest.tsv
+./build/mse build  --manifest <根>/data/manifest.tsv --index build/index.bin --stem
+```
+
+仓库自带的演示语料 `data2/`（IETF RFC 1035/5321/7231，`data2/raw/SOURCE.txt` 记录来源与
+sha256）就是这样导入的：3 文档 / 9 946 行 / 75 250 token，`stats / count / build / query /
+brute_force` 全链路零代码改动跑通，且已进 ctest（`rfc_stats`）。
+
+manifest 的可选第 8 列 `format`（`marked`，缺省 | `plain`）按文档控制行标记约定：
+
+| 值 | 行为 |
+|----|------|
+| `marked` | 莎士比亚文本层：`[ACT I]` 标题 / `(舞台指示)` / `@说话人` 被分类，默认不参与切词 |
+| `plain` | 无标记纯文本：所有非 `#` 行都是正文（`(括号整行)`、`[方括号整行]` 保持可检索） |
+
+在 RFC 语料上推导停用词会得到与莎士比亚**不同**的词表（56 词，含 `rfc/page` 领域样板词），
+且 RFC 2119 关键词 `must/may/should` 因速率分布倾斜而**不**被判停用词——见 notes.md §3.12。
 
 ## 数据格式速查
 

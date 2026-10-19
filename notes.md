@@ -241,6 +241,15 @@
 
 结论：① 停用词判定从"统计候选 + 人工审核"升级为"三特征规则、阈值可扫"；② 报告可讲清"为什么长度归一化是必须的"（300 倍长度差 + 原始熵反向排序的实测）；③ 通用化（plan §G）不再需要内置英语停用词表——按语料推导即可。
 
+### 3.12 通用化实验：RFC 语料端到端（2026-10-17，G 系列）
+
+- **审计结论**：引擎本身已是语料无关——grep 全部源码，只有注释提及莎士比亚；`kind/category` 等字段本就以不透明字符串流经引擎（stats 只是 groupby）。唯一**行为**耦合是行标记分类（`[...]`/`(...)`/`@...`）：普通散文里整行括号会被误判为舞台指示而过滤。
+- **manifest 可选第 8 列 `format`**（`marked|plain`，缺省 marked，向后兼容）：plain 文档跳过标记分类，所有非 `#` 行都是正文。`tests/fixtures/plain2/`（plain + marked 混排）证明按文档生效；含 `(a cold morning)` / `[supplies running low]` / `@noon ...` 行的文档不再丢 token。
+- **`tools/import_corpus.py`**：任意 `.txt` 目录 → 自包含语料（`<root>/data/manifest.tsv` + `text/` 副本，docID 按文件名排序稳定分配）。
+- **第二语料 `data2/`**：RFC 1035（DNS）/ 5321（SMTP）/ 7231（HTTP 语义），plain 格式，3 文档 / 9 946 行 / 75 250 token / 4 328 词形。`stats / count / stopwords --derive / build / query / brute_force` **全链路零代码改动**跑通；count CSV 与 Python 对拍逐字节一致；建索引 2 695 词全项对拍 OK。
+- **熵规则跨语料验证**（报告素材）：RFC 语料推导出 56 词表（与莎士比亚的 9/39 不同），含 `rfc/page` 等领域样板词；关键对照——**RFC 2119 关键词 `must/may/should` 未被判停用词**：df_ratio=1.0（三篇全覆盖）但速率分布倾斜（7231 满篇 MUST，1035 少用）→ entropy_rate_norm < 0.93 被拒；而旧两特征规则把它们连同 `server/mail/request` 一起收进 127 词候选带。"平"维度在跨语料场景真实起作用，也是"没有万能停用词表"的直接证据。
+- 已知局限（报告可讲）：plain 导入零处理，RFC 分页脚注 `[Page N]` 入库（`page` 进停用词候选）；清理属于 producer 职责（extract.py 之于莎士比亚 = import 脚本之于 RFC），引擎不必知情。
+
 ---
 
 ## 4. 验证记录
@@ -266,6 +275,8 @@
 | 熵列（entropy/entropy_norm/entropy_rate_norm）逐字节对拍（C++ vs 独立 Python，默认/停用词过滤/词干化三配置） | 完全一致（25 705 词形 × 3 列 × 3 配置） |
 | count/derive 单元测试（golden4 熵值按公式手算 + deriveStopWords 三特征规则边界） | 全过（test_count 2 用例 23 断言） |
 | 动态停用词索引全量对拍（`derive(0.4, 0.001, 0.93)` 39 词 + `--stem` 后 `brute_force.py`） | OK：14 936 词 df/tf/docID/positions 全项一致 |
+| plain2 fixture（plain+marked 混排 manifest，标记形行保持可检索） | 全过（test_count 第 3 用例） |
+| RFC 第二语料端到端（stats/count/build/query/brute_force，零代码改动） | 全通；count CSV 逐字节一致；索引 2 695 词全项一致；ctest rfc_stats 过 |
 
 ### 4.2 测试与对拍抓出的六个真问题（数字闭环）
 
