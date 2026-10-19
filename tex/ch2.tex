@@ -1,0 +1,412 @@
+% Chapter 2 -- data structures and algorithm specification.
+\chapter{数据结构与算法规格}\label{ch:design}
+
+\section{分层架构与模块边界}
+
+系统遵循“一个阶段只做一件事”的原则。分词器（\code{tokenizer}）只负责把文本变成规范化 token，既不移除停用词也不做词干化；停用词过滤（\code{stopwords}）与词干化（\code{stemmer}）是独立阶段；计数（\code{count}）、建索引（\code{index}）和查询（\code{query}）共用同一条规范化管线。这样任何一个数字出错，都能定位到唯一阶段，而不是在一条混合管线里猜测。
+
+建索引与查询必须使用完全一致的规范化规则。索引文件头部记录了两个标志位：
+
+\begin{lstlisting}[language=C++]
+constexpr std::uint32_t kIndexFlagStopWords = 1u << 0;
+constexpr std::uint32_t kIndexFlagStemmed   = 1u << 1;
+\end{lstlisting}
+
+查询程序读取索引头，按标志位决定是否过滤停用词、是否调用 Porter 词干化。这避免了“建索引时词干化、查询时未词干化”导致查空的一类常见错误。
+
+\section{语料获取与预处理}
+
+\subsection{原始语料与文档集合}
+
+\code{tools/fetch_corpus.sh} 通过 \code{git clone --depth 1} 获取镜像，并用 \code{git archive} 导出到 \code{data/raw/}，同时把仓库地址、commit、抓取日期和 HTML 文件数写入同目录下的 \code{SOURCE.txt}。抓取是一次性的，之后所有实验都可离线复现。
+
+文档集合由 \code{tools/extract.py} 从首页解析得到：戏剧取 \code{full.html}，十四行诗按页面编号的罗马数字顺序展开（并校验恰好 154 首），长诗取各自的页面。docID 按首页出现顺序分配，从 1 开始连续编号，\code{Corpus::load} 会校验编号必须是 $1..N$ 的稠密序列。
+
+\subsection{行式文本层}
+
+每个文档被转换为一个 \code{data/text/<docid>_<slug>.txt}，一行一个单元，行首标记区分类型（表~\ref{tab:linemarkers}）。
+
+\begin{table}[htbp]
+  \centering
+  \caption{行式文本层的行首标记}
+  \label{tab:linemarkers}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X l@{}}
+    \toprule
+    标记 & 含义 & 默认是否参与检索 \\
+    \midrule
+    \code{[ACT I]} / \code{[SCENE I. ...]} & 标题行（H1--H3） & 否（\code{--keep-headings} 可开） \\
+    \code{(Exit Ghost)} & 舞台指示（\code{<i>} 及从诗句拆出的方括号提示） & 否（\code{--keep-stage} 可开） \\
+    \code{@BERNARDO} & 说话人标签（\code{<b>}） & 否（\code{--keep-speakers} 可开） \\
+    其他 & 台词、诗行、散文正文 & 是 \\
+    \code{#} 开头 & 文件头注释（docID、标题、来源、URL） & 跳过 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+manifest 的可选第 8 列 \code{format} 决定按哪种方式解释文本：\code{marked}（默认）使用上表；\code{plain} 跳过标记分类，所有非 \code{#} 行都是正文，适合 RFC、散文、日志等普通文本。plain 文档不会因为一行恰好以括号或方括号开头而被误判为舞台或标题。
+
+行标记的判定规则是“行首与行尾同时匹配”：只有当一行以 \code{[} 开头且以 \code{]} 结尾时才视为标题行，以 \code{(} 开头且以 \code{)} 结尾时才视为舞台行。这条规则在开发中被证明非常关键：语料里存在大量“以 \code{[} 开头、但其实是台词”的行，例如以 \code{[To HELENA]} 开头的台词；如果只按行首判断，会损失 4,340 个 token。对拍脚本最初就踩了这个坑，修正后 C++ 与 Python 才重新一致。
+
+\subsection{清洗中的边界情况}
+
+预处理阶段处理了若干源数据问题，均有测试记录：
+
+\begin{itemize}
+  \item \code{elegy.html} 的 \code{</TITLE} 缺少 \code{>}，导致 HTMLParser 永远不发出 \code{</head>}；提取器把 \code{<body>} 的开始作为“头部结束”的兜底信号。
+  \item \code{elegy} 的诗文藏在表格中，每 5 行有一个纯数字行号单元格；提取器只丢弃导航表格（\code{td.play} / \code{td.nav}）和纯数字单元格，保留诗文表格。
+  \item Moby 版把内嵌舞台提示写成方括号，共 610 处。提取器把行首的 \code{[...]} 片段重定位为独立舞台行 \code{(...)}，避免 \code{aside}、\code{sings}、收信人名混入正文词表。修复后正文 token 从 867,475 降到 866,626，净减 849，与 B 类片段的统计完全吻合。
+  \item \code{2henryiv} 中有 \code{<h3>None</h3>} 转换残渣；提取器丢弃它，不臆造 \code{ACT I}。
+  \item 全语料非 ASCII 字符数为 0（撇号统一为 \code{'}，破折号为 \code{--}），因此 tokenizer 可按字节处理，不需要 Unicode 归一化。这一前提在报告中明确记录；换语料时必须重新检查。
+\end{itemize}
+
+\section{分词与规范化}
+
+\code{tokenizer} 的规则如下：
+
+\begin{itemize}
+  \item token 是连续的 ASCII 字母；数字、连字符、标点都是分隔符：\code{to-day} $\rightarrow$ \code{to}、\code{day}；
+  \item 撇号只保留在 token 内部（两个字母之间）：\code{don't} $\rightarrow$ \code{don't}，\code{'Tis} $\rightarrow$ \code{tis}，\code{friends'} $\rightarrow$ \code{friends}；
+  \item 所有 token 小写化：\code{KING.} $\rightarrow$ \code{king}；
+  \item 分词器不删除停用词、不做词干化；
+  \item 每个文档内 position 从 0 开始递增，记录在 posting 中。
+\end{itemize}
+
+边界用例包括撇号（内部、行首、行尾、连续）、连字符、数字（\code{1660s} $\rightarrow$ \code{s} 是已知边缘行为）、纯标点、空输入、全大写。
+
+\section{任务 (1)：词频统计与停用词判定}
+
+\subsection{tf 与 df 的定义}
+
+对每个规范化后的词项 $t$：$tf(t)$ 是 $t$ 在全部文档中的总出现次数；$df(t)$ 是包含 $t$ 至少一次的文档数；$df\_ratio(t)=df(t)/\text{文档总数}$；$tf\_share(t)=tf(t)/\text{总 token 数}$。
+
+\code{countWords()} 按文档遍历。为了在 $O(1)$ 时间内更新 df，每个词项记录 \code{lastDoc}：只有当前文档 ID 与 \code{lastDoc} 不同时才把 df 加一。词干化阶段使用缓存，相同的词形只调用一次 \code{stem()}。
+
+\code{mse count} 输出 CSV 列：\code{rank, term, tf, df, df_ratio, tf_share, stop_candidate}。其中 \code{stop_candidate} 是\textbf{粗筛标记}，规则为 $df\_ratio \ge 0.75$ 且 $tf\_share \ge 0.1\%$；它只是给人工分析提供候选，不是最终停用词表。
+
+\subsection{候选带的确定}
+
+如果直接用 0.75 的粗筛线，只能得到 9 个词（\code{the and i to of my that in but}）。这条线过于保守：154 首短诗会显著稀释 df——很多功能词只出现在戏剧对白中，而短诗里没有，因此 $df\_ratio$ 被拉低。为了不漏掉结构性功能词，最终分析把候选带放宽到
+
+\[
+  tf\_share \ge 0.1\% \;(\ge 867\ \text{次})
+  \quad\text{且}\quad
+  df\_ratio \ge 0.40 \;(\ge 78/195\ \text{篇}),
+\]
+
+得到 \textbf{48 个候选词}。这条规则的两个条件分工明确：$df\_ratio$ 管“广度”（词是否遍布整个语料），$tf\_share$ 管“强度”（词是否足够高频）。在本语料上，df 条件是决定性条件：只按 $df\_ratio \ge 0.75$ 筛出 9 个词；只按 $tf\_share \ge 0.1\%$ 筛出 125 个词；两者的交集仍是这 9 个词。$tf\_share$ 条件作为通用护栏保留，防止在超大语料上仅凭 df 选入过于罕见的词。
+
+阈值敏感性见表~\ref{tab:candidate-sensitivity}（固定 $tf\_share \ge 0.1\%$，逐步放宽 df 线）。
+
+\begin{table}[htbp]
+  \centering
+  \caption{停用词候选带的阈值敏感性}
+  \label{tab:candidate-sensitivity}
+  \small
+  \begin{tabularx}{\linewidth}{@{}r r X@{}}
+    \toprule
+    df\_ratio 阈值 & 候选数 & 相对上一档新增的词 \\
+    \midrule
+    $\ge 0.90$ & 4  & the and to in \\
+    $\ge 0.75$ & 9  & 加 i of my that but \\
+    $\ge 0.70$ & 14 & 加 a is not for with \\
+    $\ge 0.65$ & 16 & 加 so love \\
+    $\ge 0.60$ & 21 & 加 me be thou thy thee \\
+    $\ge 0.50$ & 31 & 加 it this as by all do on from which when \\
+    $\ge 0.40$ & 48 & 加 his have what no if are o or more then their hath than yet mine time doth \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+这张表就是“线画在哪里”的直接依据：阈值每放宽一档，新增词从明显的高频功能词逐渐过渡到内容词和古语词，0.40 之后新增项已经开始包含 \code{love}、\code{time} 这类有检索价值的词，因此把界线定在 0.40。
+
+\subsection{从候选到最终停用词表}
+
+对 48 个候选词做人工边界判定，只保留\textbf{结构性功能词}：冠词、介词、连词、代词、助动词、wh-词。最终得到 \textbf{39 个词}，写入 \code{data/stopwords.txt}。判定中刻意排除两类词：
+
+\begin{itemize}
+  \item \textbf{内容词}：\code{love}（tf 2,224 / df 127，$df\_ratio$ 65.1\%）、\code{time}（40.0\%）——它们在文学检索中恰恰是有意义的查询词；
+  \item \textbf{古语功能词}：\code{thou thee thy hath doth o mine}——它们在莎士比亚文体中有区分度，留作“激进版”对照。
+\end{itemize}
+
+线下方但保持可检索的代表词：\code{you}（38.5\%）、\code{he}（33.3\%）、\code{we}（26.7\%）。它们的 df 被短诗稀释，是文档粒度效应的直接证据。
+
+39 词停用表覆盖正文 $309{,}760 / 866{,}626 = 35.74\%$ 的 token；过滤后保留 556,866 个 token，词型从 25,705 降到 25,666（不词干化时）。第 3.5 节给出完整结果，第 4.1 节讨论这条线的合理性。
+
+\subsection{熵驱动的三特征规则（Bonus）}
+
+静态 39 词表依赖人工审核。为了在任意语料上自动完成这一步，\code{mse count} 增加了三个分布特征，并实现 \code{mse stopwords --derive}。
+
+设文档 $d$ 中词 $t$ 的 tf 为 $tf(t,d)$，总 tf 为 $tf(t)$，文档长度为 $L_d$（过滤后 token 数）。文档分布熵、归一化熵和长度归一化速率熵定义如下：
+
+\begin{align}
+  H(t) &= -\sum_d p_d \log_2 p_d,
+  & p_d &= \frac{tf(t,d)}{tf(t)}, \\
+  \mathit{entropyNorm}(t) &= \frac{H(t)}{\log_2 df}, \\
+  rate_d &= \frac{tf(t,d)}{L_d},
+  & q_d &= \frac{rate_d}{\sum_{d'} rate_{d'}}, \\
+  \mathit{entropyRateNorm}(t) &= \frac{-\sum_d q_d \log_2 q_d}{\log_2 df}.
+\end{align}
+
+\textbf{为什么必须做长度归一化}：本语料中一部剧约 3 万 token，一首十四行诗约 100 token，长度差约 300 倍。停用词的出现次数跟随文档长度（长文多、短文少），所以原始 $H$ 反映的是“文档长度分布”，而不是“均匀分布”。实测 \code{the} 的 \code{entropyNorm} 只有 \textbf{0.724}，反而低于内容词 \code{man} 的 \textbf{0.941}——直接使用原始熵会把停用词排到内容词后面。改用速率熵后，功能词普遍落在 0.95--0.98（\code{the} 0.975、\code{and} 0.979、\code{it} 0.969、\code{is} 0.972），内容词明显更低（\code{love} 0.927、\code{sweet} 0.893、\code{king} 0.826、\code{heart} 0.831），$df=1$ 的专名（如 \code{osric}）定义为 0。
+
+三特征规则要求词同时满足三个条件：“宽”（$df\_ratio \ge r$）、“重”（$tf\_share \ge s$）、“平”（$\mathit{entropyRateNorm} \ge h$）。\code{mse stopwords --derive} 的默认阈值是 $(0.75, 0.1\%, 0.93)$；三个阈值可分别用 \code{--min-df-ratio}、\code{--min-tf-share}、\code{--min-entropy-rate} 覆盖。阈值扫描结果见表~\ref{tab:entropy-rule}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{三特征规则的阈值扫描（对照静态 39 词表）}
+  \label{tab:entropy-rule}
+  \small
+  \begin{tabularx}{\linewidth}{@{}r r r r X@{}}
+    \toprule
+    df 门 & 熵门 & 词数 & 与静态表重叠 & 说明 \\
+    \midrule
+    0.75 & 0.93 & 9  & 9/9   & 默认，保守，零误报 \\
+    0.50 & 0.95 & 23 & 23/23 & 仍零误报 \\
+    0.40 & 0.93 & 39 & 35/39 & \textbf{自动复现人工定稿的规模} \\
+    0.30 & 0.93 & 50 & 35/39 & 开始收进半功能词，过冲 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+(0.40, 0.93) 的 39 词与人工表恰好互换 4 词：自动版加入 \code{hath o thee thou}（正是 2.4.3 节刻意保留可检索的古语功能词），漏掉 \code{more or than their}。差异完全可解释，没有离群误报——熵特征实质上完成了人工审核的工作。三套索引的规模对比见 3.5 节。
+
+\section{词干化}
+
+\subsection{收缩词预处理}
+
+分词后的 token 可能带内部撇号（\code{who's}、\code{o'er}、\code{marry'd}）。词干化前先做收缩词规范化：
+
+\begin{enumerate}
+  \item 按最长优先剥离一个收缩后缀：\code{n't}、\code{'ll}、\code{'re}、\code{'ve}、\code{'s}、\code{'d}、\code{'t}、\code{'m}；
+  \item 去掉剩余的所有撇号（省略式，如 \code{o'er} $\rightarrow$ \code{oer}）。
+\end{enumerate}
+
+文档化的不规则结果：\code{can't} $\rightarrow$ \code{ca}、\code{won't} $\rightarrow$ \code{wo}（\code{n't} 整段剥离遇到英语不规则拼写）；\code{was} $\rightarrow$ \code{wa}、\code{this} $\rightarrow$ \code{thi} 是 Porter 论文 step 1a 中无条件的 \code{S} 规则造成的，保留为论文行为。
+
+\subsection{Porter 算法}
+
+实现严格按 Porter 1980 的规则表：step 1a（复数）、1b（\code{-ed} / \code{-ing}）、1c（词尾 \code{y}）、step 2（双后缀映射）、step 3（\code{-icate} / \code{-ative} / \code{-alize} 等）、step 4（残余后缀）、step 5a（词尾 \code{e}）、step 5b（双 \code{l}）。
+
+核心概念是 measure $m$：单词中“元音--辅音”对（VC）的个数。元音定义为 \code{a e i o u}，以及前面是辅音的 \code{y}。规则的条件用 $m$、\code{*v*}（词干含元音）、\code{*d}（双辅音结尾）、\code{*o}（cvc 且最后字母不是 \code{w/x/y}）表达。
+
+一个容易实现错的细节是后缀匹配的“首个匹配说了算”：规则表按后缀长度从长到短排列；一旦某个后缀匹配，就只检查该规则的条件，条件失败\textbf{不再}尝试更短的后缀。例如 \code{agreement} 匹配 \code{ement}，条件在 \code{agre} 上不满足，于是保持不变，而不是退回去匹配 \code{ment}。最初的实现写成“条件失败继续试更短后缀”，导致 41 个词形被过度词干化（例如 \code{agreem}），后来由全词表对拍抓出并修正。
+
+\subsection{变体选择}
+
+实现采用“论文加作者 canonical C 实现中三处 \code{--DEPARTURE--}”的语义，等价于 NLTK 的 \code{MARTIN_EXTENSIONS}：
+
+\begin{enumerate}
+  \item 两个字母及以下的词不改（长度护栏）；
+  \item \code{bli} $\rightarrow$ \code{ble}（推广论文的 \code{abli} $\rightarrow$ \code{able}，如 \code{possibli} $\rightarrow$ \code{possibl}）；
+  \item \code{logi} $\rightarrow$ \code{log}（如 \code{chronologi} $\rightarrow$ \code{chronolog}）。
+\end{enumerate}
+
+选择理由：作者本人推荐这些改进；\code{is} $\rightarrow$ \code{i} 一类合并过于激进；且与下载的 canonical C 实现一致。NLTK 的 \code{MARTIN_EXTENSIONS} 模式作为独立 oracle，用于全词表对拍。
+
+规范化顺序在全链路统一为：\textbf{小写化 $\rightarrow$ 停用词过滤 $\rightarrow$ 词干化}（先滤后干）。这样停用词判断针对原始词形，词干化只作用于保留下来的词。
+
+\section{倒排索引}
+
+\subsection{posting 结构}
+
+对每个词干 $t$，保存一个按 docID 严格递增的 posting 列表：
+
+\begin{lstlisting}[language=,basicstyle=\ttfamily\small]
+t -> [ { docID: u32, posStart: u32, tf: u32 } ... ]
+     + positions: u32[]（所有文档的位置连续存放，按 posStart/tf 切片）
+\end{lstlisting}
+
+\begin{itemize}
+  \item \code{docID} 从 1 开始，严格递增；
+  \item \code{posStart} 是该文档在 \code{positions} 数组中的起始下标；
+  \item \code{tf} 是该文档内的出现次数；
+  \item \code{positions} 是 token 在\textbf{过滤后 token 流}中的偏移（停用词不占位置），用于短语匹配。
+\end{itemize}
+
+将 positions 放在独立的 arena 中，而不是每个 posting 各带一个 \code{vector}，可以减少小对象和内存分配次数，也让序列化更直接。
+
+\subsection{词典结构：伸展树、哈希表与 std::map}
+
+系统定义了统一的 \code{Dictionary} 接口：
+
+\begin{lstlisting}[language=C++]
+virtual TermEntry& upsert(const std::string& term) = 0;  // 查找或插入
+virtual TermEntry* find(const std::string& term) = 0;    // 只查找
+virtual std::vector<TermEntry*> sortedEntries() = 0;     // 字典序输出
+\end{lstlisting}
+
+三个实现：
+
+\textbf{伸展树（主结构）}：自调整二叉搜索树。每次查找或插入后把访问节点通过 zig、zig-zig、zig-zag 旋转到根。支持的操作是“只插入、不删除”；词流呈 Zipf 分布，高频词会停留在根附近；中序遍历直接得到字典序词表，正好用于冻结 term 表。构建期统计字符串比较次数与旋转次数。
+
+\textbf{哈希表（基线/互验）}：链地址法，FNV-1a 64 位哈希，负载因子超过 0.75 时翻倍 rehash。平均 $O(1)$ 查找，但输出有序词表需要额外收集与排序。它与伸展树走完全相同的构建管线，产出的索引文件必须逐字节一致——这是独立于 Python 对拍的另一层互验。
+
+\textbf{std::map（标准库对照）}：\code{std::map<std::string, TermEntry>}，典型实现是红黑树。由于 \code{std::map} 的内部比较不可观测，\code{MapDictionary} 用一个带计数的严格弱序比较器包住它，使三者的“字符串比较次数”是同一口径的机器无关指标。它是 plan.md 6.5 节预留的第三列实验。
+
+选择伸展树作为主结构的理由：本场景“只插不删”，红黑树最复杂的删除情形不存在；访问高度偏斜，splay 的自调整能利用热点；最终需要字典序输出，中序遍历免费排序。哈希表保留为速度基线与交叉验证，\code{std::map} 作为标准库对照点。三者的产出必须逐字节一致。
+
+\subsection{构建算法}
+
+\begin{lstlisting}[language=,basicstyle=\ttfamily\small]
+for each doc D in manifest:                 // docID 递增
+    position <- 0
+    for token t in tokenize(D):             // 默认只统计正文行
+        if t in stopwords: continue         // 停用词不占 position
+        s <- stem(t)
+        dictionary.upsert(s).postings.append(D.id, position)
+        position <- position + 1
+    index.docs.append(D.id, title, position)
+    index.tokenCount <- index.tokenCount + position
+
+terms <- dictionary.sortedEntries()           // 伸展树中序 / 哈希收集后排序
+serialize(index) -> index.bin
+\end{lstlisting}
+
+构建期同时统计 token 总数、不同词干数、posting 数、position 数、索引文件大小与构建耗时。
+
+\subsection{持久化格式（v1 与 v2）}
+
+索引文件为小端、自描述、确定性序列化。v1 布局如下：
+
+\begin{lstlisting}[language=,basicstyle=\ttfamily\small]
+[header]
+  magic        "MSE1"       4 B
+  version      u32          4 B   （1 = v1；2 = v2 压缩）
+  flags        u32          4 B   （bit0=停用词，bit1=词干化）
+  docCount     u32          4 B
+  termCount    u32          4 B
+  tokenCount   u64          8 B
+
+[doc 表]   每项：docID u32, keptTokens u32, title（u32 长度 + 字节）
+[term 表]  按字典序，每项：
+             term（u32 长度 + 字节）
+             df u32
+             tf u64
+             postingsOffset u64
+             postingsBytes u32
+[postings] 每个 term：
+             df 条 { docID u32, tf u32, positions u32[tf] }
+\end{lstlisting}
+
+写入前先计算所有 offset，顺序写出；读取时先读 term 表，再按 offset 跳转到各自的 postings 块。这样写入与读取共享同一份规格，\code{dump} 可以验证往返一致性。
+
+v2 只改变 \code{[postings]} 段的编码，头部、文档表、term 表布局完全不变，靠 \code{version = 2} 区分。每个 posting 块依次编码 docID 差分（相邻 docID 的 gap，$\ge 1$）、tf、文档内 positions 的相邻差分（$\ge 0$）。所有整数使用字节对齐变长码：首字节高 2 位表示总长度（1--4 字节），低 6 位是数值低位，后续字节各贡献 8 位；可表示 6/14/22/30 位，最大值受 30 位限制。v2 的 term 表 offset/length 指向压缩后的块，读取端按版本选择解码器。实现与结果见 4.4 节。
+
+\subsection{不变量}
+
+\code{validateIndex()} 在加载后检查以下不变量，任一违反即抛出异常：
+
+\begin{itemize}
+  \item docID 稠密且为 $1..N$；
+  \item term 表严格字典序递增，且无空词；
+  \item 每个 term 的 posting 非空；
+  \item posting 内 docID 严格递增且不超过文档数；
+  \item 每条 posting 的 $tf > 0$，且 \code{posStart} 连续（dense）；
+  \item 每个 term 的 tf 之和等于其 positions 数组长度；
+  \item 所有 term 的 position 总数等于 \code{tokenCount}；
+  \item 所有文档的 \code{keptTokens} 之和等于 \code{tokenCount}。
+\end{itemize}
+
+\subsection{磁盘 B+Tree 词典（Bonus）}
+
+索引的 term 表在 400M 词规模下无法常驻内存。\code{build --dict-file} 在写索引的同时，把 \code{term -> (posting offset, byte length)} 冻结成一个页式 B+Tree 文件（sidecar）：
+
+\begin{itemize}
+  \item 每个节点是一个有字节预算的页（默认 4096 B）；键是变长 term，节点按“是否还装得下下一条”分裂；
+  \item 叶节点用 \code{nextLeaf} 串成有序链，支持范围/前缀扫描；
+  \item 文件头页记录 magic \code{BPT1}、版本、页大小、页数、根、树高、叶数、键数；
+  \item 值把 posting 偏移和长度打包成一个 u64：\code{(offset << 21) | length}，因此单 term posting 最长 2 MiB，offset 可达 $2^{43}$ 字节；
+  \item \code{BTreeFile} 读取端只加载根路径上的 $O(\text{height})$ 个页，并用 LRU 缓存（默认 8 页）减少重复读。
+\end{itemize}
+
+不变量 I1--I5：节点内键严格递增；内部路由区间左闭（分隔键是真实键的副本）；非根节点满足变长键下可证的填充下界；所有叶同深且叶链按序覆盖全部键；每个键只有一个值。\code{BTree::validate()} 全量校验。
+
+查询侧 \code{LazyIndexReader} 只解析索引头和文档表，term 经 B+Tree 定位后直接 seek 到 posting 字节，词表与 postings 都不整体加载。实测见 3.6、3.7 节。
+
+\subsection{块式外部构建（SPIMI，Bonus）}
+
+\code{build-blocks} 实现两阶段构建：
+
+\begin{enumerate}
+  \item \textbf{块内索引}：按文档流扫描，块内词典达到 \code{--block-terms} 预算（默认 4096）就冻结：按词排序写入临时 run 文件，然后清空词典继续；
+  \item \textbf{k 路归并}：把所有 run 当成有序词流，按词归并成最终索引。
+\end{enumerate}
+
+因为块边界只切在文档边界，同一个词在后续块中的 posting 的 docID 一定更大，归并时只需按词拼接，位置编号也是文档内独立编号。内存占用 $O(\text{blockTerms})$，与语料总词表大小无关；产物与 \code{buildIndex()} 逐字节一致。实测见 3.6 节。
+
+\section{查询处理}
+
+\subsection{查询管线}
+
+查询文本先用与语料相同的 tokenizer 切分，再按索引头标志位执行停用词过滤与词干化：
+
+\begin{lstlisting}[language=,basicstyle=\ttfamily\small]
+query text -> tokenize -> [stop word check] -> [stem] -> terms
+           -> 词典二分查找 -> posting 合并/位置验证 -> 评分 -> 阈值过滤 -> 输出
+\end{lstlisting}
+
+词典查找使用冻结 term 表上的二分搜索，复杂度 $O(\log \#terms)$。给出 \code{--dict-file} 时，单词查询改走磁盘 B+Tree：按树高 $O(\text{height})$ 次页读定位 term，再 seek 到 posting 字节；评分、阈值与输出仍复用同一个 \code{runQuery()}。
+
+\subsection{三种查询模式}
+
+\textbf{单词（Word）}：要求恰好一个可检索 term；多个 token 会给出提示并返回空集。结果按“匹配词数降序、$\Sigma tf$ 降序、docID 升序”排序。
+
+\textbf{短语（Phrase）}：把短语切成词序列 $w_1..w_k$，要求所有词都在索引中；选取 df 最小的词作为候选文档，对每个候选文档做位置验证：$pos(w_{i+1}) = pos(w_i) + 1$。由于 positions 在 posting 内按升序存放，验证使用二分查找。短语查询不受 \code{--max-df} / \code{--min-df} 裁词影响——短语的语义要求整段匹配，丢掉任何一个词都会改变语义。
+
+\textbf{布尔（Boolean）}：\code{--words "a b c"} 指定多个词，默认要求全部命中（AND）；\code{--min-match k} 表示至少命中 k 个词；\code{--or} 是 \code{--min-match 1} 的简写。被管线或阈值丢弃的词不参与匹配，输出用 \code{note:} 行说明原因。
+
+\subsection{评分与四个阈值}
+
+四个查询阈值见表~\ref{tab:thresholds}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{查询阈值}
+  \label{tab:thresholds}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X l@{}}
+    \toprule
+    参数 & 含义 & 默认 \\
+    \midrule
+    \code{--max-df <ratio>} & 丢弃 $df\_ratio > ratio$ 的查询词（太常见、区分度低） & 1.0（关闭） \\
+    \code{--min-df <n>} & 丢弃 $df < n$ 的查询词（太罕见） & 1（关闭） \\
+    \code{--min-match <k>} & 布尔查询至少命中 k 个词；0 = 全部命中 & 0 \\
+    \code{--top-x <n>} & 只保留得分最高的 n 篇文档 & 0（不限） \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+评分向量为 $(\text{matched}, \Sigma tf, \text{docID})$，排序规则为 matched 降序、$\Sigma tf$ 降序、docID 升序，保证结果确定性。\code{minMatch} 会被钳制到可用词数：如果查询只有 2 个可检索词，\code{--min-match 3} 等价于 2。
+
+\subsection{输出}
+
+默认输出 \code{docID<TAB>标题}，多词查询附带 \code{[matched k/n, tf ...]}；\code{--pretty} 会重跑同一管线，把命中 position 映射回源行并打印；\code{--json} 输出机器可读结果，供阈值实验脚本消费。命中位置的映射函数 \code{lineOfPosition()} 只遍历 \code{LineKind::Body} 行，并对停用词跳过位置计数，因此与建索引时的 position 语义一致。
+
+\section{复杂度汇总}
+
+主要操作的时间与空间复杂度见表~\ref{tab:complexity}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{复杂度汇总}
+  \label{tab:complexity}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X X@{}}
+    \toprule
+    操作 & 时间复杂度 & 空间 \\
+    \midrule
+    分词 & $O(\text{字符数})$ & $O(\text{token 数})$ \\
+    词频统计 & $O(\text{token 数})$，哈希平均 $O(1)$/词 & $O(\text{distinct 词数})$ \\
+    建索引（splay） & 摊还 $O(\log \#terms)$/次访问 & $O(\text{postings} + \text{positions})$ \\
+    建索引（hash） & 平均 $O(1)$/次访问 & $O(\text{postings} + \text{positions})$ \\
+    建索引（std::map） & $O(\log \#terms)$/次访问 & $O(\text{postings} + \text{positions})$ \\
+    块式构建（SPIMI） & $O(\text{token 数} + \text{归并量})$ & $O(\text{blockTerms})$ \\
+    单词查询（内存表） & $O(\log \#terms + df)$ & $O(\#docs)$ \\
+    单词查询（磁盘 B+Tree） & $O(\text{height})$ 页读加 $O(df)$ 解码 & $O(\text{cachePages}) + O(df)$ \\
+    短语查询 & $O(df_{\text{rarest}} \times k \times \log tf)$ & $O(\#docs + k)$ \\
+    布尔查询 & $O(\Sigma df_i + \#docs \log \#docs)$ & $O(\#docs)$ \\
+    v2 posting 解码 & $O(\text{压缩块字节数})$ & $O(df + tf)$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

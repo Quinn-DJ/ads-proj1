@@ -29,8 +29,9 @@ __pycache__/
 # clangd index cache (appears once build/compile_commands.json exists)
 .cache/
 
-# LaTeX auxiliary files. tools/build_report.sh writes these under build/, but
-# an accidental in-source xelatex run should not add them to the repository.
+# LaTeX auxiliary files. report.tex is compiled with
+# latexmk -xelatex -outdir=build, but an accidental in-source xelatex run
+# should not add these to the repository.
 *.aux
 *.fls
 *.fdb_latexmk

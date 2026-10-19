@@ -1,0 +1,138 @@
+% Appendices A--C.
+\chapter{构建与运行}\label{app:build}
+
+本节给出从干净仓库复现实验结果的最小命令集。所有命令在仓库根目录执行，构建目录为 \code{build/}。
+
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\small]
+# 配置、编译与测试
+cmake -S . -B build
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+
+# Task 1：词频统计
+./build/mse count --csv build/wordcount.csv --top 50
+
+# Bonus：熵驱动停用词
+./build/mse stopwords --derive --min-df-ratio 0.4 --min-entropy-rate 0.93 \
+                      --compare data/stopwords.txt
+
+# Task 2：正式索引（v1）
+./build/mse build --index build/index.bin \
+                  --stop-words data/stopwords.txt --stem
+
+# Bonus：v2 压缩索引 + 磁盘 B+Tree 词典
+./build/mse build --index build/index-v2.bin \
+                  --stop-words data/stopwords.txt --stem --compress
+./build/mse build --index build/index.bin \
+                  --stop-words data/stopwords.txt --stem \
+                  --dict-file build/index.bpt
+
+# Bonus：SPIMI 块式构建
+./build/mse build-blocks --stop-words data/stopwords.txt --stem \
+                         --block-terms 4096
+
+# Bonus：B+Tree 规模实测
+./build/mse bptree-bench --keys 10000000 --lookups 1000
+
+# Task 3：查询
+./build/mse query --index build/index.bin \
+                  --stop-words data/stopwords.txt --word osric --pretty
+./build/mse query --index build/index.bin \
+                  --stop-words data/stopwords.txt --phrase "my lord"
+./build/mse query --index build/index.bin \
+                  --stop-words data/stopwords.txt --words "king queen" --min-match 2
+
+# Bonus：磁盘词典查询与全词表校验
+./build/mse dump --index build/index.bin --dict-file build/index.bpt --term banquo
+./build/mse dump --index build/index.bin --dict-file build/index.bpt --verify-all
+
+# Bonus：第二语料 RFC
+./build/mse stats --manifest data2/data/manifest.tsv
+./build/mse count --manifest data2/data/manifest.tsv --csv build/rfc_wordcount.csv
+./build/mse stopwords --derive --manifest data2/data/manifest.tsv \
+                      --min-df-ratio 0.4 --min-entropy-rate 0.93 \
+                      --out build/rfc_stopwords.txt
+./build/mse build --manifest data2/data/manifest.tsv \
+                  --stop-words build/rfc_stopwords.txt --stem \
+                  --index build/rfc_index.bin
+
+# Task 4：阈值实验
+python3 tools/threshold_matrix.py
+
+# 独立对拍
+python3 tools/check_wordcount.py > build/wordcount_py.csv
+diff build/wordcount.csv build/wordcount_py.csv
+python3 tools/brute_force.py --stop-words data/stopwords.txt --stem
+python3 tools/check_phrases.py --index build/index.bin \
+    --stop-words data/stopwords.txt --stem --queries 300
+
+# Bonus：500k 文件合成跑批（仅用于规模实验，不参与正式语料）
+python3 tools/gen_synthetic_corpus.py --root build/scale-500k \
+    --docs 500000 --tokens-per-doc 40 --vocab 5000000
+./build/mse build-blocks --manifest build/scale-500k/data/manifest.tsv \
+    --block-terms 50000 --index build/scale-500k-index.bin
+\end{lstlisting}
+
+若系统没有 \code{cmake}，可用 g++ 直接编译；仓库的 CMake 配置也支持开启“警告即错误”（选项名 \code{MSE_WERROR}）。Python 脚本只依赖标准库（Porter 词干化使用 vendored 的 NLTK 扩展模式数据，见 \code{tools/}）。
+
+\chapter{数据与索引格式速查}\label{app:formats}
+
+\section{manifest}
+
+\code{data/manifest.tsv} 为制表符分隔、首行表头，共 8 列（第 8 列可选）：
+
+\begin{lstlisting}[language=,basicstyle=\ttfamily\small]
+docid  kind  category  title  text  source  url  [format]
+30     play  Tragedy   Hamlet data/text/0030_hamlet.txt  data/raw/hamlet/full.html  http://shakespeare.mit.edu/hamlet/full.html
+\end{lstlisting}
+
+\code{format} 取 \code{marked}（默认，带行标记）或 \code{plain}（每行都是正文）。\code{data2/} 的 RFC 语料使用 \code{plain}，因此其中的方括号和圆括号不会被当作舞台提示删除。
+
+\section{文本层行标记}
+
+\begin{table}[htbp]
+  \centering
+  \caption{\code{data/text/*.txt} 的行标记}
+  \label{tab:line-markers}
+  \small
+  \begin{tabularx}{0.8\linewidth}{@{}l X l@{}}
+    \toprule
+    标记 & 含义 & 默认 \\
+    \midrule
+    \code{[ACT I]} / \code{[SCENE ...]} & 标题 & 过滤 \\
+    \code{(Exit Ghost)} & 舞台指示 & 过滤 \\
+    \code{@BERNARDO} & 说话人 & 过滤 \\
+    其他 & 正文 & 保留 \\
+    \code{#} & 文件头注释 & 跳过 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{倒排索引文件}
+
+索引文件 v1/v2 的布局见第 2.6.4 节：magic 为 \code{MSE1}，小端；version 1 存储原始 u32 postings，version 2 存储差分加 varint postings；头部、文档表、term 表布局相同。磁盘 B+Tree 词典 sidecar 的 magic 为 \code{BPT1}，4 KiB 页，页 0 为头部，其后是树页（见第 2.6.6 节）。
+
+\chapter{评分对照}\label{app:grading}
+
+\begin{table}[htbp]
+  \centering
+  \caption{题目要求与本报告的对应位置}
+  \label{tab:grading}
+  \small
+  \begin{tabularx}{\linewidth}{@{}X r X@{}}
+    \toprule
+    评分项 & 分值 & 本报告对应位置 \\
+    \midrule
+    Word counting 程序 & 1 & 2.4、3.5；代码 \code{src/count.cpp} \\
+    Index generation 程序 & 5 & 2.6、3.6；代码 \code{src/index.cpp} 等（含 \code{bptree}、\code{blockbuild}） \\
+    Query processing 程序 & 3 & 2.7、3.7；代码 \code{src/query.cpp} \\
+    倒排索引正确性测试 & 2 & 3.2--3.4、3.9 \\
+    查询阈值测试 & 2 & 3.8 \\
+    分析与评论 & 3 & 第 4 章 \\
+    Bonus & +2 & 4.7（熵停用词、RFC、v2 压缩、B+Tree、SPIMI、500k 文件、50M 键） \\
+    文档第 1 章 & 1 & 第 1 章 \\
+    文档第 2 章 & 2 & 第 2 章 \\
+    整体文档风格 & 1 & 全文结构、表格、术语统一 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

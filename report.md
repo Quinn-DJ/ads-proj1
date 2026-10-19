@@ -927,7 +927,7 @@ Bonus 的验证链在同一套方法上继续扩展：熵规则与人工表对�
 - 把 SPIMI 的 run 直接写成磁盘 term 表/B+Tree，跑一次 500,000 文件级构建；
 - term 表前端编码、Elias γ、块级自适应压缩；
 - 分布式按文档/按词切分的原型与查询合并；
-- 注释率已补齐：`src/` + `include/` 的非空行注释率约 **37.9%**（含 `tests/` 的全部 C++ 代码约 35.2%），高于课程 30% 的硬性要求与 plan.md 的 35% 目标。
+- 注释率已补齐：`src/` + `include/` 的非空行注释率约 **31%**，高于课程 30% 的硬性要求。
 
 ### 4.7 Bonus：500,000 个文件与 400,000,000 个不同单词
 
@@ -1197,6 +1197,6 @@ docid  kind  category  title  text  source  url  [format]
 - [x] 500k 文件合成跑批与 50M 键 B+Tree 实测；
 - [ ] 粒度敏感性实验（暂不做，留作未来工作；见 4.1 节）；
 - [ ] 检查全文无姓名、学号、昵称、组号等身份信息；
-- [x] 生成 LaTeX 源 `report.tex` 与 `report.pdf`（`bash tools/build_report.sh`）；提交前按课程格式重命名；
+- [x] 生成 LaTeX 源 `report.tex` 与 `report.pdf`（`latexmk -xelatex -outdir=build report.tex`）；提交前按课程格式重命名；
 - [ ] 匿名打包：删 `.git`，把 `report.pdf` 与 `figures/` 一起放入提交 zip；
-- [x] 代码注释率补齐到 ≥ 30%（`src/` + `include/` 约 37.9%，全部 C++ 约 35.2%）。
+- [x] 代码注释率补齐到 ≥ 30%（`src/` + `include/` 的非空行注释率约 31%）。

@@ -1,0 +1,167 @@
+% Chapter 1 -- introduction, corpus, system overview.
+\chapter{引言}\label{ch:intro}
+
+\section{项目背景与目标}
+
+本课程项目要求实现一个能对莎士比亚全集进行查询的迷你搜索引擎。题目包含四项任务：
+
+\begin{enumerate}
+  \item 对语料做词频统计，并识别停用词（noisy words），说明“有趣的词”与“噪声词”之间的界线画在哪里；
+  \item 在语料上建立带词干化的倒排索引，且不包含第 (1) 步识别出的停用词；
+  \item 在倒排索引之上实现查询程序，接受单词或短语，返回包含该词的文档 ID；
+  \item 运行测试，展示查询阈值如何影响结果。
+\end{enumerate}
+
+评分标准将编程分为词频统计（1 分）、索引生成（5 分）、查询处理（3 分），测试分为索引正确性（2 分）、查询阈值（2 分）与分析评论（3 分），另有 Bonus：若拥有 500,000 个文件与 400,000,000 个不同单词，程序是否仍能工作（+2 分）。文档部分要求第 1 章（1 分）、第 2 章（2 分）以及完整报告的整体风格（1 分）。
+
+本报告对应上述要求组织为四章：第 1 章介绍语料与系统全貌；第 2 章给出数据结构与算法规格；第 3 章给出测试结果与实验数据；第 4 章给出分析、局限与 Bonus 讨论。
+
+\section{语料与规模}
+
+语料来自 MIT 的 Shakespeare 站点（\url{http://shakespeare.mit.edu/}）。为便于复现，项目使用该站点的官方 GitHub 镜像 \code{TheMITTech/shakespeare}，固定 commit \texttt{6b82db8}（完整哈希见参考文献），抓取日期 2026-10-10，共 1,211 个 HTML 文件。
+
+文档集合严格以站点首页 \code{index.html} 的四栏分类为准，共 \textbf{195 个文档}：
+
+\begin{itemize}
+  \item 37 部戏剧（每部取完整的 \code{full.html}）；
+  \item 154 首十四行诗（每首一个独立页面）；
+  \item 4 首长诗（\emph{Venus and Adonis}、\emph{The Rape of Lucrece}、\emph{A Lover's Complaint}、\emph{Funeral Elegy}）。
+\end{itemize}
+
+按首页顺序分配稳定的 docID（1--195）：喜剧 17 部、历史剧 10 部、悲剧 10 部、诗歌 158 篇。仓库中还保留了站点的大写旧目录（\code{Comedy/}、\code{History/}、\code{Tragedy/}）和 Moby 纯文本版本，但它们与首页没有链接关系，不参与建索引——这是“以站点自身索引为唯一权威”的清洗原则。
+
+语料的规模统计见表~\ref{tab:corpus-stats}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{莎士比亚语料的规模统计（\texttt{mse stats}）}
+  \label{tab:corpus-stats}
+  \begin{tabularx}{\linewidth}{@{}Xr@{}}
+    \toprule
+    指标 & 数值 \\
+    \midrule
+    文档数 & 195 \\
+    总行数 & 152,632 \\
+    正文行 & 114,315 \\
+    标题行 & 1,099 \\
+    舞台指示行 & 6,251 \\
+    说话人行 & 30,967 \\
+    空白分隔词数 & 930,911 \\
+    文本字节数 & 4,919,371 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+默认配置（只统计正文行）切分出 \textbf{866,626 个 token}，其中不同词型 \textbf{25,705} 个，hapax（只出现一次的词）\textbf{9,753} 个。需要说明的是，930,911 是文本层的空白分隔字段数，而 866,626 是经过分词规则（标点、数字、标记行过滤）后的 token 数，两者口径不同，不能直接比较。
+
+\subsection{第二语料与语料无关性}
+
+题目只要求莎士比亚语料，但引擎本身不应依赖莎士比亚。Bonus 阶段新增了两项通用化能力：
+
+\begin{itemize}
+  \item manifest 可选第 8 列 \code{format}：\code{marked}（默认，带 \code{[标题]} / \code{(舞台)} / \code{@说话人} 标记）或 \code{plain}（每行都是正文）。plain 语料不会被行标记规则误删括号内容。
+  \item \code{tools/import_corpus.py}：把任意纯文本目录转换成自包含语料。语料由 \code{manifest.tsv} 和文本副本组成，docID 按文件名稳定分配。
+\end{itemize}
+
+仓库中的 \code{data2/} 是第二套语料：RFC 1035（DNS）、RFC 5321（SMTP）、RFC 7231（HTTP 语义），3 个 plain 文档、9,946 行、75,250 token、4,328 个词型。第 3、4 章用它验证“零代码改动换语料”以及熵停用词规则的跨语料行为。
+
+\section{系统总体设计}
+
+系统采用三层可再生成的数据流（图~\ref{fig:pipeline}）：原始 HTML 由 Python 提取为行式文本层与 manifest，C++ 程序再读取文本层构建倒排索引。HTML 的解析、清洗与文档切分只在预处理阶段做一次，之后每一层都可以独立检查、独立重跑。
+
+\begin{figure}[H]
+  \centering
+  \begin{lstlisting}[language=,basicstyle=\ttfamily\small]
+data/raw/*.html                     原始 HTML（1,211 个文件，固定 commit）
+        |  tools/extract.py
+        v
+data/text/*.txt + data/manifest.tsv 行式文本层 + 文档表（195 个文档）
+        |  mse build
+        v
+build/index.bin                     倒排索引二进制（可加载、可 dump）
+  \end{lstlisting}
+  \caption{三层数据流：原始 HTML、行式文本层、倒排索引。}
+  \label{fig:pipeline}
+\end{figure}
+
+C++ 程序只读取文本层，不接触 HTML。同一套 C++ 管线也直接支持 \code{data2/} 的 plain 语料（manifest 第 8 列），无需改动引擎代码。
+
+命令行程序 \code{mse} 提供九个子命令（表~\ref{tab:commands}）。
+
+\begin{table}[htbp]
+  \centering
+  \caption{\code{mse} 子命令}
+  \label{tab:commands}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    子命令 & 作用 & 对应任务 \\
+    \midrule
+    \code{stats} & 语料统计 & 前置/对拍 \\
+    \code{tokenize} & 查看 token 流 & 调试/实验 \\
+    \code{count} & 词频 tf/df/熵统计，输出 CSV & Task 1 \\
+    \code{stopwords} & 熵驱动的三特征停用词推导 & Bonus \\
+    \code{build} & 构建并序列化倒排索引（v1/v2） & Task 2 \\
+    \code{build-blocks} & SPIMI 式块式外部构建 & Bonus \\
+    \code{bptree-bench} & B+Tree 规模实测 & Bonus \\
+    \code{dump} & 打印 posting；支持磁盘词典 & 调试/报告 \\
+    \code{query} & 单词、短语、布尔查询与阈值 & Task 3/4 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+模块划分与代码组织见表~\ref{tab:modules}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{模块划分}
+  \label{tab:modules}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l X@{}}
+    \toprule
+    模块 & 职责 \\
+    \midrule
+    \code{corpus} & 读 manifest、读文本层（marked/plain）、解析行标记 \\
+    \code{tokenizer} & 切词、小写化、位置编号 \\
+    \code{stopwords} & 加载停用词表，$O(1)$ 查询 \\
+    \code{stemmer} & Porter 词干化与收缩词预处理 \\
+    \code{posting} & posting 与 positions 的动态数组 \\
+    \code{dict} & 伸展树（主）加哈希（基线）加 \code{std::map}（对照） \\
+    \code{index} & 构建、v1/v2 序列化、加载、不变量、dump、懒加载 \\
+    \code{bptree} & 页式 B+Tree（内存构建、磁盘页文件、LRU 读取） \\
+    \code{blockbuild} & SPIMI 两阶段（块内索引、run 文件、k 路归并） \\
+    \code{query} & 三种查询模式与四个阈值 \\
+    \code{count} & tf/df/熵统计、停用词规则、CSV 输出 \\
+    \code{main} & CLI 解析与子命令分发 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{完成情况}
+
+截至 2026-10-19 的完成情况见表~\ref{tab:status}。
+
+\begin{table}[htbp]
+  \centering
+  \caption{项目完成情况}
+  \label{tab:status}
+  \small
+  \begin{tabularx}{\linewidth}{@{}l l X@{}}
+    \toprule
+    评分项 & 状态 & 说明 \\
+    \midrule
+    词频统计程序（1 分） & 完成 & \code{mse count}，四种变体均与独立 Python 实现逐字节一致；新增熵特征列 \\
+    索引生成程序（5 分） & 完成 & \code{mse build}，splay/hash/map 输出逐字节一致，v1/v2 两种格式均通过 brute-force 对拍 \\
+    查询程序（3 分） & 完成 & 单词/短语/布尔、四阈值、\code{--pretty}、\code{--json}、磁盘词典路径 \\
+    索引正确性测试（2 分） & 完成 & 8 个测试可执行文件、46 个 TEST\_CASE、85,155 条断言；黄金样例加全量对拍 \\
+    查询阈值测试（2 分） & 完成 & 201 条测量的阈值矩阵 \\
+    分析评论（3 分） & 完成 & 见第 3、4 章，含 Bonus 实测与分析 \\
+    Bonus（+2 分） & 完成 & 熵停用词、RFC 第二语料、v2 压缩、B+Tree 磁盘词典、SPIMI 块式构建、500k 文件跑批、5000 万键规模实测 \\
+    文档（4 分） & 进行中 & LaTeX 源与 PDF 已生成；剩余匿名检查与按课程格式重命名 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{报告组织}
+
+第 2 章给出各模块的规格、数据结构选择与算法伪代码；第 3 章给出测试策略、测试结果与实验数据；第 4 章讨论停用词界线（含熵规则）、Zipf 分布、词典对比、压缩实现、阈值语义、局限性以及 Bonus 的构建与查询两侧规模分析；附录给出构建命令、数据格式与评分对照表。

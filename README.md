@@ -126,17 +126,23 @@ cmake --build build --target clean           # 清理构建产物（或直接删
 
 ## 报告编译（LaTeX）
 
-报告正文以 `report.md` 为源；`report.tex` 与 `report.pdf` 由脚本生成：
+报告正文以 `report.tex` 为唯一源文件，按章节拆分为 `tex/ch1.tex`–`tex/ch4.tex` 与
+`tex/appendix.tex`。直接编译：
 
 ```bash
-bash tools/build_report.sh
+latexmk -xelatex -interaction=nonstopmode -halt-on-error -outdir=build report.tex
+cp build/report.pdf report.pdf
 ```
 
-依赖：Pandoc ≥ 3、TinyTeX/TeX Live（`xelatex`、`latexmk`、`ctex`、`fandol`、`fvextra`）。
-中文字体由 ctex/Fandol 提供；拉丁正文与代码使用 DejaVu 字体（Linux 通常已安装，Windows 可安装
-DejaVu Sans / DejaVu Sans Mono，或修改 `tools/latex-header.tex` 的 `\setmainfont`/`\setmonofont`）。
-脚本会把 `figures/*.svg` 对应的 PNG 渲染图用于 XeLaTeX、给宽表加 `p{}` 换行列，
-然后生成 `report.tex` 并编译出 `report.pdf`。`figures/README.md` 记录了图的生成命令。
+依赖：TinyTeX / TeX Live（`xelatex`、`latexmk`、`ctex`、`fandol`、`listings`、
+`booktabs`、`tabularx`、`longtable`、`fancyhdr` 等）。中文字体由 ctex/Fandol 提供；
+拉丁正文与代码使用 DejaVu 字体（Linux 通常已安装，Windows 可安装 DejaVu Serif /
+DejaVu Sans Mono，或修改 `report.tex` 的 `\setmainfont`/`\setmonofont`）。
+图片是 `figures/` 下已提交的 PNG（XeLaTeX 不能直接包含 SVG）；`figures/README.md`
+记录了从 SVG 重新生成 PNG 的命令。
+
+`report.md` 是早期 Markdown 草稿与数据留档，**不再参与 PDF 生成**；排版、表格、
+图注与章节结构均以 `report.tex` 为准。
 
 ## 命令参考
 
@@ -544,6 +550,6 @@ docid	kind	category	title	text	source	url
 ## 开发约定
 
 - 头文件放 `include/*.hpp`，实现放 `src/*.cpp`，单元测试放 `tests/`；
-- 注释率目标 ≥35%（课程硬性要求 30%，不达标代码不计分）；
+- 注释率 ≥30%（课程硬性要求；当前 `src/` + `include/` 非空行约 31%）；
 - 外部代码（如 Porter 词干化）单独文件标注来源，与自写代码区分；
 - `build/` 与临时文件不入库；提交课程作业的 zip 中不要包含 `.git`。

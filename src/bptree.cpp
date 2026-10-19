@@ -3,6 +3,24 @@
 // B1 scope: the page store is a vector (page id == index). Split policy,
 // byte accounting and invariants are the ones the on-disk format will
 // use, so B2 only replaces the store -- the algorithm below is final.
+//
+// Design summary
+// --------------
+// * Every node is serialized into a fixed `pageSize` byte budget. The budget
+//   counts the 7-byte header, one slot per value/child, and for every key a
+//   1-byte length plus its bytes. There is no separate alignment padding, so
+//   the in-memory byte count is exactly what the serializer will emit.
+// * Inner nodes store separator keys, not copies of the data: child i owns
+//   keys in [keys[i-1], keys[i]), with the first interval open on the left.
+//   The separator is a real key copied from the right subtree's minimum.
+// * Leaves store values inline and are linked by `nextLeaf` for range scans.
+// * Insertion is "absorb then split": a key is inserted even if that pushes
+//   the node over budget, then the node is cut at a byte-aware midpoint. The
+//   constructor's page-size floor guarantees both halves can absorb one more
+//   maximum-size entry, so the parent always has room after a split.
+// * Bulk load builds leaves greedily and then repairs the rightmost page of
+//   each level. That repair is the only place that merges/borrows; it keeps
+//   the I3 fill invariant without complicating the common path.
 
 #include "bptree.hpp"
 
@@ -18,7 +36,9 @@ namespace {
 //   inner  : (count+1) page ids u32, then count key blobs
 //   leaf   : count values u64, then count key blobs
 //   blob   : length u8 (<= 255) + bytes
-// The budget math below mirrors these sizes exactly.
+// The budget math below mirrors these sizes exactly. Keeping the header at a
+// fixed width makes page 0's header parseable before the node kind is known;
+// the leaf flag then selects between the two slot layouts.
 constexpr std::size_t kNodeHeaderBytes = 7;
 constexpr std::size_t kChildBytes = 4;    // one inner slot (page id)
 constexpr std::size_t kValueBytes = 8;    // one leaf slot (u64)
@@ -32,6 +52,8 @@ constexpr std::size_t kKeyLenPrefix = 1;  // one length byte
 constexpr std::size_t kMaxEntryBytes = kKeyLenPrefix + 255 + kValueBytes;
 
 std::size_t keyBlobBytes(const std::string& key) {
+    // One length byte plus the raw bytes. The serializer rejects keys longer
+    // than 255 bytes at the API boundary, so the length always fits in u8.
     return kKeyLenPrefix + key.size();
 }
 
@@ -39,6 +61,12 @@ std::size_t keyBlobBytes(const std::string& key) {
 // as possible while keeping both halves above the I3 floor. `floor` is the
 // entry-byte count each side must retain (pageSize/2 - header, relaxed by
 // kMaxEntryBytes at the caller).
+//
+// The two-pass structure is intentional. The first pass only considers cuts
+// that satisfy the floor; the second pass (taken when none does) relaxes the
+// floor and picks the closest cut. This keeps the common case optimal while
+// still making progress for a node whose keys are so skewed that no cut can
+// satisfy the byte floor.
 std::size_t leafSplitMid(const std::vector<std::string>& keys,
                          std::size_t floorBytes) {
     std::size_t total = 0;
@@ -82,6 +110,12 @@ std::size_t leafSplitMid(const std::vector<std::string>& keys,
 
 // Inner split point: children [0, i] stay left, keys[i] is promoted, the
 // rest goes right; nearest-to-even split of the remaining bytes.
+//
+// Note the asymmetry against the leaf split: the promoted key is removed from
+// both children, so the left side owns keys[0..i) and the right side owns
+// keys[i+1..n). `prefix[i]` therefore counts only the keys that stay left.
+// The header and child-slot overhead are included because an inner node is
+// dominated by 4-byte child ids when keys are short.
 std::size_t innerSplitMid(const std::vector<std::string>& keys) {
     const std::size_t n = keys.size();          // promote candidates 0..n-1
     std::vector<std::size_t> prefix(n + 1, 0);  // prefix[i] = blobs of keys[0..i)
@@ -110,6 +144,8 @@ std::size_t innerSplitMid(const std::vector<std::string>& keys) {
 BTree::BTree(std::uint32_t pageSize) : pageSize_(pageSize) {
     // Both halves of a split must be able to absorb one maximum-size
     // entry afterwards, or the "retry after split" assumption breaks.
+    // 4 * maxEntry gives two max entries per half: one to make the half
+    // non-empty and one to absorb a later insert without splitting again.
     if (pageSize_ < 4 * (kMaxKeyLen + kValueBytes + kKeyLenPrefix)) {
         throw std::runtime_error("BTree page size must be at least 1056 bytes");
     }
@@ -121,6 +157,8 @@ BTree::BTree(std::uint32_t pageSize) : pageSize_(pageSize) {
 // byte budget
 // ---------------------------------------------------------------------------
 
+// Bytes the node would occupy after serialization. This is the single source
+// of truth for "does it fit?": no estimate, no rounding, no per-kind fudge.
 std::size_t BTree::nodeBytes(const Node& node) const {
     std::size_t bytes = kNodeHeaderBytes;
     bytes += (node.leaf ? node.values.size() : node.children.size()) *
@@ -131,6 +169,10 @@ std::size_t BTree::nodeBytes(const Node& node) const {
     return bytes;
 }
 
+// Would `node` still fit after adding `key`? An empty node is special-cased:
+// even a maximal key plus its slot is guaranteed to fit by the constructor's
+// page-size floor, and allowing it prevents a deadlock where an empty page
+// rejects the first entry.
 bool BTree::nodeHasRoom(const Node& node, const std::string& key) const {
     if (node.keys.empty()) {
         return true;  // an empty node always accepts its first entry
@@ -139,6 +181,10 @@ bool BTree::nodeHasRoom(const Node& node, const std::string& key) const {
     return nodeBytes(node) + slot + keyBlobBytes(key) <= pageSize_;
 }
 
+// Append a page and return its id. Ids are stable for the tree's lifetime:
+// pages are never erased, so a parent can hold ids across reallocations. The
+// caller must re-fetch any Node reference after this call, because growing
+// `pages_` invalidates references into the vector.
 std::uint32_t BTree::newPage(Node node) {
     pages_.push_back(std::move(node));
     return static_cast<std::uint32_t>(pages_.size() - 1);
@@ -148,13 +194,22 @@ std::uint32_t BTree::newPage(Node node) {
 // lookup helpers
 // ---------------------------------------------------------------------------
 
+// First slot whose separator key is > key: that subtree owns key.
+//
+// The upper_bound is what makes the interval left-closed: if key equals a
+// separator, it belongs to the child to the right of that separator. Using
+// lower_bound here would send equal keys one child too far left and break
+// both point lookups and range scans.
 std::size_t BTree::slotFor(const Node& node, const std::string& key) const {
-    // First slot whose separator key is > key: that subtree owns key.
     return static_cast<std::size_t>(
         std::upper_bound(node.keys.begin(), node.keys.end(), key) -
         node.keys.begin());
 }
 
+// Minimum key in a subtree, found by walking the leftmost child chain. Used
+// by bulk load to derive a separator when grouping child pages. Returns
+// nullptr only for an empty tree/leaf; callers substitute an empty string in
+// that degenerate case.
 const std::string* BTree::firstKeyOfSubtree(std::uint32_t id) const {
     const Node* node = &page(id);
     while (!node->leaf) {
@@ -163,6 +218,11 @@ const std::string* BTree::firstKeyOfSubtree(std::uint32_t id) const {
     return node->keys.empty() ? nullptr : &node->keys.front();
 }
 
+// Point lookup. `lastFindPageReads_` counts nodes visited, which equals the
+// number of page reads once the disk store replaces the vector; the benchmark
+// uses it to report the cold-cache cost. The loop is iterative so a corrupted
+// cyclic tree would hang rather than overflow the stack; validate() is the
+// tool that detects such corruption.
 const std::uint64_t* BTree::find(const std::string& key) const {
     lastFindPageReads_ = 0;
     if (key.size() > kMaxKeyLen) {
@@ -278,12 +338,16 @@ bool BTree::insert(const std::string& key, std::uint64_t value) {
     if (key.size() > kMaxKeyLen) {
         throw std::runtime_error("BTree key longer than 255 bytes");
     }
+    // Any structural change invalidates the fill/fanout statistics computed
+    // by the last validate(); mark them stale rather than trying to update
+    // them incrementally (the stats are diagnostic, not correctness-critical).
     validated_ = false;
     bool inserted = false;
     auto split = insertRec(root_, key, value, inserted);
     if (split.has_value()) {
         // The root split: grow the tree by one level (the only place the
-        // height can increase).
+        // height can increase). The old root becomes the left child and the
+        // promoted separator is the boundary to the new right child.
         const std::uint32_t oldRoot = root_;
         Node newRoot;
         newRoot.leaf = false;
@@ -302,6 +366,14 @@ bool BTree::insert(const std::string& key, std::uint64_t value) {
 // range scan (leaf chain walk)
 // ---------------------------------------------------------------------------
 
+// Return every (key, value) with lo <= key < hi, in ascending key order.
+//
+// We first descend to the leaf that may contain `lo`, then walk the leaf
+// chain. The `continue` for keys < lo is only needed on the first leaf; the
+// early return on key >= hi is valid because leaves are sorted and the chain
+// preserves that order. An empty `hi` therefore means "unbounded above" only
+// if it compares greater than every key, which an empty string does not;
+// callers that want an open-ended scan pass a high sentinel instead.
 std::vector<std::pair<std::string, std::uint64_t>> BTree::rangeScan(
     const std::string& lo, const std::string& hi) const {
     std::vector<std::pair<std::string, std::uint64_t>> out;
@@ -332,6 +404,14 @@ std::vector<std::pair<std::string, std::uint64_t>> BTree::rangeScan(
 // bulk load (the index-build path)
 // ---------------------------------------------------------------------------
 
+// Build a B+Tree from a sorted vector in O(n) page writes.
+//
+// Why not just call insert() n times? Sequential insertion would split pages
+// by arrival order and leave the tree with roughly half-full pages; bulk load
+// packs leaves greedily to the byte budget, so the resulting file is smaller
+// and shallower. The input must be strictly sorted: duplicates would violate
+// I1 and the caller (index build) already has unique terms. The two passes
+// below are (1) leaves, (2) inner levels until one root remains.
 BTree BTree::bulkLoad(const std::vector<std::pair<std::string, std::uint64_t>>& sorted,
                       std::uint32_t pageSize) {
     const auto ascending = [](const auto& a, const auto& b) {
@@ -352,8 +432,13 @@ BTree BTree::bulkLoad(const std::vector<std::pair<std::string, std::uint64_t>>& 
     tree.validated_ = false;
 
     // Level 0: pack leaves greedily under the byte budget. Greedy packing
-    // can leave the *last* page lighter than half; fixLastLeaf() below
-    // rebalances (merge or borrow) so every page meets I3.
+    // can leave the *last* page lighter than half; the rebalance block below
+    // merges or borrows so every page meets I3.
+    //
+    // `level` holds the page ids of the level just built; it is also the
+    // input to the next level's grouping. The `nextLeaf` links are wired as
+    // pages are appended, so range scans work even before the inner levels
+    // exist (they are only used from the root down).
     std::vector<std::uint32_t> level;  // page ids of the level below
     {
         Node current;
@@ -412,6 +497,11 @@ BTree BTree::bulkLoad(const std::vector<std::pair<std::string, std::uint64_t>>& 
     // Inner levels: group children under the same budget; the separator
     // between two children is the first key of the right one's subtree.
     // The same rightmost-page rebalance keeps every inner node >= half.
+    //
+    // Separators are copied into the parent rather than referenced, because
+    // the child page may later be rewritten (or, on disk, evicted). A copied
+    // separator can become stale only if that key is deleted; this tree never
+    // deletes, so one copy is valid for the tree's lifetime.
     while (level.size() > 1) {
         std::vector<std::uint32_t> next;
         std::size_t i = 0;
@@ -482,6 +572,9 @@ void BTree::validate() const {
     bool leafDepthKnown = false;
 
     // Recursive walk with an explicit stack (page id, depth, key bounds).
+    // The bounds are pointers because separators live in the parent pages and
+    // remain valid for the duration of this call (no mutation here). `lo` is
+    // exclusive and `hi` is exclusive: a child owns [lo, hi), matching I2.
     struct Frame {
         std::uint32_t id;
         std::uint32_t depth;
@@ -587,7 +680,9 @@ void BTree::validate() const {
     }
 
     // I4 chain: following nextLeaf from the leftmost leaf must visit the
-    // leaves in key order and terminate at the last one.
+    // leaves in key order and terminate at the last one. The explicit guard
+    // bound turns a corrupted cycle into an error instead of an infinite loop;
+    // pages_.size() + 1 is larger than any valid chain.
     if (!leafOrder.empty()) {
         std::uint32_t id = leafOrder.front();
         const std::uint32_t firstId = id;
@@ -618,6 +713,10 @@ void BTree::validate() const {
         }
     }
 
+    // I5: the cached key counter must equal the number of leaf entries. This
+    // catches duplicate-key bugs that would otherwise hide behind a correct
+    // tree shape, and is the check the bulk-load duplicate assumption relies
+    // on. Reaching here means I1--I4 all held.
     if (seenKeys != keyCount_) {
         throw std::runtime_error("BTree I5 violated: stored keys " +
                                  std::to_string(seenKeys) + " != tracked " +
