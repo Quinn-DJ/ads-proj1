@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="680" font-family="Helvetica,Arial,sans-serif" font-size="10">
+<rect width="1120" height="680" fill="white"/>
+<g transform="translate(0,0)">
+<text x="46" y="18" font-size="13" font-weight="bold">max-df</text>
+<line x1="46" y1="30" x2="46" y2="290" stroke="#333"/>
+<line x1="46" y1="290" x2="346" y2="290" stroke="#333"/>
+<text x="42" y="34" text-anchor="end">138</text>
+<text x="42" y="290" text-anchor="end">0</text>
+<text x="46.0" y="304" text-anchor="middle">0.9</text>
+<text x="121.0" y="304" text-anchor="middle">0.7</text>
+<text x="196.0" y="304" text-anchor="middle">0.5</text>
+<text x="271.0" y="304" text-anchor="middle">0.3</text>
+<text x="346.0" y="304" text-anchor="middle">0.1</text>
+<polyline points="46.0,30.0 121.0,290.0 196.0,290.0 271.0,290.0 346.0,290.0" fill="none" stroke="#d62728" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#d62728">love</text>
+<polyline points="46.0,120.4 121.0,120.4 196.0,120.4 271.0,290.0 346.0,290.0" fill="none" stroke="#d62728" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#d62728">sweet</text>
+<polyline points="46.0,182.6 121.0,182.6 196.0,182.6 271.0,182.6 346.0,290.0" fill="none" stroke="#1f77b4" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#1f77b4">good</text>
+<polyline points="46.0,184.5 121.0,184.5 196.0,184.5 271.0,184.5 346.0,290.0" fill="none" stroke="#1f77b4" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#1f77b4">night</text>
+<polyline points="46.0,220.3 121.0,220.3 196.0,220.3 271.0,220.3 346.0,290.0" fill="none" stroke="#2ca02c" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#2ca02c">sword</text>
+<polyline points="46.0,224.1 121.0,224.1 196.0,224.1 271.0,224.1 346.0,290.0" fill="none" stroke="#2ca02c" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#2ca02c">moon</text>
+<polyline points="46.0,288.1 121.0,288.1 196.0,288.1 271.0,288.1 346.0,288.1" fill="none" stroke="#9467bd" stroke-width="1.5"/>
+<text x="350.0" y="291.1159420289855" fill="#9467bd">banquo</text>
+<polyline points="46.0,288.1 121.0,288.1 196.0,288.1 271.0,288.1 346.0,288.1" fill="none" stroke="#9467bd" stroke-width="1.5"/>
+<text x="350.0" y="291.1159420289855" fill="#9467bd">osric</text>
+<polyline points="46.0,276.8 121.0,276.8 196.0,276.8 271.0,276.8 346.0,276.8" fill="none" stroke="#ff7f0e" stroke-width="1.5"/>
+<text x="350.0" y="279.81159420289856" fill="#ff7f0e">king richard</text>
+<polyline points="46.0,246.7 121.0,246.7 196.0,246.7 271.0,246.7 346.0,246.7" fill="none" stroke="#ff7f0e" stroke-width="1.5"/>
+<text x="350.0" y="249.66666666666669" fill="#ff7f0e">good night</text>
+<polyline points="46.0,210.9 121.0,210.9 196.0,210.9 271.0,210.9 346.0,210.9" fill="none" stroke="#8c564b" stroke-width="1.5"/>
+<text x="350.0" y="213.8695652173913" fill="#8c564b">my lord</text>
+<polyline points="46.0,227.8 121.0,227.8 196.0,227.8 271.0,227.8 346.0,290.0" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#17becf">king queen</text>
+<polyline points="46.0,233.5 121.0,233.5 196.0,233.5 271.0,233.5 346.0,290.0" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#17becf">sweet sword moon</text>
+<polyline points="46.0,290.0 121.0,290.0 196.0,290.0 271.0,290.0 346.0,290.0" fill="none" stroke="#7f7f7f" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#7f7f7f">the</text>
+<polyline points="46.0,290.0 121.0,290.0 196.0,290.0 271.0,290.0 346.0,290.0" fill="none" stroke="#7f7f7f" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#7f7f7f">of</text>
+</g>
+<g transform="translate(560,0)">
+<text x="46" y="18" font-size="13" font-weight="bold">min-df</text>
+<line x1="46" y1="30" x2="46" y2="290" stroke="#333"/>
+<line x1="46" y1="290" x2="346" y2="290" stroke="#333"/>
+<text x="42" y="34" text-anchor="end">138</text>
+<text x="42" y="290" text-anchor="end">0</text>
+<text x="46.0" y="304" text-anchor="middle">2</text>
+<text x="146.0" y="304" text-anchor="middle">5</text>
+<text x="246.0" y="304" text-anchor="middle">20</text>
+<text x="346.0" y="304" text-anchor="middle">50</text>
+<polyline points="46.0,30.0 146.0,30.0 246.0,30.0 346.0,30.0" fill="none" stroke="#d62728" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#d62728">love</text>
+<polyline points="46.0,120.4 146.0,120.4 246.0,120.4 346.0,120.4" fill="none" stroke="#d62728" stroke-width="1.5"/>
+<text x="350.0" y="123.43478260869566" fill="#d62728">sweet</text>
+<polyline points="46.0,182.6 146.0,182.6 246.0,182.6 346.0,182.6" fill="none" stroke="#1f77b4" stroke-width="1.5"/>
+<text x="350.0" y="185.6086956521739" fill="#1f77b4">good</text>
+<polyline points="46.0,184.5 146.0,184.5 246.0,184.5 346.0,184.5" fill="none" stroke="#1f77b4" stroke-width="1.5"/>
+<text x="350.0" y="187.4927536231884" fill="#1f77b4">night</text>
+<polyline points="46.0,220.3 146.0,220.3 246.0,220.3 346.0,290.0" fill="none" stroke="#2ca02c" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#2ca02c">sword</text>
+<polyline points="46.0,224.1 146.0,224.1 246.0,224.1 346.0,290.0" fill="none" stroke="#2ca02c" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#2ca02c">moon</text>
+<polyline points="46.0,290.0 146.0,290.0 246.0,290.0 346.0,290.0" fill="none" stroke="#9467bd" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#9467bd">banquo</text>
+<polyline points="46.0,290.0 146.0,290.0 246.0,290.0 346.0,290.0" fill="none" stroke="#9467bd" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#9467bd">osric</text>
+<polyline points="46.0,276.8 146.0,276.8 246.0,276.8 346.0,276.8" fill="none" stroke="#ff7f0e" stroke-width="1.5"/>
+<text x="350.0" y="279.81159420289856" fill="#ff7f0e">king richard</text>
+<polyline points="46.0,246.7 146.0,246.7 246.0,246.7 346.0,246.7" fill="none" stroke="#ff7f0e" stroke-width="1.5"/>
+<text x="350.0" y="249.66666666666669" fill="#ff7f0e">good night</text>
+<polyline points="46.0,210.9 146.0,210.9 246.0,210.9 346.0,210.9" fill="none" stroke="#8c564b" stroke-width="1.5"/>
+<text x="350.0" y="213.8695652173913" fill="#8c564b">my lord</text>
+<polyline points="46.0,227.8 146.0,227.8 246.0,227.8 346.0,290.0" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#17becf">king queen</text>
+<polyline points="46.0,233.5 146.0,233.5 246.0,233.5 346.0,120.4" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="123.43478260869566" fill="#17becf">sweet sword moon</text>
+<polyline points="46.0,290.0 146.0,290.0 246.0,290.0 346.0,290.0" fill="none" stroke="#7f7f7f" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#7f7f7f">the</text>
+<polyline points="46.0,290.0 146.0,290.0 246.0,290.0 346.0,290.0" fill="none" stroke="#7f7f7f" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#7f7f7f">of</text>
+</g>
+<g transform="translate(0,340)">
+<text x="46" y="18" font-size="13" font-weight="bold">min-match</text>
+<line x1="46" y1="30" x2="46" y2="290" stroke="#333"/>
+<line x1="46" y1="290" x2="346" y2="290" stroke="#333"/>
+<text x="42" y="34" text-anchor="end">93</text>
+<text x="42" y="290" text-anchor="end">0</text>
+<text x="46.0" y="304" text-anchor="middle">1</text>
+<text x="196.0" y="304" text-anchor="middle">2</text>
+<text x="346.0" y="304" text-anchor="middle">3</text>
+<polyline points="46.0,169.8 196.0,197.7 346.0,197.7" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="200.74193548387098" fill="#17becf">king queen</text>
+<polyline points="46.0,30.0 196.0,181.0 346.0,206.1" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="209.12903225806454" fill="#17becf">sweet sword moon</text>
+</g>
+<g transform="translate(560,340)">
+<text x="46" y="18" font-size="13" font-weight="bold">top-x</text>
+<line x1="46" y1="30" x2="46" y2="290" stroke="#333"/>
+<line x1="46" y1="290" x2="346" y2="290" stroke="#333"/>
+<text x="42" y="34" text-anchor="end">20</text>
+<text x="42" y="290" text-anchor="end">0</text>
+<text x="46.0" y="304" text-anchor="middle">5</text>
+<text x="196.0" y="304" text-anchor="middle">10</text>
+<text x="346.0" y="304" text-anchor="middle">20</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#d62728" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#d62728">love</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#d62728" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#d62728">sweet</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#1f77b4" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#1f77b4">good</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#1f77b4" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#1f77b4">night</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#2ca02c" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#2ca02c">sword</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#2ca02c" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#2ca02c">moon</text>
+<polyline points="46.0,277.0 196.0,277.0 346.0,277.0" fill="none" stroke="#9467bd" stroke-width="1.5"/>
+<text x="350.0" y="280.0" fill="#9467bd">banquo</text>
+<polyline points="46.0,277.0 196.0,277.0 346.0,277.0" fill="none" stroke="#9467bd" stroke-width="1.5"/>
+<text x="350.0" y="280.0" fill="#9467bd">osric</text>
+<polyline points="46.0,225.0 196.0,199.0 346.0,199.0" fill="none" stroke="#ff7f0e" stroke-width="1.5"/>
+<text x="350.0" y="202.0" fill="#ff7f0e">king richard</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#ff7f0e" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#ff7f0e">good night</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#8c564b" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#8c564b">my lord</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#17becf">king queen</text>
+<polyline points="46.0,225.0 196.0,160.0 346.0,30.0" fill="none" stroke="#17becf" stroke-width="1.5"/>
+<text x="350.0" y="33.0" fill="#17becf">sweet sword moon</text>
+<polyline points="46.0,290.0 196.0,290.0 346.0,290.0" fill="none" stroke="#7f7f7f" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#7f7f7f">the</text>
+<polyline points="46.0,290.0 196.0,290.0 346.0,290.0" fill="none" stroke="#7f7f7f" stroke-width="1.5"/>
+<text x="350.0" y="293.0" fill="#7f7f7f">of</text>
+</g>
+</svg>
