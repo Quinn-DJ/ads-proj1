@@ -53,7 +53,7 @@ std::vector<std::string> splitLines(const std::string& data) {
 }
 
 // Split one manifest row on tabs. Titles may contain spaces but never a tab
-// (tools/extract.py guarantees this), so a plain split is safe.
+// (the manifest producers guarantee this), so a plain split is safe.
 std::vector<std::string> splitTab(const std::string& line) {
     std::vector<std::string> fields;
     std::string current;
@@ -80,8 +80,9 @@ std::string joinPaths(const std::string& dir, const std::string& rel) {
 }
 
 // Directory part of a path: "a/b/c" -> "a/b", "c" -> ".", "/c" -> "/".
+// Both separators are accepted so Windows-style argv paths also resolve.
 std::string dirName(const std::string& path) {
-    const std::size_t pos = path.find_last_of('/');
+    const std::size_t pos = path.find_last_of("/\\");
     if (pos == std::string::npos) {
         return ".";
     }
@@ -121,6 +122,27 @@ const char* toString(LineKind kind) {
     return "unknown";
 }
 
+const char* toString(TextFormat format) {
+    switch (format) {
+        case TextFormat::Marked: return "marked";
+        case TextFormat::Plain:  return "plain";
+    }
+    return "unknown";
+}
+
+// Parse the optional 8th manifest column. Absent means "marked", so every
+// existing manifest (including the golden4 fixture) keeps working unchanged.
+TextFormat parseTextFormat(const std::string& value, const std::string& where) {
+    if (value == "marked") {
+        return TextFormat::Marked;
+    }
+    if (value == "plain") {
+        return TextFormat::Plain;
+    }
+    throw std::runtime_error(where + ": unknown text format '" + value +
+                             "' (expected marked|plain)");
+}
+
 Corpus Corpus::load(const std::string& manifestPath) {
     const std::string manifest = readFile(manifestPath);
 
@@ -130,8 +152,15 @@ Corpus Corpus::load(const std::string& manifestPath) {
 
     const std::vector<std::string> rows = splitLines(manifest);
     const std::string expectedHeader = "docid\tkind\tcategory\ttitle\ttext\tsource\turl";
-    if (rows.empty() || rows.front() != expectedHeader) {
+    if (rows.empty() || rows.front().compare(0, expectedHeader.size(), expectedHeader) != 0) {
         throw std::runtime_error("unexpected manifest header in " + manifestPath);
+    }
+    // Optional 8th column "format" (marked|plain); anything else is rejected
+    // so a typo cannot silently fall back to the default.
+    const bool hasFormatColumn = rows.front() == expectedHeader + "\tformat";
+    if (!hasFormatColumn && rows.front() != expectedHeader) {
+        throw std::runtime_error("unexpected manifest header in " + manifestPath +
+                                 " (optional 8th column must be 'format')");
     }
 
     Corpus corpus;
@@ -144,8 +173,11 @@ Corpus Corpus::load(const std::string& manifestPath) {
         const std::string where = manifestPath + " row " + std::to_string(i + 1);
 
         const std::vector<std::string> fields = splitTab(rows[i]);
-        if (fields.size() != 7) {
-            throw std::runtime_error(where + ": expected 7 tab-separated fields, got " +
+        const std::size_t expectedFields = hasFormatColumn ? 8 : 7;
+        if (fields.size() != expectedFields) {
+            throw std::runtime_error(where + ": expected " +
+                                     std::to_string(expectedFields) +
+                                     " tab-separated fields, got " +
                                      std::to_string(fields.size()));
         }
 
@@ -161,6 +193,9 @@ Corpus Corpus::load(const std::string& manifestPath) {
         doc.textPath = fields[4];
         doc.sourcePath = fields[5];
         doc.url = fields[6];
+        if (hasFormatColumn) {
+            doc.format = parseTextFormat(fields[7], where);
+        }
 
         // docIDs must be dense and ordered 1..N; byID() relies on this.
         if (doc.id != static_cast<int>(corpus.docs_.size()) + 1) {
@@ -169,10 +204,17 @@ Corpus Corpus::load(const std::string& manifestPath) {
                                      std::to_string(corpus.docs_.size() + 1) + ")");
         }
 
-        // Load the line-based text; '#' lines are generator header comments.
+        // Load the line-based text; '#' lines are producer header comments.
+        // Plain-format documents skip marker classification entirely: every
+        // non-comment line is Body, so "(a remark)" or "[note]" lines in an
+        // ordinary prose corpus stay searchable.
         const std::string textFile = joinPaths(root, doc.textPath);
         for (const std::string& line : splitLines(readFile(textFile))) {
             if (line.empty() || line.front() == '#') {
+                continue;
+            }
+            if (doc.format == TextFormat::Plain) {
+                doc.lines.push_back(TextLine{LineKind::Body, line});
                 continue;
             }
             std::string content;

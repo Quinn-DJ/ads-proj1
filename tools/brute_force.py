@@ -24,8 +24,9 @@ import struct
 import sys
 from collections import defaultdict
 
-from check_wordcount import (line_kind, load_reference_porter,
-                             normalize_contractions, tokenize)
+from check_wordcount import (line_kind, load_manifest,
+                             load_reference_porter, normalize_contractions,
+                             tokenize)
 
 
 class Cursor:
@@ -130,17 +131,19 @@ def expected_terms(manifest_path, stop_path, stem_flag):
             cache[token] = porter.stem(normalize_contractions(token))
         return cache[token]
 
-    rows = list(csv.reader(open(manifest_path, encoding="utf-8"), delimiter="\t"))
+    rows = load_manifest(manifest_path)
     terms = defaultdict(list)  # term -> [(docID, positions...)]
-    for row in rows[1:]:
-        doc_id = int(row[0])
+    for row in rows:
+        doc_id = int(row["docid"])
+        plain = row["format"] == "plain"  # no markers: everything is body
         per_doc = defaultdict(list)  # term -> positions in the filtered stream
         position = 0
-        with open(row[4], encoding="utf-8") as handle:
+        with open(row["text"], encoding="utf-8") as handle:
             for line in handle.read().splitlines():
                 if not line or line.startswith("#"):
                     continue
-                if line_kind(line) != "body":
+                kind = "body" if plain else line_kind(line)
+                if kind != "body":
                     continue
                 for token in tokenize(line):
                     if token in stop:

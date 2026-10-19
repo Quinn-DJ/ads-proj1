@@ -99,6 +99,48 @@ TEST_CASE("entropy features on the golden4 fixture", "[count]") {
     }
 }
 
+TEST_CASE("plain-format documents keep marker-looking lines searchable", "[count]") {
+    // plain2 fixture: docs 1-2 are format=plain, doc 3 is format=marked --
+    // both formats share one manifest, exercising the per-document column.
+    const mse::Corpus corpus =
+        mse::Corpus::load("tests/fixtures/plain2/data/manifest.tsv");
+    REQUIRE(corpus.size() == 3);
+
+    // Plain docs: every non-'#' line is Body, including "(...)" / "[...]" /
+    // "@..." lines that the marked rules would classify and filter.
+    const mse::Document& notes = corpus.byID(1);
+    CHECK(notes.format == mse::TextFormat::Plain);
+    for (const mse::TextLine& line : notes.lines) {
+        CHECK(line.kind == mse::LineKind::Body);
+    }
+    REQUIRE(notes.lines.size() == 5);  // all five content lines survived
+
+    // Marked doc in the same manifest: markers still classified/filtered.
+    const mse::Document& play = corpus.byID(3);
+    CHECK(play.format == mse::TextFormat::Marked);
+    REQUIRE(play.lines.size() == 4);  // [ACT I], (Exit...), @SPEAKER, body
+    CHECK(play.lines[0].kind == mse::LineKind::Heading);
+    CHECK(play.lines[1].kind == mse::LineKind::Stage);
+    CHECK(play.lines[2].kind == mse::LineKind::Speaker);
+    CHECK(play.lines[3].kind == mse::LineKind::Body);
+
+    // Token-level proof: words only reachable if marker lines were kept.
+    const mse::WordCount count = mse::countWords(corpus, mse::CountOptions{});
+    const mse::TermRow* cold = findRow(count, "cold");        // inside (...)
+    const mse::TermRow* supplies = findRow(count, "supplies");  // inside [...]
+    const mse::TermRow* noon = findRow(count, "noon");        // after @
+    const mse::TermRow* postscript = findRow(count, "postscript");  // doc2 [...]
+    CHECK(cold != nullptr);
+    CHECK(supplies != nullptr);
+    CHECK(noon != nullptr);
+    CHECK(postscript != nullptr);
+    // ...while the marked doc's markers stay out of the default stream
+    CHECK(findRow(count, "act") == nullptr);
+    CHECK(findRow(count, "speaker") == nullptr);
+    CHECK(findRow(count, "exit") == nullptr);
+    CHECK(findRow(count, "be") != nullptr);  // its body line counts
+}
+
 TEST_CASE("deriveStopWords applies the three-feature rule", "[count]") {
     mse::WordCount count;
     count.documents = 10;

@@ -1,0 +1,9 @@
+# docID: 1
+# title: Field Notes
+# plain-format fixture: marker-looking lines must stay searchable body text
+
+Weather log for the expedition.
+(a cold morning on the ridge)
+[ supplies running low ]
+@noon the wind turned north
+We counted forty two birds.

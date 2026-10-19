@@ -21,7 +21,7 @@ namespace {
 // tokenCount (see plan.md 7 for the full layout).
 constexpr std::size_t kHeaderBytes = 4 + 4 + 4 + 4 + 4 + 8;
 
-// Dump: how many positions of a single posting are printed before "…".
+// Dump: how many positions of a single posting are printed before "...".
 constexpr std::uint32_t kDumpPositionsPerPosting = 12;
 
 void writeU32(std::ostream& out, std::uint32_t value) {
@@ -396,12 +396,12 @@ bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostin
             out << ' ' << entry->positions[posting.posStart + k];
         }
         if (posting.tf > printed) {
-            out << " …(+" << (posting.tf - printed) << " more)";
+            out << " ... (+" << (posting.tf - printed) << " more)";
         }
         out << "\n";
     }
     if (entry->postings.size() > shown) {
-        out << "  …(+" << (entry->postings.size() - shown) << " more postings)\n";
+        out << "  ... (+" << (entry->postings.size() - shown) << " more postings)\n";
     }
     return true;
 }

@@ -70,6 +70,44 @@ def line_kind(line):
     return "body"
 
 
+def load_manifest(path):
+    """Manifest rows as dicts, accepting the optional 8th 'format' column.
+
+    Mirrors src/corpus.cpp: the header is either the 7 base columns or those
+    plus 'format'; every data row then carries the matching field count, and
+    the format value must be 'marked' (default semantics) or 'plain'. Text
+    paths are resolved against the manifest's grandparent directory (the
+    C++ "<root>/data/manifest.tsv" convention), so the checker works from
+    any working directory and against fixture manifests.
+    """
+    rows = list(csv.reader(open(path, encoding="utf-8"), delimiter="\t"))
+    if not rows:
+        sys.exit(f"empty manifest: {path}")
+    base = ["docid", "kind", "category", "title", "text", "source", "url"]
+    header, body = rows[0], rows[1:]
+    if header == base:
+        has_format = False
+    elif header == base + ["format"]:
+        has_format = True
+    else:
+        sys.exit(f"unexpected manifest header: {header}")
+    root = os.path.dirname(os.path.dirname(os.path.abspath(path)))
+    docs = []
+    for row in body:
+        if not row:
+            continue
+        if len(row) != (8 if has_format else 7):
+            sys.exit(f"manifest row has {len(row)} fields, expected "
+                     f"{8 if has_format else 7}: {row}")
+        doc = dict(zip(base, row))
+        doc["text"] = os.path.join(root, row[4].replace("/", os.sep))
+        doc["format"] = row[7] if has_format else "marked"
+        if doc["format"] not in ("marked", "plain"):
+            sys.exit(f"unknown text format {doc['format']!r} (doc {doc['docid']})")
+        docs.append(doc)
+    return docs
+
+
 # --------------------------------------------------------------------------
 # stemming (only used with --stem): reference NLTK Porter + our contraction
 # normalization, duplicated here as an independent implementation of the
@@ -127,10 +165,7 @@ def main():
     parser.add_argument("--keep-stage", action="store_true")
     args = parser.parse_args()
 
-    rows = list(csv.reader(open(args.manifest, encoding="utf-8"), delimiter="\t"))
-    header, documents_rows = rows[0], rows[1:]
-    if header != ["docid", "kind", "category", "title", "text", "source", "url"]:
-        sys.exit(f"unexpected manifest header: {header}")
+    documents_rows = load_manifest(args.manifest)
 
     def wanted(kind):
         return (kind == "body"
@@ -164,13 +199,14 @@ def main():
 
     for row in documents_rows:
         documents += 1
-        docid = int(row[0])
+        docid = int(row["docid"])
+        plain = row["format"] == "plain"  # no markers: everything is body
         cur = defaultdict(int)  # this document's tf, flushed per term below
-        with open(row[4], encoding="utf-8") as handle:
+        with open(row["text"], encoding="utf-8") as handle:
             for line in handle.read().splitlines():
                 if not line or line.startswith("#"):
                     continue
-                kind = line_kind(line)
+                kind = "body" if plain else line_kind(line)
                 if not wanted(kind):
                     continue
                 if kind != "body":

@@ -1,12 +1,25 @@
 // corpus.h -- document storage for the mini search engine.
 //
-// The C++ programs never touch HTML: tools/extract.py has already produced
+// The engine is corpus-agnostic: it reads a manifest plus the line-based
+// text files the manifest points to, and treats kind/category as opaque
+// strings (any vocabulary works -- `mse stats` just groups by them). What
+// the Shakespeare producer (tools/extract.py) freezes into data/ is one
+// *instance* of the format, not engine knowledge.
+//
 //   data/manifest.tsv   one row per document (docID, kind, category, title, ...)
 //   data/text/*.txt     the line-based text of each document
 // This module loads both into memory. The whole corpus is ~5.5 MB of text, so
 // a resident copy is the simplest and fastest design (plan.md section 6.1);
 // the scaling question (500k files / 400M terms) is discussed separately in
 // the bonus analysis.
+//
+// Per-document text format (optional 8th manifest column, default "marked"):
+//   marked -- the extract.py layer: [ACT I] headings, (stage) directions and
+//             @SPEAKER labels are tagged and filtered by default
+//   plain  -- no line markers: every non-comment line is searchable body
+//             text (prose, letters, logs, transcripts, ...). A plain corpus
+//             never loses a parenthetical sentence to the stage rule.
+//             '#' comment lines are skipped in both formats.
 
 #pragma once
 
@@ -28,25 +41,36 @@ enum class LineKind : std::uint8_t {
 
 const char* toString(LineKind kind);
 
+// Line-marker convention of one document's text file (manifest column 8).
+enum class TextFormat : std::uint8_t {
+    Marked,  // extract.py's marker layer (the Shakespeare producer)
+    Plain,   // no markers: everything non-'#' is body text
+};
+
+const char* toString(TextFormat format);
+
 // One line of a document, with its marker already stripped:
 //   [ACT I]       -> Heading "ACT I"
 //   (Exit Ghost)  -> Stage   "Exit Ghost"
 //   @BERNARDO     -> Speaker "BERNARDO"
 //   Who's there?  -> Body    (unchanged)
+// Plain-format documents only ever produce Body lines.
 struct TextLine {
     LineKind kind = LineKind::Body;
     std::string text;
 };
 
-// One document = one complete work (play / sonnet / poem), see plan.md 3.2.
+// One document = one work-sized unit (play / sonnet / chapter / article --
+// whatever unit the manifest's producer decided, plan.md 3.2).
 struct Document {
     int id = 0;                 // 1-based docID from the manifest
-    std::string kind;           // play | sonnet | poem
-    std::string category;       // Comedy | History | Tragedy | Poetry
-    std::string title;          // display name, e.g. "Hamlet", "Sonnet CXLIV"
+    std::string kind;           // opaque producer vocabulary (play|sonnet|...)
+    std::string category;       // opaque producer vocabulary (Comedy|...)
+    std::string title;          // display name, e.g. "Hamlet", "RFC 7231"
     std::string textPath;       // data/text/....txt (relative to project root)
-    std::string sourcePath;     // data/raw/....html
-    std::string url;            // canonical URL on shakespeare.mit.edu
+    std::string sourcePath;     // original file the text was extracted from
+    std::string url;            // canonical URL of the source (or "-")
+    TextFormat format = TextFormat::Marked;  // line-marker convention
     std::vector<TextLine> lines;
 };
 
