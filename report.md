@@ -560,7 +560,7 @@ query text → tokenize → [stop word check] → [stem] → terms
 |---|---|---|
 | 逐文档 token 数（C++ tokenizer vs Python） | 195 文档 | 100% 一致，866,626 token |
 | `wordcount.csv` 默认配置 | 25,705 行 | 逐字节一致 |
-| `wordcount.csv --keep-speakers` | 25,705 行 | 逐字节一致 |
+| `wordcount.csv --keep-speakers` | 25,742 行 | 逐字节一致 |
 | `wordcount.csv --stop-words` | 556,866 kept / 309,760 removed | 逐字节一致 |
 | `wordcount.csv --stem` | 14,947 词干 | 逐字节一致（NLTK `MARTIN_EXTENSIONS`） |
 | `wordcount.csv --stem --stop-words` | 14,937 词干 | 逐字节一致 |
