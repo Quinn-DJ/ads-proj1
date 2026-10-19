@@ -1,0 +1,100 @@
+% style.tex -- shared preamble for the standalone test reports.
+%
+% Each report is an independent document: build it with
+%   latexmk -xelatex -interaction=nonstopmode -halt-on-error -outdir=build <file>.tex
+% from the reports/ directory. The main project report is intentionally not
+% part of this directory; these reports document the test evidence on its own.
+
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+
+\usepackage{geometry}
+\geometry{top=2.3cm,bottom=2.3cm,left=2.5cm,right=2.5cm,headheight=14pt}
+
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}[AutoFakeSlant=0.2]
+\setsansfont{DejaVu Sans}[AutoFakeSlant=0.2]
+\setmonofont{DejaVu Sans Mono}[Scale=0.88]
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+
+\definecolor{codebg}{gray}{0.96}
+\definecolor{codeframe}{gray}{0.45}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framerule=0.3pt,
+  rulecolor=\color{codeframe},
+  backgroundcolor=\color{codebg},
+  showstringspaces=false,
+  tabsize=2,
+  aboveskip=0.7em,
+  belowskip=0.7em,
+}
+
+% Inline code. detokenize preserves spaces and special characters; a plain
+% lstinline argument loses spaces under ctex (xeCJK-listings turns them into
+% CJK glue). Avoid a literal percent sign in the argument.
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 迷你搜索引擎项目}
+\fancyhead[R]{\small 测试报告}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+}
+
+\captionsetup{font=small,labelfont=bf,skip=5pt}
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{2em}
+\setlength{\emergencystretch}{3em}
+\renewcommand{\arraystretch}{1.15}
+\setlist{itemsep=0.2em,topsep=0.3em}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  urlcolor=blue!55!black,
+  bookmarksnumbered=true,
+}
+
+% Report title block: number/title, subtitle, version.
+\newcommand{\reportheader}[3]{%
+  \begin{center}
+    {\large 迷你搜索引擎项目}\\[0.35em]
+    {\LARGE\bfseries #1}\\[0.45em]
+    {\large #2}\\[0.6em]
+    {\small 版本 #3 \quad 测试日期 2026-10-19}
+  \end{center}
+  \vspace{0.3em}
+  \noindent\rule{\linewidth}{0.6pt}
+  \vspace{0.8em}
+}
+
+% A highlighted conclusion.
+\newcommand{\finding}[1]{%
+  \begin{quote}
+    \noindent\textbf{结论：}#1
+  \end{quote}
+}

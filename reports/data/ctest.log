@@ -1,0 +1,42 @@
+Internal ctest changing into directory: /home/cenru/project/ads-proj1/build
+Test project /home/cenru/project/ads-proj1/build
+      Start  1: test_tokenizer
+ 1/18 Test  #1: test_tokenizer ...................   Passed    0.00 sec
+      Start  2: test_stemmer
+ 2/18 Test  #2: test_stemmer .....................   Passed    0.00 sec
+      Start  3: test_dict
+ 3/18 Test  #3: test_dict ........................   Passed    0.01 sec
+      Start  4: test_index
+ 4/18 Test  #4: test_index .......................   Passed    0.00 sec
+      Start  5: test_query
+ 5/18 Test  #5: test_query .......................   Passed    0.00 sec
+      Start  6: test_stopwords
+ 6/18 Test  #6: test_stopwords ...................   Passed    0.00 sec
+      Start  7: test_count
+ 7/18 Test  #7: test_count .......................   Passed    0.00 sec
+      Start  8: test_bptree
+ 8/18 Test  #8: test_bptree ......................   Passed    0.04 sec
+      Start  9: mse_stats
+ 9/18 Test  #9: mse_stats ........................   Passed    0.04 sec
+      Start 10: rfc_stats
+10/18 Test #10: rfc_stats ........................   Passed    0.01 sec
+      Start 11: crosscheck_build
+11/18 Test #11: crosscheck_build .................   Passed    0.30 sec
+      Start 12: crosscheck_brute_force
+12/18 Test #12: crosscheck_brute_force ...........   Passed    1.71 sec
+      Start 13: crosscheck_phrases
+13/18 Test #13: crosscheck_phrases ...............   Passed   20.62 sec
+      Start 14: crosscheck_dictfile
+14/18 Test #14: crosscheck_dictfile ..............   Passed    0.03 sec
+      Start 15: crosscheck_compress_build
+15/18 Test #15: crosscheck_compress_build ........   Passed    0.28 sec
+      Start 16: crosscheck_compress
+16/18 Test #16: crosscheck_compress ..............   Passed    1.76 sec
+      Start 17: crosscheck_compress_dictfile
+17/18 Test #17: crosscheck_compress_dictfile .....   Passed    0.03 sec
+      Start 18: crosscheck_compress_phrases
+18/18 Test #18: crosscheck_compress_phrases ......   Passed   19.20 sec
+
+100% tests passed, 0 tests failed out of 18
+
+Total Test time (real) =  44.05 sec

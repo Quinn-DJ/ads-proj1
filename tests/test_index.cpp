@@ -104,6 +104,10 @@ bool sameIndex(const mse::Index& a, const mse::Index& b) {
 
 }  // namespace
 
+// Golden sample: the four-document example from the class03 notes. Every term
+// is checked against the lecture's posting table, and positions are checked
+// for "silver" in docs 1 and 3. This is the smallest end-to-end test of
+// tokenize -> dictionary -> posting -> freeze, with a hand-verifiable answer.
 TEST_CASE("raw build reproduces the lecture posting table", "[index][golden]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -111,6 +115,9 @@ TEST_CASE("raw build reproduces the lecture posting table", "[index][golden]") {
     mse::SplayDictionary splay;
     const mse::Index raw = mse::buildIndex(corpus, mse::BuildOptions{}, splay);
 
+    // The fixture has 11 distinct terms: a, arrived, damaged, delivery, fire,
+    // gold, in, of, shipment, silver, truck. The token total is the sum of the
+    // four sentence lengths: 3 + 7 + 8 + 7 = 25.
     CHECK(raw.docs.size() == 4);
     CHECK(raw.terms.size() == 11);
     CHECK(raw.tokenCount == 3 + 7 + 8 + 7);
@@ -135,12 +142,17 @@ TEST_CASE("raw build reproduces the lecture posting table", "[index][golden]") {
 
     // Positions: doc 1 "Gold silver truck" -> silver at 1;
     // doc 3 "... silver ... silver ..." -> silver at 2 and 6.
+    // The two posts are checked in posting order (doc 1, then doc 3).
     const mse::IndexTerm* silver = findTerm(raw, "silver");
     REQUIRE(silver != nullptr);
     CHECK(positionsOf(*silver, 0) == std::vector<std::uint32_t>{1});
     CHECK(positionsOf(*silver, 1) == std::vector<std::uint32_t>({2, 6}));
 }
 
+// Determinism/consistency: the dictionary is an implementation detail, so
+// splay and hash must produce the same in-memory Index and byte-identical
+// serialized files. The round trip (write -> load -> compare) also exercises
+// the reader against the writer on the same fixture.
 TEST_CASE("splay and hash dictionaries build identical indexes", "[index]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -161,6 +173,10 @@ TEST_CASE("splay and hash dictionaries build identical indexes", "[index]") {
     CHECK(sameIndex(raw, loaded));
 }
 
+// Stop words must disappear from the term table, and positions must be
+// renumbered on the *filtered* stream: in doc3, "silver" was at 2 and 6 with
+// stop words, and becomes 1 and 3 after removing "of", "in" and "a". Phrase
+// queries depend on exactly this behavior.
 TEST_CASE("stop word variant: terms vanish, positions renumber", "[index]") {
     const mse::Corpus corpus =
         mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
@@ -176,12 +192,17 @@ TEST_CASE("stop word variant: terms vanish, positions renumber", "[index]") {
     CHECK(findTerm(clean, "of") == nullptr);
     CHECK(findTerm(clean, "in") == nullptr);
 
+    // Removing "of", "in" and "a" closes the gaps, so the two silver
+    // occurrences in doc 3 move from (2, 6) to (1, 3).
     const mse::IndexTerm* cleanSilver = findTerm(clean, "silver");
     REQUIRE(cleanSilver != nullptr);
     CHECK(positionsOf(*cleanSilver, 1) == std::vector<std::uint32_t>({1, 3}));
     CHECK(clean.flags == mse::kIndexFlagStopWords);
 }
 
+// Error path: a file that is not an index must be rejected by the magic (or a
+// later bounds/invariant check), never loaded as garbage. The exact exception
+// type is not important; failing loudly is.
 TEST_CASE("a corrupt index file must fail loudly", "[index]") {
     {
         std::ofstream out("build/test_index_bad.bin", std::ios::binary);

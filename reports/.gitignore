@@ -1,0 +1,11 @@
+# LaTeX build products; committed PDFs live in pdf/.
+build/
+*.aux
+*.fls
+*.fdb_latexmk
+*.log
+!data/*.log
+*.out
+*.toc
+*.xdv
+*.synctex.gz
