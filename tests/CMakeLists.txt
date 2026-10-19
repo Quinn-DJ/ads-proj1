@@ -29,7 +29,8 @@ set(MSE_TESTS
     test_dict
     test_index
     test_query
-    test_stopwords)
+    test_stopwords
+    test_count)
 
 foreach(test IN LISTS MSE_TESTS)
     add_executable(${test} ${test}.cpp)

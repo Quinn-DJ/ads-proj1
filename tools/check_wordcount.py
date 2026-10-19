@@ -10,9 +10,10 @@ the same specification *independently*; their outputs must be byte-identical:
     diff build/wordcount.csv build/wordcount_py.csv && echo identical
 
 It reads data/manifest.tsv and the referenced data/text/*.txt files, then
-prints the same CSV (rank,term,tf,df,df_ratio,tf_share,stop_candidate) to
-stdout. Flags mirror the C++ side's tokenizer options, --stop-words and
---stem. When --stem is given, the stemming itself is done by the *reference*
+prints the same CSV (rank,term,tf,df,df_ratio,tf_share,stop_candidate,
+entropy,entropy_norm,entropy_rate_norm) to stdout. Flags mirror the C++
+side's tokenizer options, --stop-words and --stem. When --stem is given,
+the stemming itself is done by the *reference*
 NLTK implementation (reference/nltk-porter-3.9.1.py, MARTIN_EXTENSIONS
 mode = the author's canonical C behaviour) after the same contraction
 normalization our C++ stemmer applies, so the comparison validates opposite
@@ -22,6 +23,7 @@ sides: our C++ implementation vs NLTK.
 import argparse
 import csv
 import importlib.util
+import math
 import os
 import sys
 import types
@@ -138,6 +140,8 @@ def main():
 
     tf = defaultdict(int)
     df = defaultdict(int)
+    per_doc = defaultdict(list)  # term -> [(docid, tf), ...] in docID order
+    doc_lens = {}  # docid -> kept tokens of that document
     documents = 0
     total_tokens = 0
 
@@ -160,7 +164,8 @@ def main():
 
     for row in documents_rows:
         documents += 1
-        seen = set()
+        docid = int(row[0])
+        cur = defaultdict(int)  # this document's tf, flushed per term below
         with open(row[4], encoding="utf-8") as handle:
             for line in handle.read().splitlines():
                 if not line or line.startswith("#"):
@@ -177,16 +182,44 @@ def main():
                         token = stem_token(token)
                     tf[token] += 1
                     total_tokens += 1
-                    seen.add(token)
-        for token in seen:
+                    cur[token] += 1
+        # Flush the per-document counts in manifest order: per_doc[term] then
+        # holds the term's document distribution in docID order, matching the
+        # C++ docIds/docTf vectors (same summation order -> bit-identical
+        # entropy columns).
+        doc_lens[docid] = sum(cur.values())
+        for token, count in cur.items():
+            per_doc[token].append((docid, count))
             df[token] += 1
 
-    print("rank,term,tf,df,df_ratio,tf_share,stop_candidate")
+    def entropies(term):
+        """Raw and length-normalized entropy, see count.hpp for the spec."""
+        total = tf[term]
+        h = 0.0
+        for _, count in per_doc[term]:
+            p = count / total
+            h -= p * math.log2(p)
+        rate_sum = 0.0
+        for doc, count in per_doc[term]:
+            rate_sum += count / doc_lens[doc]
+        h_rate = 0.0
+        for doc, count in per_doc[term]:
+            q = (count / doc_lens[doc]) / rate_sum
+            h_rate -= q * math.log2(q)
+        return h, h_rate
+
+    print("rank,term,tf,df,df_ratio,tf_share,stop_candidate,"
+          "entropy,entropy_norm,entropy_rate_norm")
     for i, term in enumerate(sorted(tf, key=lambda t: (-tf[t], t)), start=1):
         df_ratio = df[term] / documents
         tf_share = tf[term] / total_tokens
         candidate = 1 if (df_ratio >= 0.75 and tf_share >= 0.001) else 0
-        print(f"{i},{term},{tf[term]},{df[term]},{df_ratio:.6f},{tf_share:.6f},{candidate}")
+        entropy, rate_entropy = entropies(term)
+        entropy_norm = entropy / math.log2(df[term]) if df[term] >= 2 else 0.0
+        rate_norm = rate_entropy / math.log2(df[term]) if df[term] >= 2 else 0.0
+        print(f"{i},{term},{tf[term]},{df[term]},{df_ratio:.6f},"
+              f"{tf_share:.6f},{candidate},{entropy:.6f},"
+              f"{entropy_norm:.6f},{rate_norm:.6f}")
 
 
 if __name__ == "__main__":
