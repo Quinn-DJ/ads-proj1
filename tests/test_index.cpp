@@ -5,10 +5,12 @@
 
 #include "catch_amalgamated.hpp"  // vendored Catch2 v3, single include
 
+#include "blockbuild.hpp"
 #include "index.hpp"
 #include "stopwords.hpp"
 
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -186,6 +188,102 @@ TEST_CASE("a corrupt index file must fail loudly", "[index]") {
         out << "this is not an index";
     }
     CHECK_THROWS_AS(mse::loadIndex("build/test_index_bad.bin"), std::exception);
+}
+
+TEST_CASE("block-wise build equals the in-memory build byte for byte",
+          "[index][blocks]") {
+    const mse::Corpus corpus =
+        mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
+
+    // Reference: the ordinary single-pass build.
+    mse::SplayDictionary splay;
+    const mse::Index inMemory = mse::buildIndex(corpus, mse::BuildOptions{}, splay);
+    mse::writeIndex("build/test_index_memory.bin", inMemory);
+
+    // Block build with an absurdly small budget -- each golden4 document has
+    // ~8 terms, so budget 2 spills after every document: 4 blocks, each term
+    // split across as many blocks as documents it occurs in.
+    mse::BlockBuildOptions options;
+    options.blockTerms = 2;
+    options.blockDir = "build/blockbuild_test";
+    mse::BlockBuildStats stats;
+    const mse::Index blocked = mse::buildIndexBlocked(corpus, options, stats);
+
+    CHECK(blocked.flags == inMemory.flags);
+    CHECK(blocked.tokenCount == inMemory.tokenCount);
+    CHECK(blocked.docs.size() == inMemory.docs.size());
+    CHECK(blocked.terms.size() == inMemory.terms.size());
+    CHECK(stats.blocks >= 2);  // the budget must actually have forced spills
+    CHECK(stats.maxLiveTerms >= 2);
+
+    // Term tables identical (sorted, same postings and positions).
+    for (std::size_t i = 0; i < inMemory.terms.size(); ++i) {
+        CHECK(blocked.terms[i].term == inMemory.terms[i].term);
+        CHECK(blocked.terms[i].postings == inMemory.terms[i].postings);
+        CHECK(blocked.terms[i].positions == inMemory.terms[i].positions);
+    }
+    mse::validateIndex(blocked);
+    mse::writeIndex("build/test_index_blocked.bin", blocked);
+    CHECK(readFile("build/test_index_memory.bin") ==
+          readFile("build/test_index_blocked.bin"));
+}
+
+TEST_CASE("varint round trips across every length class", "[index][varint]") {
+    // Boundaries of the four payload classes (6/14/22/30 bits) plus a
+    // spread inside each; encode then decode must return the same value
+    // and consume exactly the encoded bytes.
+    const std::vector<std::uint32_t> values = {
+        0, 1, 5, 63, 64, 65, 100, 16383, 16384, 20000,
+        (1u << 21) - 1, (1u << 21), (1u << 22) - 1, (1u << 22), 123456789,
+        (1u << 30) - 1};
+    for (const std::uint32_t value : values) {
+        const std::string encoded = mse::encodeVarint(value);
+        const std::uint8_t* cursor =
+            reinterpret_cast<const std::uint8_t*>(encoded.data());
+        const std::uint8_t* end = cursor + encoded.size();
+        CHECK(mse::decodeVarint(cursor, end) == value);
+        CHECK(cursor == end);  // consumed exactly the encoded bytes
+    }
+    // Values above 30 bits are rejected (they cannot occur in our format).
+    CHECK_THROWS(mse::encodeVarint(1u << 30));
+    // Truncated buffers fail loudly instead of reading garbage.
+    const std::string four = mse::encodeVarint((1u << 22));
+    const std::uint8_t* cursor =
+        reinterpret_cast<const std::uint8_t*>(four.data());
+    CHECK_THROWS(mse::decodeVarint(cursor, cursor + 2));
+}
+
+TEST_CASE("compressed v2 index round trips and shrinks", "[index][v2]") {
+    const mse::Corpus corpus =
+        mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
+    mse::SplayDictionary splay;
+    const mse::Index index = mse::buildIndex(corpus, mse::BuildOptions{}, splay);
+
+    mse::writeIndex("build/test_index_v1.bin", index);
+    mse::writeIndexCompressed("build/test_index_v2.bin", index);
+
+    // Same content, both encodings.
+    const mse::Index loadedV1 = mse::loadIndex("build/test_index_v1.bin");
+    const mse::Index loadedV2 = mse::loadIndex("build/test_index_v2.bin");
+    CHECK(sameIndex(index, loadedV1));
+    CHECK(sameIndex(index, loadedV2));
+    mse::validateIndex(loadedV2);
+
+    // golden4 postings are small numbers -- gaps/deltas dominate.
+    CHECK(std::filesystem::file_size("build/test_index_v2.bin") <
+          std::filesystem::file_size("build/test_index_v1.bin"));
+
+    // The disk dictionary works against the v2 file as well (its values
+    // carry the compressed block ranges).
+    mse::writeDictFile(index, "build/test_index_v2.bpt", 4096, /*compressed=*/true);
+    const mse::LazyIndexReader lazy("build/test_index_v2.bin",
+                                    "build/test_index_v2.bpt");
+    for (const mse::IndexTerm& reference : index.terms) {
+        mse::IndexTerm viaDict;
+        REQUIRE(lazy.readTerm(reference.term, viaDict));
+        CHECK(viaDict.postings.size() == reference.postings.size());
+        CHECK(viaDict.positions == reference.positions);
+    }
 }
 
 TEST_CASE("B+Tree sidecar serves every term without loading the table",

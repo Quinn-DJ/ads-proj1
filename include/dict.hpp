@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -122,6 +123,38 @@ private:
     static std::uint64_t hashOf(const std::string& term);  // FNV-1a 64
     void rehash(std::size_t newBucketCount);
     static void destroyChain(Node* node);
+};
+
+// ---------------------------------------------------------------------------
+// std::map dictionary (standard-library baseline, typically a red-black
+// tree; the third column of the plan.md 6.5 comparison experiment)
+// ---------------------------------------------------------------------------
+
+class MapDictionary : public Dictionary {
+public:
+    // The comparator must see this object's stats_ from the first insert;
+    // the base subobject is constructed before map_, so &stats_ is stable.
+    MapDictionary() : map_(CountingCompare{&stats_}) {}
+
+    TermEntry& upsert(const std::string& term) override;
+    TermEntry* find(const std::string& term) override;
+    std::vector<TermEntry*> sortedEntries() override;
+
+private:
+    // Instrumented comparator: std::map's internal comparisons are not
+    // observable, so the tree runs on our counting strict-weak-order --
+    // every key comparison the map performs lands in DictStats, making
+    // the three-way comparison metric machine-independent again.
+    struct CountingCompare {
+        DictStats* stats = nullptr;  // -> Dictionary::stats_ of the owner
+        bool operator()(const std::string& a, const std::string& b) const;
+    };
+
+    // map nodes are stable: references handed out by upsert()/find() stay
+    // valid for the dictionary's lifetime (same contract as the others).
+    // The comparator points at this object's stats_, so the map must never
+    // be copied out of the dictionary (Dictionary is non-copyable anyway).
+    std::map<std::string, TermEntry, CountingCompare> map_;
 };
 
 }  // namespace mse

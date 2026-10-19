@@ -51,6 +51,7 @@ proj1/
 │   ├── index.hpp             #   索引构建/序列化/加载/不变量/ dump
 │   │                         #   + B+Tree 词典 sidecar 与 LazyIndexReader
 │   ├── bptree.hpp           #   页式 B+Tree（磁盘词典，Bonus 实做）
+│   ├── blockbuild.hpp       #   SPIMI 式块式外部构建（Bonus 构建侧）
 │   ├── query.hpp             #   查询：word/phrase/boolean + 四个阈值
 │   └── count.hpp             #   词频统计：tf/df 表（Task 1）
 ├── src/                      # C++ 实现（与 include/ 一一对应）
@@ -321,8 +322,8 @@ only in derived: hath o thee thou (4)
 
 ```bash
 ./build/mse build [--manifest data/manifest.tsv] [--index build/index.bin]
-                  [--dict splay|hash] [--stop-words data/stopwords.txt] [--stem]
-                  [--dict-file build/index.bpt]
+                  [--dict splay|hash|map] [--stop-words data/stopwords.txt] [--stem]
+                  [--dict-file build/index.bpt] [--compress]
 ```
 
 ```text
@@ -346,6 +347,29 @@ python3 tools/brute_force.py --stop-words data/stopwords.txt --stem
 
 `--dict-file` 额外写出一个 **B+Tree 词典 sidecar**（term → posting 字节区，见
 [磁盘 B+Tree 词典](#磁盘-btree-词典bonus-实做)）。
+
+### `mse build-blocks` — 块式外部构建（Bonus 构建侧演示）
+
+```bash
+./build/mse build-blocks [--manifest ...] [--index build/index.bin]
+                         [--stop-words ...] [--stem] [--compress]
+                         [--block-terms 4096]
+```
+
+SPIMI 式两阶段：文档流式扫描，块内词典达到预算即排序落盘成 run 文件，最后按词 k 路归并
+——**内存 O(预算)**，与语料词表大小无关（500 000 文件场景的构建侧答案）。产物与
+`mse build` **逐字节一致**；输出块数/峰值活词/两阶段耗时，run 文件用后即删。
+
+### `mse bptree-bench` — B+Tree 规模实测（Bonus）
+
+```bash
+./build/mse bptree-bench --keys 1000000 [--lookups 1000] [--page-size 4096]
+                         [--out build/bptree-bench.bpt]
+```
+
+合成键（递增 base-26 计数器）bulk-load 落盘后从文件做随机查询验证：高度、页数、字节/键、
+每次查询页读、构建耗时。实测 10 万 → 1000 万键体积严格线性（15.1 B/键）、高度与扇出公式
+逐点吻合；外推 4 亿键：文件 ~6 GB、高度 4、每次查询 4 页 = 16 KB（notes.md §3.17）。
 
 ### `mse dump` — 查看某个词的 posting
 
@@ -412,6 +436,19 @@ index read: 8308 bytes (vs 3685655 for a full load)
 实测（莎士比亚索引，14 937 词）：sidecar 237KB（6.4%）;冷查询 ~16.5KB I/O（全量加载的
 0.45%）;`--verify-all` 全词表双路径对拍 0 差异（已进 ctest）。4 亿词外推：树高 4、单查询 4 页
 （见 notes.md §3.13）。`mse query --dict-file`（单词模式）与全载路径输出逐字节一致。
+
+### 索引压缩（v2：差分 + 变长编码）
+
+`mse build --compress` 把 postings 段改存 docID/位置差分的字节对齐变长码（讲义《Compression》
+的方案；头部/文档表/词表布局与 v1 完全一致，靠版本字段区分）：
+
+| 编码 | 索引字节 |
+|------|----------|
+| v1 原始 u32 | 3 685 655 |
+| v2 差分 + varint | 1 725 694（**46.8%**） |
+
+`loadIndex` / `dump` / `query` / `brute_force.py` / `--dict-file` 全部自动识别两种版本；
+压缩链对拍（独立 Python 解析 + verify-all）已进 ctest。磁盘词典 sidecar 与压缩正交，可叠加。
 
 ### 规划中的命令
 

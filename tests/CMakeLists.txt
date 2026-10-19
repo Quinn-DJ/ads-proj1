@@ -99,6 +99,38 @@ if(Python3_Interpreter_FOUND)
         FIXTURES_REQUIRED CROSSCHECK_INDEX
         PASS_REGULAR_EXPRESSION "0 mismatches"
         TIMEOUT 300)
+    # Compression cross-check (plan.md 6.4): the v2 gap+varint index must
+    # agree with the independent Python scanner AND with the disk
+    # dictionary -- same gates as v1, second encoding.
+    add_test(NAME crosscheck_compress_build
+             COMMAND mse build
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-v2.bpt
+                     --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
+                     --stem --compress)
+    set_tests_properties(crosscheck_compress_build PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_SETUP CROSSCHECK_V2)
+    add_test(NAME crosscheck_compress
+             COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/brute_force.py
+                     --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
+                     --stem)
+    set_tests_properties(crosscheck_compress PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_V2
+        TIMEOUT 300)
+    add_test(NAME crosscheck_compress_dictfile
+             COMMAND mse dump
+                     --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
+                     --dict-file ${PROJECT_BINARY_DIR}/crosscheck-v2.bpt
+                     --verify-all)
+    set_tests_properties(crosscheck_compress_dictfile PROPERTIES
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        FIXTURES_REQUIRED CROSSCHECK_V2
+        PASS_REGULAR_EXPRESSION "0 mismatches"
+        TIMEOUT 300)
 else()
     message(STATUS "Python3 not found: skipping the cross-check tests")
 endif()

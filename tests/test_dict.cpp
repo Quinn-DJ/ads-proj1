@@ -1,6 +1,6 @@
-// test_dict.cpp -- unit tests for the dictionary layer (splay + hash).
+// test_dict.cpp -- unit tests for the dictionary layer (splay + hash + map).
 //
-// Both implementations are checked against the same behavioural script, then
+// All implementations are checked against the same behavioural script, then
 // against each other on a mixed insert/lookup workload: their vocabularies
 // must agree exactly. Run via `ctest --test-dir build`.
 
@@ -71,6 +71,11 @@ TEST_CASE("the behavioural script passes on the hash dictionary", "[dict]") {
     behaviourScript(hash, "hash");
 }
 
+TEST_CASE("the behavioural script passes on the std::map dictionary", "[dict]") {
+    mse::MapDictionary map;
+    behaviourScript(map, "map");
+}
+
 TEST_CASE("splay: last accessed term is the root, rotations happen", "[dict][splay]") {
     mse::SplayDictionary rootProbe;
     rootProbe.upsert("mid");
@@ -92,6 +97,7 @@ TEST_CASE("cross-check: splay and hash agree on a random workload", "[dict]") {
     const std::size_t vocabulary = 300;
     mse::SplayDictionary splay;
     mse::HashDictionary hash;
+    mse::MapDictionary map;
 
     std::uint32_t state = 12345;
     const auto next = [&state]() {
@@ -102,11 +108,15 @@ TEST_CASE("cross-check: splay and hash agree on a random workload", "[dict]") {
         const std::string term = "w" + std::to_string(next() % vocabulary);
         splay.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
         hash.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
+        map.upsert(term).postings.append(1, static_cast<std::uint32_t>(i));
     }
 
     const std::vector<std::string> splayTerms = termsOf(splay.sortedEntries());
     const std::vector<std::string> hashTerms = termsOf(hash.sortedEntries());
+    const std::vector<std::string> mapTerms = termsOf(map.sortedEntries());
     CHECK(splayTerms == hashTerms);
+    CHECK(splayTerms == mapTerms);
     CHECK(splay.size() == hash.size());
-    CHECK(hash.size() == vocabulary);
+    CHECK(map.size() == vocabulary);
+    CHECK(map.stats().stringComparisons > 0);  // comparator is instrumented
 }

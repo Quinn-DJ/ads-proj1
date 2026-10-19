@@ -21,6 +21,12 @@ struct Posting {
     std::uint32_t tf = 0;        // occurrences inside this document
 };
 
+// Field-wise equality (tests compare posting tables directly; posStart is
+// the slice offset into the owning arena and must match too).
+inline bool operator==(const Posting& a, const Posting& b) {
+    return a.docID == b.docID && a.posStart == b.posStart && a.tf == b.tf;
+}
+
 class PostingList {
 public:
     // Append one occurrence of the term: `position` is the token's offset in

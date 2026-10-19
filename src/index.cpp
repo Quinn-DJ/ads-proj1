@@ -117,6 +117,26 @@ public:
     // Bytes left in the buffer (a postings block parses until it hits 0).
     std::size_t remaining() const { return data_.size() - pos_; }
 
+    // One varint (see index.hpp for the byte-aligned code spec).
+    std::uint32_t varint() {
+        require(1);
+        const std::uint8_t first = data_[pos_];
+        std::size_t count;  // total bytes, from the first byte's prefix
+        switch (first & 0xC0u) {
+            case 0x40u: count = 1; break;  // 01xxxxxx
+            case 0x80u: count = 2; break;  // 10xxxxxx
+            case 0xC0u: count = 3; break;  // 11xxxxxx
+            default:    count = 4; break;  // 00xxxxxx + 3 continuation bytes
+        }
+        require(count);
+        std::uint32_t value = first & 0x3Fu;
+        for (std::size_t i = 1; i < count; ++i) {
+            value |= static_cast<std::uint32_t>(data_[pos_ + i]) << (6 + 8 * (i - 1));
+        }
+        pos_ += count;
+        return value;
+    }
+
 private:
     void require(std::size_t bytes) {
         if (pos_ + bytes > data_.size()) {
@@ -141,7 +161,75 @@ std::vector<std::uint8_t> readWholeFile(const std::string& path) {
     return data;
 }
 
+// ---------------------------------------------------------------------------
+// varint + compressed postings blocks (plan.md 6.4)
+// ---------------------------------------------------------------------------
+
+// One term's postings as a v2 block: docID gap, tf, then position deltas.
+// Decoding is symmetric (parse until the block's bytes are consumed).
+std::string encodePostingsBlock(const IndexTerm& term) {
+    std::string out;
+    std::uint32_t previousDoc = 0;
+    for (const Posting& posting : term.postings) {
+        out += encodeVarint(posting.docID - previousDoc);  // >= 1: docIDs rise
+        previousDoc = posting.docID;
+        out += encodeVarint(posting.tf);
+        std::uint32_t previousPos = 0;
+        for (std::uint32_t k = 0; k < posting.tf; ++k) {
+            const std::uint32_t position = term.positions[posting.posStart + k];
+            out += encodeVarint(position - previousPos);
+            previousPos = position;
+        }
+    }
+    return out;
+}
+
 }  // namespace
+
+std::string encodeVarint(std::uint32_t value) {
+    if (value >= (1u << 30)) {
+        throw std::runtime_error("varint value exceeds 30 bits");
+    }
+    std::string out;
+    if (value < (1u << 6)) {
+        out.push_back(static_cast<char>(0x40u | value));
+    } else if (value < (1u << 14)) {
+        out.push_back(static_cast<char>(0x80u | (value & 0x3Fu)));
+        out.push_back(static_cast<char>((value >> 6) & 0xFFu));
+    } else if (value < (1u << 22)) {
+        out.push_back(static_cast<char>(0xC0u | (value & 0x3Fu)));
+        out.push_back(static_cast<char>((value >> 6) & 0xFFu));
+        out.push_back(static_cast<char>((value >> 14) & 0xFFu));
+    } else {
+        out.push_back(static_cast<char>(value & 0x3Fu));
+        out.push_back(static_cast<char>((value >> 6) & 0xFFu));
+        out.push_back(static_cast<char>((value >> 14) & 0xFFu));
+        out.push_back(static_cast<char>((value >> 22) & 0xFFu));
+    }
+    return out;
+}
+
+std::uint32_t decodeVarint(const std::uint8_t*& cursor, const std::uint8_t* end) {
+    if (cursor >= end) {
+        throw std::runtime_error("varint runs past the block end");
+    }
+    const std::uint8_t first = *cursor++;
+    std::size_t count;
+    switch (first & 0xC0u) {
+        case 0x40u: count = 1; break;
+        case 0x80u: count = 2; break;
+        case 0xC0u: count = 3; break;
+        default:    count = 4; break;
+    }
+    if (cursor + (count - 1) > end) {
+        throw std::runtime_error("varint runs past the block end");
+    }
+    std::uint32_t value = first & 0x3Fu;
+    for (std::size_t i = 1; i < count; ++i) {
+        value |= static_cast<std::uint32_t>(*cursor++) << (6 + 8 * (i - 1));
+    }
+    return value;
+}
 
 Index buildIndex(const Corpus& corpus, const BuildOptions& options,
                  Dictionary& dictionary) {
@@ -243,6 +331,61 @@ void writeIndex(const std::string& path, const Index& index) {
     }
 }
 
+void writeIndexCompressed(const std::string& path, const Index& index) {
+    // Pre-encode every postings block so the term table can record the
+    // compressed (offset, length) pairs before the blocks are flushed --
+    // one sequential write, deterministic bytes, same as the v1 writer.
+    std::vector<std::string> blocks;
+    blocks.reserve(index.terms.size());
+    std::uint64_t offset = kHeaderBytes;
+    for (const IndexDoc& doc : index.docs) {
+        offset += 12 + doc.title.size();
+    }
+    for (const IndexTerm& term : index.terms) {
+        offset += 28 + term.term.size();  // the term table row itself
+    }
+    std::vector<std::uint64_t> termOffsets(index.terms.size());
+    for (std::size_t i = 0; i < index.terms.size(); ++i) {
+        termOffsets[i] = offset;
+        blocks.push_back(encodePostingsBlock(index.terms[i]));
+        offset += blocks.back().size();
+        if (blocks.back().size() >= (1u << kDictLenBits)) {
+            throw std::runtime_error("term '" + index.terms[i].term +
+                                     "' has a compressed block over 2 MiB");
+        }
+    }
+
+    std::ofstream out(path, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("cannot write index file: " + path);
+    }
+    out.write("MSE1", 4);
+    writeU32(out, kIndexVersionCompressed);
+    writeU32(out, index.flags);
+    writeU32(out, static_cast<std::uint32_t>(index.docs.size()));
+    writeU32(out, static_cast<std::uint32_t>(index.terms.size()));
+    writeU64(out, index.tokenCount);
+    for (const IndexDoc& doc : index.docs) {
+        writeU32(out, doc.docID);
+        writeU32(out, doc.keptTokens);
+        writeString(out, doc.title);
+    }
+    for (std::size_t i = 0; i < index.terms.size(); ++i) {
+        const IndexTerm& term = index.terms[i];
+        writeString(out, term.term);
+        writeU32(out, static_cast<std::uint32_t>(term.postings.size()));
+        writeU64(out, static_cast<std::uint64_t>(term.positions.size()));
+        writeU64(out, termOffsets[i]);
+        writeU32(out, static_cast<std::uint32_t>(blocks[i].size()));
+    }
+    for (const std::string& block : blocks) {
+        out.write(block.data(), static_cast<std::streamsize>(block.size()));
+    }
+    if (!out) {
+        throw std::runtime_error("error while writing index file: " + path);
+    }
+}
+
 Index loadIndex(const std::string& path) {
     // Keep the buffer alive for the whole parse: Reader holds a reference to
     // it (binding the temporary directly to Reader would dangle immediately).
@@ -250,7 +393,7 @@ Index loadIndex(const std::string& path) {
     Reader reader(data);
     reader.expectMagic();
     const std::uint32_t version = reader.u32();
-    if (version != kIndexVersion) {
+    if (version != kIndexVersion && version != kIndexVersionCompressed) {
         throw std::runtime_error("unsupported index version " +
                                  std::to_string(version));
     }
@@ -298,13 +441,29 @@ Index loadIndex(const std::string& path) {
         term.term = std::move(source.term);
         term.postings.reserve(source.df);
         std::uint64_t tfTotal = 0;
+        // v1 blocks store raw u32s; v2 stores docID gaps / position deltas
+        // in the byte-aligned varint (only the postings block encoding
+        // differs between the versions -- plan.md 7).
+        std::uint32_t previousDoc = 0;
         for (std::uint32_t d = 0; d < source.df; ++d) {
             Posting posting;
-            posting.docID = reader.u32();
-            posting.tf = reader.u32();
+            if (version == kIndexVersionCompressed) {
+                posting.docID = previousDoc + reader.varint();
+                previousDoc = posting.docID;
+                posting.tf = reader.varint();
+            } else {
+                posting.docID = reader.u32();
+                posting.tf = reader.u32();
+            }
             posting.posStart = static_cast<std::uint32_t>(term.positions.size());
+            std::uint32_t previousPos = 0;
             for (std::uint32_t k = 0; k < posting.tf; ++k) {
-                term.positions.push_back(reader.u32());
+                const std::uint32_t position =
+                    version == kIndexVersionCompressed
+                        ? previousPos + reader.varint()
+                        : reader.u32();
+                previousPos = position;
+                term.positions.push_back(position);
             }
             tfTotal += posting.tf;
             term.postings.push_back(posting);
@@ -422,19 +581,44 @@ bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostin
 // ---------------------------------------------------------------------------
 
 void writeDictFile(const Index& index, const std::string& path,
-                   std::uint32_t pageSize) {
+                   std::uint32_t pageSize, bool compressed) {
     // index.terms is sorted by construction; the packed value keeps the
     // posting byte range, so the reader can seek without the term table.
-    const std::vector<std::uint64_t> offsets = computeTermOffsets(index);
+    // Offsets follow whichever postings encoding the index file uses.
+    std::vector<std::uint64_t> offsets;
+    std::vector<std::uint64_t> lengths;
+    if (compressed) {
+        offsets.reserve(index.terms.size());
+        lengths.reserve(index.terms.size());
+        std::uint64_t offset = kHeaderBytes;
+        for (const IndexDoc& doc : index.docs) {
+            offset += 12 + doc.title.size();
+        }
+        for (const IndexTerm& term : index.terms) {
+            offset += 28 + term.term.size();  // the term table rows
+        }
+        for (const IndexTerm& term : index.terms) {
+            offsets.push_back(offset);
+            const std::uint64_t len = encodePostingsBlock(term).size();
+            lengths.push_back(len);
+            offset += len;
+        }
+    } else {
+        offsets = computeTermOffsets(index);
+        lengths.reserve(index.terms.size());
+        for (const IndexTerm& term : index.terms) {
+            lengths.push_back(postingsBytesOf(term));
+        }
+    }
     std::vector<std::pair<std::string, std::uint64_t>> pairs;
     pairs.reserve(index.terms.size());
     for (std::size_t i = 0; i < index.terms.size(); ++i) {
-        const std::uint64_t len = postingsBytesOf(index.terms[i]);
-        if (len >= (1ull << kDictLenBits)) {
+        if (lengths[i] >= (1ull << kDictLenBits)) {
             throw std::runtime_error("term '" + index.terms[i].term +
                                      "' postings exceed the 2 MiB pack limit");
         }
-        pairs.emplace_back(index.terms[i].term, (offsets[i] << kDictLenBits) | len);
+        pairs.emplace_back(index.terms[i].term,
+                           (offsets[i] << kDictLenBits) | lengths[i]);
     }
     BTree::bulkLoad(pairs, pageSize).writeFile(path);
 }
@@ -469,9 +653,11 @@ LazyIndexReader::LazyIndexReader(const std::string& indexPath,
     {
         Reader headerReader(buffer);
         headerReader.expectMagic();
-        if (headerReader.u32() != kIndexVersion) {
+        const std::uint32_t fileVersion = headerReader.u32();
+        if (fileVersion != kIndexVersion && fileVersion != kIndexVersionCompressed) {
             throw std::runtime_error("unsupported index version in " + indexPath_);
         }
+        version_ = fileVersion;
         flags_ = headerReader.u32();
         docCount = headerReader.u32();
         const std::uint32_t termCount = headerReader.u32();
@@ -535,14 +721,29 @@ bool LazyIndexReader::readTerm(const std::string& term, IndexTerm& out) const {
     out.term = term;
     out.postings.clear();
     out.positions.clear();
+    std::uint32_t previousDoc = 0;  // gap decoding state, reset per block
     while (reader.remaining() > 0) {
         Posting posting;
-        posting.docID = reader.u32();
-        posting.tf = reader.u32();
+        // v1 blocks store raw u32s; v2 blocks store gaps/deltas as varints
+        // (the version came from the header in the constructor).
+        if (version_ == kIndexVersionCompressed) {
+            posting.docID = previousDoc + reader.varint();
+            previousDoc = posting.docID;
+            posting.tf = reader.varint();
+        } else {
+            posting.docID = reader.u32();
+            posting.tf = reader.u32();
+        }
         posting.posStart =
             static_cast<std::uint32_t>(out.positions.size());
+        std::uint32_t previousPos = 0;  // position deltas, per posting
         for (std::uint32_t k = 0; k < posting.tf; ++k) {
-            out.positions.push_back(reader.u32());
+            const std::uint32_t position =
+                version_ == kIndexVersionCompressed
+                    ? previousPos + reader.varint()
+                    : reader.u32();
+            previousPos = position;
+            out.positions.push_back(position);
         }
         out.postings.push_back(posting);
     }

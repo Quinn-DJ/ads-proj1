@@ -19,6 +19,8 @@
 #include "stopwords.hpp"
 #include "tokenizer.hpp"
 
+#include "blockbuild.hpp"
+
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
@@ -49,6 +51,8 @@ void printUsage(const char* program) {
         << "  count [options]      word count table (tf/df) -> CSV\n"
         << "  stopwords --derive   derive a stop word list from corpus statistics\n"
         << "  build [options]      build the inverted index -> <index file>\n"
+        << "  build-blocks [opts]  block-wise (SPIMI-style) external build demo\n"
+        << "  bptree-bench [opts]  synthetic-scale B+Tree experiment (bonus)\n"
         << "  dump [options]       print one term's postings from an index file\n"
         << "  query [options]      run a query against the index (task 3)\n"
         << "\n"
@@ -81,11 +85,23 @@ void printUsage(const char* program) {
         << "\n"
         << "build options:\n"
         << "  --index <path>       output index file (default: build/index.bin)\n"
-        << "  --dict <name>        build dictionary: splay | hash (default: splay)\n"
+        << "  --dict <name>        build dictionary: splay | hash | map (default: splay)\n"
         << "  --stop-words <path>  drop these tokens (recorded in the index flags)\n"
         << "  --stem               Porter-stem the tokens (recorded in the flags)\n"
         << "  --dict-file <path>   also write the term->postings B+Tree sidecar\n"
         << "                       (disk dictionary; query with --dict-file)\n"
+        << "  --compress           v2 postings encoding: docID/position gaps in\n"
+        << "                       byte-aligned varints (plan.md 6.4)\n"
+        << "\n"
+        << "build-blocks options (same pipeline flags as build, plus):\n"
+        << "  --block-terms <n>    in-memory vocabulary budget per block (default 4096)\n"
+        << "\n"
+        << "bptree-bench options:\n"
+        << "  --keys <n>           synthetic key count (default 1000000; keys are\n"
+        << "                       the ascending base-26 counter, 26^6 = 309M max)\n"
+        << "  --lookups <n>        verified random lookups (default 1000)\n"
+        << "  --page-size <n>      B+Tree page budget (default 4096)\n"
+        << "  --out <path>         output page file (default build/bptree-bench.bpt)\n"
         << "\n"
         << "dump options:\n"
         << "  --index <path>       index file (default: build/index.bin)\n"
@@ -426,6 +442,7 @@ int commandBuild(int argc, char** argv) {
     const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
     const std::string dictName = optionValue(argc, argv, "--dict", "splay");
     const std::string dictFilePath = optionValue(argc, argv, "--dict-file", "");
+    const bool compress = hasFlag(argc, argv, "--compress");
 
     mse::StopWords stopWords;
     mse::BuildOptions options;
@@ -441,19 +458,25 @@ int commandBuild(int argc, char** argv) {
         dictionary = std::make_unique<mse::SplayDictionary>();
     } else if (dictName == "hash") {
         dictionary = std::make_unique<mse::HashDictionary>();
+    } else if (dictName == "map") {
+        dictionary = std::make_unique<mse::MapDictionary>();
     } else {
         throw std::runtime_error("unknown --dict '" + dictName +
-                                 "' (expected splay|hash)");
+                                 "' (expected splay|hash|map)");
     }
 
     const mse::Corpus corpus = mse::Corpus::load(manifest);
     const auto started = std::chrono::steady_clock::now();
     const mse::Index index = mse::buildIndex(corpus, options, *dictionary);
     mse::validateIndex(index);
-    mse::writeIndex(indexPath, index);
+    if (compress) {
+        mse::writeIndexCompressed(indexPath, index);
+    } else {
+        mse::writeIndex(indexPath, index);
+    }
     if (!dictFilePath.empty()) {
         // Disk dictionary sidecar: term -> posting byte range (plan.md 11).
-        mse::writeDictFile(index, dictFilePath);
+        mse::writeDictFile(index, dictFilePath, 4096, compress);
     }
     const double seconds = std::chrono::duration<double>(
                                std::chrono::steady_clock::now() - started)
@@ -475,7 +498,8 @@ int commandBuild(int argc, char** argv) {
               << "postings   : " << postings << "\n"
               << "positions  : " << positions << "\n"
               << "index      : " << indexPath << " ("
-              << std::filesystem::file_size(indexPath) << " bytes)\n";
+              << std::filesystem::file_size(indexPath) << " bytes"
+              << (compress ? ", v2 gap+varint" : "") << ")\n";
     if (!dictFilePath.empty()) {
         std::cout << "dict-file  : " << dictFilePath << " ("
                   << std::filesystem::file_size(dictFilePath)
@@ -485,6 +509,137 @@ int commandBuild(int argc, char** argv) {
               << seconds << " s\n";
     std::cout.unsetf(std::ios::fixed);
     std::cout << "invariants : OK\n";
+    return 0;
+}
+
+int commandBuildBlocks(int argc, char** argv) {
+    // Same pipeline options as `build`, plus the memory budget that drives
+    // the block spills -- the bonus demo: O(blockTerms) dictionary memory
+    // regardless of corpus vocabulary size.
+    const std::string manifest = optionValue(argc, argv, "--manifest", "data/manifest.tsv");
+    const std::string indexPath = optionValue(argc, argv, "--index", "build/index.bin");
+    const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
+    int blockTerms = intOption(argc, argv, "--block-terms", "4096");
+    const bool compress = hasFlag(argc, argv, "--compress");
+    if (blockTerms < 1) {
+        throw std::runtime_error("--block-terms must be at least 1");
+    }
+
+    mse::StopWords stopWords;
+    mse::BlockBuildOptions options;
+    options.build.tokenizer = tokenizerOptionsFromArgs(argc, argv);
+    if (!stopPath.empty()) {
+        stopWords = mse::StopWords::load(stopPath);
+        options.build.stopWords = &stopWords;
+    }
+    options.build.stem = hasFlag(argc, argv, "--stem");
+    options.blockTerms = static_cast<std::size_t>(blockTerms);
+
+    const mse::Corpus corpus = mse::Corpus::load(manifest);
+    mse::BlockBuildStats stats;
+    const mse::Index index = mse::buildIndexBlocked(corpus, options, stats);
+    mse::validateIndex(index);
+    if (compress) {
+        mse::writeIndexCompressed(indexPath, index);
+    } else {
+        mse::writeIndex(indexPath, index);
+    }
+
+    std::cout << "blocks    : " << stats.blocks
+              << " (budget " << options.blockTerms << " terms, peak "
+              << stats.maxLiveTerms << " live)\n"
+              << "documents : " << index.docs.size() << "\n"
+              << "tokens    : " << index.tokenCount << "\n"
+              << "terms     : " << index.terms.size() << "\n"
+              << "run bytes : " << stats.blockBytes << " (temporary, removed)\n"
+              << "scan time : " << std::fixed << std::setprecision(2)
+              << stats.scanSeconds << " s\n"
+              << "merge time: " << stats.mergeSeconds << " s\n"
+              << "index     : " << indexPath << " ("
+              << std::filesystem::file_size(indexPath) << " bytes)\n";
+    std::cout.unsetf(std::ios::fixed);
+    std::cout << "invariants: OK\n";
+    return 0;
+}
+
+// 26^e for the bench's base-26 key generator (e <= 5).
+int pow26(int exponent) {
+    int value = 1;
+    for (int i = 0; i < exponent; ++i) {
+        value *= 26;
+    }
+    return value;
+}
+
+int commandBptreeBench(int argc, char** argv) {
+    // Scale experiment for the bonus answer (plan.md 11): build a B+Tree
+    // over N synthetic keys and measure what actually matters at 400M
+    // terms -- height, file size and page reads per lookup. Keys are the
+    // base-26 counter in ascending order (deterministic, unique, sorted:
+    // exactly the shape bulkLoad expects from the term table).
+    const int keys = intOption(argc, argv, "--keys", "1000000");
+    const int lookups = intOption(argc, argv, "--lookups", "1000");
+    const int pageSize = intOption(argc, argv, "--page-size", "4096");
+    const std::string outPath = optionValue(argc, argv, "--out", "build/bptree-bench.bpt");
+    if (keys < 2 || lookups < 1 || pageSize < 1056) {
+        throw std::runtime_error("bptree-bench: need --keys >= 2, --lookups >= 1, "
+                                 "--page-size >= 1056");
+    }
+
+    const auto started = std::chrono::steady_clock::now();
+    std::vector<std::pair<std::string, std::uint64_t>> pairs;
+    pairs.reserve(static_cast<std::size_t>(keys));
+    for (int c = 0; c < keys; ++c) {
+        std::string key(6, 'a');  // 26^6 = 309M keys; 6 chars, SSO-friendly
+        for (int digit = 0; digit < 6; ++digit) {
+            // most significant digit first: lexicographic == numeric order,
+            // so the generated sequence is already sorted for bulkLoad
+            key[static_cast<std::size_t>(5 - digit)] =
+                static_cast<char>('a' + (c / pow26(digit)) % 26);
+        }
+        pairs.emplace_back(key, static_cast<std::uint64_t>(c));
+    }
+    const mse::BTree tree = mse::BTree::bulkLoad(pairs, static_cast<std::uint32_t>(pageSize));
+    tree.validate();
+    tree.writeFile(outPath);
+    const double buildSeconds =
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+
+    const mse::BTreeStats stats = tree.stats();
+    const std::uintmax_t fileSize = std::filesystem::file_size(outPath);
+
+    // Cold-ish lookup path: cache of one page, so every descent re-reads
+    // the inner pages -- the I/O a query pays when the dictionary is huge.
+    const mse::BTreeFile file(outPath, 1);
+    std::uint32_t state = 987654321u;
+    std::uint64_t readsBefore = file.pageReads();
+    for (int i = 0; i < lookups; ++i) {
+        state = state * 1664525u + 1013904223u;
+        const std::uint64_t wanted = state % static_cast<std::uint32_t>(keys);
+        const auto found = file.findValue(pairs[static_cast<std::size_t>(wanted)].first);
+        if (!found.has_value() || *found != wanted) {
+            throw std::runtime_error("bptree-bench: wrong value for key " +
+                                     std::to_string(wanted));
+        }
+    }
+    const double readsPerLookup =
+        static_cast<double>(file.pageReads() - readsBefore) / lookups;
+
+    std::cout << "keys      : " << keys << "\n"
+              << "page size : " << pageSize << "\n"
+              << "height    : " << stats.height << "\n"
+              << "pages     : " << stats.pageCount
+              << " (" << stats.leafCount << " leaves)\n"
+              << "fill      : min " << stats.minFillBytes << " / max "
+              << stats.maxFillBytes << " bytes (budget " << pageSize << ")\n"
+              << "file      : " << outPath << " (" << fileSize
+              << " bytes, " << static_cast<double>(fileSize) / keys
+              << " bytes/key)\n"
+              << "lookups   : " << lookups << " verified, "
+              << std::fixed << std::setprecision(2) << readsPerLookup
+              << " page reads each (cache = 1 page)\n"
+              << "build     : " << buildSeconds << " s (generate+load+write)\n";
+    std::cout.unsetf(std::ios::fixed);
     return 0;
 }
 
@@ -801,6 +956,12 @@ int main(int argc, char** argv) {
         }
         if (command == "build") {
             return commandBuild(argc, argv);
+        }
+        if (command == "build-blocks") {
+            return commandBuildBlocks(argc, argv);
+        }
+        if (command == "bptree-bench") {
+            return commandBptreeBench(argc, argv);
         }
         if (command == "dump") {
             return commandDump(argc, argv);
