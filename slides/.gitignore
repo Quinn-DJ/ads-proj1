@@ -1,0 +1,11 @@
+# LaTeX intermediates (the rendered PDF is kept)
+build/
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.xdv
+*.synctex.gz

@@ -1,0 +1,679 @@
+% !TeX program = xelatex
+% Compile twice from this directory (four SimplePlus .sty files bundled):
+%   xelatex -interaction=nonstopmode -halt-on-error -output-directory=build mse_slides.tex
+% Content: ads-proj1 迷你搜索引擎项目报告（reports/，2026-10-20 终稿）的幻灯版。
+% 全部数字来自 reports/data/ 证据链（results-tasks.md / results-verify.md），
+% 与 REVIEW.md 数字审计一致；外推点均在页面上标注"外推"。
+% 按课程要求匿名：不含姓名/学号/个人信息。
+\documentclass[UTF8,fontset=windows,aspectratio=169,10pt]{ctexbeamer}
+\usepackage{amsmath,amssymb,booktabs,tabularx,array}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetheme{SimplePlus}
+\usetikzlibrary{arrows.meta,positioning}
+\setCJKsansfont{Microsoft YaHei}[BoldFont=Microsoft YaHei Bold]
+\setCJKmainfont{Microsoft YaHei}[BoldFont=Microsoft YaHei Bold]
+\colorlet{primary}{DarkBlue}
+\colorlet{accent}{MediumBlue}
+\definecolor{alertred}{RGB}{178,34,34}
+\setbeamerfont{block title}{size=\normalsize,series=\mdseries}
+\setbeamerfont{frametitle}{size=\large,series=\bfseries}
+\setbeameroption{hide notes}
+\setlength{\emergencystretch}{1.5em}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+\newcommand{\key}[1]{\textcolor{accent}{\textbf{#1}}}
+\newcommand{\bad}[1]{\textcolor{alertred}{\textbf{#1}}}
+\newcommand{\src}[1]{\par\vspace{0.5em}{\fontsize{8}{9.6}\selectfont\color{gray}#1\par}}
+\newcommand{\gap}{\par\vspace{0.7em}}
+\newcommand{\vsp}{\vspace*{\stretch{1}}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\bigstat}[1]{{\Large\bfseries\color{accent}#1}}
+% 标题页：去掉空白的 author 框，内容整体垂直居中（主题默认偏上，下半页留白过多）
+\setbeamertemplate{title page}{%
+  \vfill
+  \begingroup
+  \centering
+  \begin{beamercolorbox}[sep=10pt,center]{title}
+    \usebeamerfont{title}\inserttitle\par
+    \vskip0.3em
+    {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+  \end{beamercolorbox}
+  \vskip0.9em
+  \begin{beamercolorbox}[sep=6pt,center]{institute}
+    \usebeamerfont{institute}\insertinstitute
+  \end{beamercolorbox}
+  \vskip0.4em
+  \begin{beamercolorbox}[sep=6pt,center]{date}
+    \usebeamerfont{date}\insertdate
+  \end{beamercolorbox}
+  \endgroup
+  \vfill
+}
+% 目录条目间距（主题默认 4 行挤在一起）
+\setbeamertemplate{section in toc}{%
+  \leavevmode\inserttocsectionnumber.\ \inserttocsection\par\vspace{0.8em}}
+% 表格统一放大：11pt 正文用 \normalsize 表格，列距略放宽
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\title[迷你搜索引擎]{迷你搜索引擎}
+\subtitle{倒排索引的构建、查询与阈值分析\quad·\quad 数据结构课程项目 8-1}
+\author{}
+\institute{C++17\quad 主语料：莎士比亚全集（195 篇）\quad 副语料：IETF RFC ×3}
+\date{2026 年 10 月}
+
+\begin{document}
+
+% ============================ F1 标题 ============================
+\begin{frame}
+  \titlepage
+  \note{报告 21 页正文 + 完整证据链；本幻灯只引用证据编号（F 系列），全部数字与 reports/data/ 对账过。}
+\end{frame}
+
+% ============================ F2 概览 ============================
+\begin{frame}{概览}
+  \vsp
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \tableofcontents
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{三组数字}
+        \normalsize
+        \begin{tabularx}{\linewidth}{L r}
+          语料规模（主语料） & \bigstat{195 篇} \\
+          正文词元 & \bigstat{866,626} \\
+          正式索引词项 & \bigstat{14,937} \\
+          正式索引体积 & \bigstat{3.69 MB} \\
+          阈值实验测量 & \bigstat{201 条} \\
+          CTest 断言 & \bigstat{85,155} \\
+        \end{tabularx}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vsp
+  \normalsize 四项课程任务全部完成并经独立对拍；Bonus 的 \key{50 万文件轴实测通过}，
+  \key{4 亿词轴}在实测锚点上外推，两条轴在页面上始终标清``实测 / 外推''。
+  \src{报告摘要、§3、§4；REVIEW.md 数字审计}
+\end{frame}
+
+\section{设计流程}
+
+% ============================ F3 任务与语料 ============================
+\begin{frame}{任务与语料}
+  \begin{block}{课程任务：4 项 + Bonus}
+    \small
+    \begin{enumerate}\setlength{\itemsep}{0.15em}
+      \item 词频统计与\key{停用词}界线
+      \item 带\key{Porter 词干化}的倒排索引（不含停用词）
+      \item 单词 / 短语（及布尔）查询，返回文档 ID
+      \item 查询阈值实验：\code{max-df}、\code{min-df}、\code{min-match}、\code{top-x}
+      \item[] \hspace{-1.2em}\key{Bonus}：\key{50 万文件} + \key{4 亿不同词}
+    \end{enumerate}
+  \end{block}
+  \vsp
+  \begin{center}
+  \small
+  \begin{tabularx}{0.95\textwidth}{L r r}
+    \toprule
+    语料 & 主语料：莎士比亚全集 & 副语料：IETF RFC \\
+    \midrule
+    文档数 & 195（37 剧 / 154 十四行诗 / 4 长诗） & 3 \\
+    词数（空白切分） & 930,911 & 81,848 \\
+    正文词元（默认配置） & 866,626 & 75,250 \\
+    语料字节 & 4,919,371 B & 569,472 B \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vspace{0.4em}
+  \small 语料从镜像的 1,211 个 HTML 按清单抽取；同一套二进制不改代码跑两份语料，Python 全词表对拍一致。
+  \src{tasks F1/F3；verify F10；报告摘要、§4.1}
+\end{frame}
+
+% ============================ F4 流水线 ============================
+\begin{frame}{构建流水线}
+  \vsp
+  \begin{center}
+    \begin{tikzpicture}[
+      nd/.style={draw=MediumBlue, fill=MutedBlue, rounded corners=3pt, font=\small,
+                 inner sep=5pt, minimum height=8ex, minimum width=2.7cm, align=center},
+      gen/.style={draw=MediumGreen, fill=MutedGreen, rounded corners=3pt, font=\small,
+                  inner sep=5pt, minimum height=8ex, minimum width=2.7cm, align=center},
+      ar/.style={-{Stealth[length=2.6mm]}, draw=MediumBlue, thick},
+      node distance=4pt]
+      \node[nd] (a) {语料镜像\\与抽取\\{\scriptsize 1,211→195 篇}};
+      \node[nd, right=of a] (b) {分词\\~\\{\scriptsize 866,626 词元}};
+      \node[nd, right=of b] (c) {停用词\\过滤\\{\scriptsize 移除 35.74\%}};
+      \node[nd, right=of c] (d) {Porter\\词干化\\{\scriptsize 25,705 → 14,947}};
+      \node[gen, right=of d] (e) {倒排索引\\v1\\{\scriptsize 3,685,655 B}};
+      \draw[ar] (a) -- (b);
+      \draw[ar] (b) -- (c);
+      \draw[ar] (c) -- (d);
+      \draw[ar] (d) -- (e);
+    \end{tikzpicture}
+  \end{center}
+  \vsp
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{构建侧}
+        \small
+        \begin{itemize}\setlength{\itemsep}{0.1em}
+          \item 词典可插拔：伸展树 / 哈希 / \code{std::map}
+          \item 索引可写 v1（原始 u32）或 v2（差分 + varint）
+          \item 大语料走 SPIMI 式块式构建
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{查询侧}
+        \small
+        \begin{itemize}\setlength{\itemsep}{0.1em}
+          \item 单词 / 短语 / 布尔，输出 JSON
+          \item 四类阈值：\code{max-df}、\code{min-df}、\code{min-match}、\code{top-x}
+          \item 冷查询走磁盘 B+ 树附属词典
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vsp
+  \normalsize 语料清单 + 纯文本层是\key{唯一接口}：换语料只改 producer，不改索引与查询代码。
+  \src{报告 §1–§2；tab:coverage}
+\end{frame}
+
+% ============================ F5 词频与 Zipf ============================
+\begin{frame}{词频统计：Zipf 头部集中}
+  \begin{columns}[T]
+    \begin{column}{0.44\textwidth}
+      \begin{block}{词表结构（默认配置）}
+        \small
+        \begin{tabularx}{\linewidth}{L r}
+          不同词形 & 25,705 \\
+          仅出现一次（hapax） & 9,753 \\
+          top-10 词元占比 & 20.41\% \\
+          top-100 词元占比 & 54.30\% \\
+          top-1,000 词元占比 & 80.26\% \\
+        \end{tabularx}
+      \end{block}
+      \gap
+      \footnotesize
+      \begin{itemize}\setlength{\itemsep}{0.15em}
+        \item tf / df 双指标并列（\code{the}：tf 28,436 / df 177）
+        \item 全量 CSV 由独立 Python 实现\key{逐字节对拍}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.54\textwidth}
+      \centering
+      \begin{tikzpicture}
+        \begin{axis}[
+          width=6.6cm, height=4.2cm,
+          xmode=log, ymode=log,
+          xlabel={词频排名 $r$}, ylabel={词频 tf},
+          axis lines=left, axis line style={gray!60},
+          tick label style={font=\scriptsize},
+          label style={font=\small},
+          grid=major, grid style={gray!20},
+          every axis plot/.append style={line width=0pt},
+          title style={font=\small},
+        ]
+          \addplot[only marks, mark=*, mark size=0.9pt, color=accent]
+            table[x=rank,y=tf] {../reports/figures/data/zipf.dat};
+        \end{axis}
+      \end{tikzpicture}
+      \par{\scriptsize\color{gray}主语料 tf–排名双对数图：近似 $1/r$ 衰减（图 1）}
+    \end{column}
+  \end{columns}
+  \vsp
+  \begin{block}{观察}
+    \footnotesize
+    极少数词覆盖大量词元，这正是停用词值得单独处理的统计原因；
+    同时 hapax 占词表 \key{37.9\%}，是词干化能大幅合并词表的空间所在。
+  \end{block}
+  \src{tasks F6–F8；wordcount-default.csv；报告 §2.4}
+\end{frame}
+
+% ============================ F6 停用词 ============================
+\begin{frame}{停用词：从人工候选带到统计规则}
+  \begin{block}{第一阶段：tf/df 候选带扫描 + 人工定界}
+    \normalsize
+    按候选带 $4 \to 9 \to 14 \to 16 \to 21 \to 31 \to 48$ 词逐步放开，观察 tf/df 曲线拐点，
+    人工定界得到 \key{39 词}。
+  \end{block}
+  \vsp
+  \begin{block}{第二阶段：``宽、重、平''三特征规则（纯统计，无人为挑选）}
+    \normalsize
+    \begin{tabularx}{\linewidth}{L L}
+      \key{宽}：$\mathrm{df} \ge 0.40 \times$ 文档数 &
+      \key{重}：tf 占比 $\ge 0.001$ \\
+      \key{平}：长度归一化速率熵 $\ge 0.93$ &
+      \key{结果}：同样 39 词，与人工表重叠 35 \\
+    \end{tabularx}
+  \end{block}
+  \vsp
+  \begin{block}{效果与边界}
+    \normalsize
+    39 个词只占词表的 \key{0.15\%}，却覆盖 \key{35.74\%} 的正文词元（移除 309,760 个）。
+    速率熵度量``分布是否平坦''，是三特征里区分功能词与内容词的决定性一条。
+  \end{block}
+  \src{tasks F9/F11–F14；报告 §2.5、§3.5}
+\end{frame}
+
+% ============================ F7 RFC 交叉验证 ============================
+\begin{frame}{停用词没有万能表：RFC 交叉验证}
+  \begin{center}
+  \small
+  \begin{tabularx}{0.9\textwidth}{L r r}
+    \toprule
+    同一套三特征规则 $(0.40,\,0.001,\,0.93)$ & 莎士比亚 & IETF RFC \\
+    \midrule
+    推导出的停用词数 & 39 & \key{58} \\
+    与莎士比亚 39 词表的重叠 & — & 仅 26 词 \\
+    索引体积（原始 → 正式配置） & 5,598,793 → 3,685,655 B & 510,181 → 308,164 B \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vspace{0.4em}
+  \small
+  \begin{itemize}\setlength{\itemsep}{0.35em}
+    \item RFC 2119 关键词 \code{must} / \code{may} / \code{should}：df 比值均为 1（足够``宽''``重''），
+      但速率熵 \key{0.809 / 0.899 / 0.885} $< 0.93$（不够``平''）→ \key{正确排除}
+    \item \code{server}、\code{page}、\code{rfc} 速率熵接近 1 → 收入推导表
+      （\code{[Page N]} 样板属 producer 侧噪声，非引擎问题）
+    \item 端到端：RFC 上原始配置 75,250 词元 → 正式配置 45,370 词元；
+      \code{brute_force.py} 全词表对拍一致
+  \end{itemize}
+  \vsp
+  \begin{block}{结论}
+    \small 同一套阈值在不同语料上给出不同的停用词表——停用词是\key{语料相关}的，
+    规则可以复用，词表必须重推。
+  \end{block}
+  \src{verify F10；报告 §4.1、表 tab:rfc}
+\end{frame}
+
+% ============================ F8 词干化与索引配置 ============================
+\begin{frame}{Porter 词干化与四种索引配置}
+  \begin{block}{自实现 Porter 词干化}
+    \small
+    25,705 词形 → \key{14,947 词干}（\key{−41.85\%}），hapax 9,753 → 4,843；
+    词干化把``同源词形''折叠为一个词项，直接缩小词表与倒排记录。
+  \end{block}
+  \vspace{0.6em}
+  \begin{center}
+  \small
+  \begin{tabularx}{0.95\textwidth}{L r r r}
+    \toprule
+    配置（flags） & 词项数 & 倒排记录 & 索引字节 \\
+    \midrule
+    raw（无过滤、无词干） & 25,705 & 152,650 & 5,598,793 \\
+    stop（停用词） & 25,666 & 147,909 & 4,320,622 \\
+    stem（词干化） & 14,947 & 121,903 & 4,958,598 \\
+    \key{正式（stopwords + stemmed）} & \key{14,937} & \key{117,704} & \key{3,685,655} \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vsp
+  \begin{block}{结论}
+    \small 停用词与词干化分别压缩``词元流长度''与``词表大小''，两者叠加使正式配置最小；
+    四种配置全部通过独立 Python 实现的对拍（词频 CSV 逐字节、倒排记录全项一致）。
+  \end{block}
+  \src{tasks F18；报告表 tab:index-configs}
+\end{frame}
+
+% ============================ F9 索引格式 v1/v2 ============================
+\begin{frame}{索引格式：v1 布局与 v2 压缩}
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}
+      \begin{block}{v1：原始 u32 布局}
+        \small
+        \begin{itemize}\setlength{\itemsep}{0.1em}
+          \item 文件头 + 文档表 + 有序词表 + 倒排记录区
+          \item 倒排记录：docID、tf、位置，各 4 字节
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \begin{block}{v2：只改倒排记录区}
+        \small
+        \begin{itemize}\setlength{\itemsep}{0.1em}
+          \item docID 与位置存\key{差分}
+          \item tf 与差分值用\key{字节对齐变长码}（varint）
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vsp
+  \begin{center}
+  \small
+  \begin{tabularx}{0.95\textwidth}{L r r r r}
+    \toprule
+    语料 & 第一版字节 & 第二版字节 & 第二版/第一版 & 压缩构建峰值内存 \\
+    \midrule
+    主语料（莎士比亚） & 3,685,655 & \key{1,725,694} & \key{46.82\%} & 0.19 s（内建） \\
+    500k 合成语料 & 427,603,247 & 284,560,009 & 66.55\% & 1.46 GiB（v1 为 1.01） \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vsp
+  \begin{block}{成本权衡}
+    \footnotesize
+    \begin{itemize}\setlength{\itemsep}{0.1em}
+      \item 主语料倒排记录区占 86.0\%、段内节省 61.8\% → 整体节省 53.18\%
+      \item 500k 词项表占比高（倒排区仅 56.1\%），段内节省 59.6\% 与主语料接近
+      \item 压缩不是全维度占优：构建峰值内存 1.01 → \bad{1.46 GiB}；查询输出与 v1 完全一致
+    \end{itemize}
+  \end{block}
+  \src{tasks F21；verify F13/F14；报告 §3.4}
+\end{frame}
+
+% ============================ F10 词典对比 ============================
+\begin{frame}{三种词典：构建过程不同，产物相同}
+  \vsp
+  \begin{center}
+  \normalsize
+  \begin{tabularx}{0.95\textwidth}{L r r r}
+    \toprule
+    词典（正式配置） & 比较 / 旋转 & 额外事件 & 构建耗时 \\
+    \midrule
+    伸展树（课程要求，自实现） & 6,392,724 / 5,850,795 & — & 0.19 s \\
+    哈希表 & 688,494 & 11 次 rehash & \key{0.09 s} \\
+    \code{std::map}（基线） & 9,435,694 & — & 0.14 s \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vsp
+  \begin{block}{结论}
+    \normalsize
+    哈希最快；伸展树最慢，但中序遍历\key{直接产出有序词表}，且满足课程对自实现数据结构的要求。
+    三种词典写出的索引\key{逐字节相同}（SHA-256 一致）：词典只改变构建过程，
+    不改变持久化结果。
+  \end{block}
+  \vsp
+  \small\color{gray}提示：计时受并行负载影响（报告已声明 ±20\% 量级参考），
+  结构性数字（字节数、SHA）不受影响。
+  \gap
+  \small\key{选型建议}：自实现伸展树满足课程要求且中序有序；若只追求构建速度，
+  哈希约快 2 倍——两者写出的索引字节完全相同，因此选型只影响构建阶段。
+  \src{tasks F20；verify F5；报告 §4.3}
+\end{frame}
+
+% ============================ F11 B+ 树 sidecar + SPIMI ============================
+\begin{frame}{磁盘 B+ 树附属词典与 SPIMI 块式构建}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{B+ 树 sidecar（查询侧）}
+        \normalsize
+        词项 → 倒排记录（偏移，块长）的磁盘映射：
+        \begin{itemize}\setlength{\itemsep}{0.25em}
+          \item 文件仅 \key{237,568 B}（索引的 6.45\%）
+          \item 冷查询只读 \key{8,308 B} = 全量加载的 \key{0.225\%}
+          \item 与全量加载逐词一致（双路径校验）
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{SPIMI 块式构建（构建侧）}
+        \normalsize
+        内存预算 4,096 活词：
+        \begin{itemize}\setlength{\itemsep}{0.25em}
+          \item 17 个临时块、峰值活词 \key{5,129}
+          \item 临时块共 4,166,556 B（用后即删）
+          \item 归并产物与内存构建\key{逐字节一致}
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vsp
+  \begin{block}{为什么是这两个部件}
+    \normalsize
+    两者合起来去掉``构建/查询必须把全词表放进内存''的假设：
+    查询侧把词典移到磁盘，构建侧把内存压到 $O(\text{预算})$ 与词表规模无关——
+    这是 Bonus 两条规模轴的工程基础。
+  \end{block}
+  \src{tasks F22；verify F23；报告 §2.7、§2.10}
+\end{frame}
+
+\section{测试与结果}
+
+% ============================ F12 查询 ============================
+\begin{frame}{查询设计与样例}
+  \small
+  支持单词、短语（词元流上整段匹配）与布尔（AND 语义，按命中词数排序）；输出 JSON，\code{--pretty} 可读。
+  \vspace{0.4em}
+  \begin{center}
+  \begin{tabularx}{0.98\textwidth}{>{\raggedright\arraybackslash}p{3.4cm} L r}
+    \toprule
+    查询 & 行为 & 结果 \\
+    \midrule
+    \code{osric} & 稀有词，单文档角色 & 1 篇 \\
+    \code{love} & 高频词（top-3 tf 195 / 165 / 142） & 138 篇 \\
+    \code{"king richard"} & 短语整段匹配 & 7 篇（top-3 tf 193 / 191 / 140） \\
+    \code{"my lord"} & \code{my} 为停用词 → 只查 \code{lord} & 42 篇 \\
+    \code{king queen} & 布尔：按命中词数 + tf 排序 & 33 篇双命中 / 43 篇单命中 \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vsp
+  \begin{block}{短语语义的边界}
+    \small
+    位置定义在\key{过滤后}的词元流上：\code{"my lord"} 退化为 \code{lord}，
+    全由停用词组成的短语返回空——这是设计选择，不是实现缺陷（见第 4 章局限）。
+  \end{block}
+  \vsp
+  \small 排序仅用命中词数与 tf 总和，\bad{无 idf 与长度归一化}，长剧更易靠前。
+  \src{tasks F27–F33；报告 §3.8}
+\end{frame}
+
+% ============================ F13 阈值实验 ============================
+\begin{frame}{阈值实验：阈值改变的是查询语义}
+  \normalsize
+  15 条查询 $\times$ 四类阈值 = \key{201 条测量}（中位 19.2 ms，总计 4.05 s）；
+  用 Jaccard 系数对比阈值前后的结果集。
+  \vsp
+  \begin{block}{反直觉但可解释的三个现象}
+    \normalsize
+    \begin{enumerate}\setlength{\itemsep}{0.3em}
+      \item \bad{收紧 $\ne$ 变少}：\code{sweet sword moon} 加 \code{--min-df 50} 后 \code{sword} 等词被裁，
+        布尔查询退化为单词 \code{moon}，结果 \key{30 → 90 篇}（Jaccard 0.333）
+      \item \key{短语不受词侧阈值影响}：\code{"king richard"} 全档 7 → 7（Jaccard 1.00）——
+        短语必须整段匹配，裁剪查询词只会让短语失效或不变
+      \item \key{停用词查询恒为空}：\code{the} / \code{of} 全档 0 → 0——过滤索引的设计行为，非 bug
+    \end{enumerate}
+  \end{block}
+  \vsp
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \small\code{--top-x} 才是真正的\key{结果截断}：
+      love 的 top-5 / 10 / 20 对应 Jaccard 0.036 / 0.073 / 0.145。
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \small\code{--min-match} 改变\key{布尔条件}（AND 要求命中词数）：
+      1 / 2 / 3 对应 93 / 39 / 30 篇。
+    \end{column}
+  \end{columns}
+  \vsp
+  \footnotesize\key{一句话总结}：\code{max-df}/\code{min-df} 是查询词筛选器（偏精度），
+  \code{min-match} 改布尔语义，\code{top-x} 才截断结果——四者作用在不同阶段，
+  所以``阈值收紧''不能简单等同于``结果变少''。
+  \src{tasks F36–F39；threshold\_matrix.csv；报告 §3.9}
+\end{frame}
+
+\section{Bonus 的结果与分析}
+
+% ============================ F14 B+ 树规模 ============================
+\begin{frame}{Bonus 1：磁盘 B+ 树词典的规模实测}
+  \normalsize
+  4,908,747 词项的内存索引峰值 2.00 GiB → 线性外推 4 亿词 $\approx$ \bad{160 GiB}（外推），
+  单机放不下：词典必须上磁盘。
+  \vsp
+  \begin{center}
+  \small
+  \begin{tabular}{r r r r r r}
+    \toprule
+    键数 & 树高 & 总页数 & 文件字节 & 字节/键 & 页读/查询 \\
+    \midrule
+    100,000 & 2 & 369 & 1,515,520 & 15.1552 & 2 \\
+    1,000,000 & 3 & 3,688 & 15,110,144 & 15.1101 & 3 \\
+    10,000,000 & 3 & 36,865 & 151,003,136 & 15.1003 & 3 \\
+    30,000,000 & 3 & 110,593 & 452,993,024 & 15.0998 & 3 \\
+    50,000,000 & 4 & 184,322 & 754,987,008 & 15.0997 & 4 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vsp
+  \begin{block}{外推与边界}
+    \small
+    4 KiB 页、批量装载、每档 1,000 次随机查询全部校验；体积近似\key{严格线性}（15.10 B/键）。
+    外推 4 亿键 $\approx$ \key{6.04 GB}、树高 \key{4}、单查询读 4 页 = \key{16 KiB}
+    （树高与页读已在 5,000 万键\key{实测}到 4，外推的只有文件字节与页数）。
+  \end{block}
+  \src{verify F11；bptree-bench.csv；报告表 tab:bptree-scale}
+\end{frame}
+
+% ============================ F15 500k 实验 ============================
+\begin{frame}{Bonus 2：500,000 文档合成语料（实测）}
+  \normalsize
+  合成语料：500,000 个文件、20,000,000 词元、4,908,747 个不同词、19,999,929 条倒排记录。
+  \vsp
+  \begin{center}
+  \normalsize
+  \begin{tabularx}{0.98\textwidth}{L r r r}
+    \toprule
+    构建方式 & 耗时 & 峰值内存 & 产物 \\
+    \midrule
+    块式 v1（4,855 块） & 扫描 5.47 + 归并 125.08 s & \key{1.01 GiB} & 427,603,247 B \\
+    块式 v2（差分压缩） & 扫描 5.42 + 归并 123.31 s & 1.46 GiB & 284,560,009 B \\
+    内存构建 v1 & 总 76.75 s（内建 44.93 s） & 2.00 GiB & 427,603,247 B \\
+    \bottomrule
+  \end{tabularx}
+  \end{center}
+  \vsp
+  \begin{block}{结论}
+    \normalsize
+    块式与内存构建的 v1 索引\key{逐字节相同}（SHA-256 一致）：内存 $O(\text{预算})$ 与词表规模无关，
+    在 50 万文件规模\key{实测成立}。代价是约 \bad{2.2 倍墙钟}——
+    归并现为 $O(T\cdot R)$ 线性扫游标，换成堆可降到 $O(T\log R)$。
+  \end{block}
+  \src{verify F12–F15；报告表 tab:500k}
+\end{frame}
+
+% ============================ F16 正确性 ============================
+\begin{frame}{正确性：可复现的验证链}
+  \normalsize
+  \begin{itemize}\setlength{\itemsep}{0.5em}
+    \item CTest \key{18/18} 通过：8 个 Catch2 可执行文件、46 个用例、\key{85,155 条断言}（B+ 树占 99.3\%）
+    \item 独立 Python 实现\key{对拍}（不经任何项目代码路径）：
+      \begin{itemize}\setlength{\itemsep}{0.2em}
+        \item 四种配置词频 CSV 逐字节一致（1,677,253 / 1,674,689 / 958,633 / 957,871 B）
+        \item 正式 / 原始 / 压缩索引的全词表 df、tf、docID、位置全项一致
+        \item 短语对拍：305 条采样、303 条检查、\key{0 不一致}（21.20 s）
+        \item 磁盘词典双路径：B+ 树查询与全量加载逐词一致
+      \end{itemize}
+    \item 讲义四文档黄金样例逐项吻合；块式 / 内存 / 三词典产物 SHA-256 相同
+  \end{itemize}
+  \vsp
+  \begin{block}{项目的最大价值}
+    \normalsize
+    不是某个墙钟数字，而是这条验证链：同一文本层能被独立实现重建，三种实现写出同一字节流，
+    ``看起来能跑''的错误在提交前就被暴露。
+  \end{block}
+  \src{verify F1–F9；tasks F15；报告 §3.1–§3.4、§4.4}
+\end{frame}
+
+\section{项目评价}
+
+% ============================ F17 局限与结论 ============================
+\begin{frame}{局限与结论}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{主要局限}
+        \small
+        \begin{itemize}\setlength{\itemsep}{0.25em}
+          \item 排序无 idf / BM25，长剧占优
+          \item 短语匹配在过滤后词元流上（\code{"my lord"} 退化）
+          \item 切词仅 ASCII；构建与查询单线程
+          \item 无增量索引；4 亿词未端到端实测
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{下一步（按收益排序）}
+        \small
+        \begin{enumerate}\setlength{\itemsep}{0.25em}
+          \item 粒度实验（scene 级 / 合并短诗）
+          \item BM25 / TF-IDF 与相关性评价
+          \item SPIMI 归并输出直接写 B+ 树，跑一次真正 500k/400M 端到端
+        \end{enumerate}
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vsp
+  \begin{block}{结论}
+    \small
+    四项课程任务全部完成并经独立对拍；\key{50 万文件轴实测通过}，
+    \key{4 亿词轴}给出实测锚点上的外推（6.04 GB / 树高 4 / 4 页读 = 16 KiB），
+    两条轴在全文都明确区分``实测''与``外推''。
+  \end{block}
+  \vsp
+  \centering\small\color{gray}完整停用词表见附录 A / 附录 B。
+  \src{报告 §3.5、§4.2；REVIEW.md 数字审计}
+\end{frame}
+
+% ============================ F18 附录 A：主语料停用词 ============================
+\begin{frame}{附录 A：主语料的停用词（人工 39 / 统计 39）}
+  \begin{columns}[T]
+    \begin{column}{0.49\textwidth}
+      \begin{block}{人工定界（39 词，\code{data/stopwords.txt}）}
+        \footnotesize
+        the, and, i, to, of, a, my, that, in, is, not, me, it, for, with, be,
+        his, this, but, have, as, so, what, by, no, all, do, if, are, on, from,
+        or, which, more, then, their, when, than, yet
+      \end{block}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \begin{block}{三特征统计推导（39 词，df$\ge$0.40、tf\_share$\ge$0.001、熵$\ge$0.93）}
+        \footnotesize
+        the, and, i, to, of, a, my, that, in, is, not, me, it, for, with, be,
+        his, this, but, have, as, \key{thou}, so, what, by, no, all, do, if,
+        are, \key{thee}, on, from, \key{o}, which, then, when, \key{hath}, yet
+      \end{block}
+    \end{column}
+  \end{columns}
+  \vspace{0.5em}
+  \begin{block}{两份表的差异：重叠 35 / 39}
+    \small
+    推导\key{多出} thou、thee、o、hath（古英语功能词——``分布平坦''能自动识别它们）；
+    人工表\key{多出} more、their、than、or（比较与选择连词，速率熵略低于 0.93，被判为``不够平''）。
+  \end{block}
+  \src{tasks F9/F11–F14；data/stopwords.txt；derived-df0.40-er0.93.txt；logs/tasks/stopwords-list.log}
+\end{frame}
+
+% ============================ F19 附录 B：RFC 停用词 ============================
+\begin{frame}{附录 B：副语料 RFC 的停用词（58 词，纯统计推导）}
+  \centering
+  \footnotesize
+  \begin{tabular*}{0.97\textwidth}{@{\extracolsep{\fill}}lllll}
+    the & a & to & of & and \\
+    in & is & that & for & be \\
+    \key{rfc} & or & not & \key{server} & as \\
+    this & are & an & by & it \\
+    with & if & \key{data} & from & \key{page} \\
+    \key{information} & on & used & when & any \\
+    standards & use & can & other & one \\
+    e & will & some & have & all \\
+    \key{protocol} & no & only & case & its \\
+    more & \key{list} & \key{error} & \key{time} & received \\
+    each & does & same & they & g \\
+    \key{transfer} & however & multiple & & \\
+  \end{tabular*}
+  \vspace{0.15em}
+  \begin{block}{读法}
+    \footnotesize
+    同一套规则 $(0.40,\,0.001,\,0.93)$ 得到 58 词：\key{加粗}的 server / page / rfc / data /
+    information / protocol / error / time / list / transfer 是典型\key{领域内容词}，
+    而 RFC 2119 的 must / may / should（熵 0.809 / 0.899 / 0.885 $<$ 0.93）\bad{不在表中}。
+  \end{block}
+  \vsp
+  \centering\small\color{gray}谢谢！问题与讨论欢迎提出。
+  \src{verify F10；work/verify/rfc-stopwords.txt（e / g 来自 ``e.g.'' 切分）；报告 §4.1}
+\end{frame}
+
+\end{document}
