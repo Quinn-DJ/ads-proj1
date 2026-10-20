@@ -167,47 +167,32 @@ and 0.9789），内容词 love、king、heart、sweet 落在 0.82--0.93（0.9271
 \subsubsection{倒排索引构建结果}
 \label{sec:index-build}
 
-任务 2 关注索引是否反映停用词过滤与词干化后的词项集合，以及这些处理对索引规模的
-影响。表~\ref{tab:index-configs} 给出四种配置的规模与构建代价。
-% src: tasks F18（四配置）、tasks F19（正式配置确定性与计时）
+正式倒排索引采用 39 词停用表并执行词干化。构建完成后的结果见
+表~\ref{tab:index-configs}。
+% src: tasks F18、F21
 \begin{table}[!htbp]
   \centering
-  \caption{四种构建配置的索引规模与构建代价（主语料，195 篇）}
+  \caption{正式倒排索引的最终构建结果}
   \label{tab:index-configs}
-  \footnotesize
-  \renewcommand{\arraystretch}{1.0}
-  \begin{tabular}{l r r r r}
+  \small
+  \begin{tabular}{lr}
     \toprule
-    指标 & 原始配置 & 仅停用词 & 仅词干化 & 正式（停用词＋词干化） \\
+    指标 & 结果 \\
     \midrule
-    处理标志 & \code{(raw)} & \code{stopwords} & \code{stemmed} & \code{stopwords stemmed} \\
-    词元数 & 866\,626 & 556\,866 & 866\,626 & 556\,866 \\
-    词项数 & 25\,705 & 25\,666 & 14\,947 & 14\,937 \\
-    倒排记录数 & 152\,650 & 147\,909 & 121\,903 & 117\,704 \\
-    位置数 & 866\,626 & 556\,866 & 866\,626 & 556\,866 \\
-    索引字节 & 5\,598\,793 & 4\,320\,622 & 4\,958\,598 & \textbf{3\,685\,655} \\
-    内建构建时间 & 0.20\,s & 0.18\,s & 0.23\,s & 0.19\,s \\
-    相对原始配置 & 100\% & 77.17\% & 88.57\% & \textbf{65.83\%} \\
+    文档数 & 195 \\
+    保留词元数 & 556\,866 \\
+    词项数 & 14\,937 \\
+    倒排记录数 & 117\,704 \\
+    位置数 & 556\,866 \\
+    第一版索引大小 & 3\,685\,655 字节 \\
+    第二版索引大小 & 1\,725\,694 字节 \\
+    构建时间 & 0.19\,秒 \\
     \bottomrule
   \end{tabular}
-  \par\smallskip
-  \footnotesize 注：处理标志由索引头写出并由 \code{dump}/\code{query} 头部打印；  % src: tasks F18
-  倒排记录数为词项与文档的出现对数，位置数为位置总数（等于保留词元数）；内建
-  构建时间为 C++ 内部计时（正式配置取 3 次中位）；相对原始配置为索引字节之比。
 \end{table}
 
-停用词过滤只删词元、几乎不动词表（词项仅少 39 个），体积却降到原始配置的 77.17\%：
-省的是倒排记录区与位置数组，它们的大小正比于保留词元数。词干化不删词元、位置仍为
-866\,626，但词表压到 14\,947 个，体积降到 88.57\%，省的是词项表与倒排记录条数
-（152\,650 降到 121\,903）。两者叠加的正式配置是原始配置的 65.83\%（3\,685\,655 字节）。
-位置总数等于词元总数、每条倒排记录项的词频等于其位置数，这两条恒等式在四种配置上
-都成立，也解释了为什么位置数组会随停用词过滤明显缩小。
-
-构建可重复：正式配置连续构建 3 次，外部墙钟 0.2563/0.2908/0.2583\,s、内建计时
-0.19/0.22/0.19\,s，中位为 0.19\,s。构建时间有小幅波动，但三次都处于同一量级。
-
-表~\ref{tab:dict-compare} 用同一套插桩计数比较三种词典实现。
-% src: tasks F20（三词典）、tasks F19（产物 sha256）
+表~\ref{tab:dict-compare} 比较三种词典实现构建同一份正式索引时的代价。
+% src: tasks F20
 \begin{table}[!htbp]
   \centering
   \caption{三种词典实现的构建代价（正式配置，各构建 3 次）}
@@ -228,66 +213,52 @@ and 0.9789），内容词 love、king、heart、sweet 落在 0.82--0.93（0.9271
   启动与文件读写，受并行负载影响只作量级比较。
 \end{table}
 
-三种词典的差别只在构建过程：哈希比较次数约为伸展树的 10.8\%、构建最快，伸展树有
-5\,850\,795 次旋转，\code{std::map} 比较次数最多。哈希适合追求构建速度，伸展树更适合
-需要有序输出的场景；本项目的结构取舍见第~\ref{sec:dict-analysis}~节。第二版索引格式
-把正式索引从 3\,685\,655 字节降到 1\,725\,694 字节（46.82\%，省 53.18\%），原因见
-第~\ref{sec:compression}~节。
+从构建速度看，哈希表最快，标准映射次之，伸展树最慢；从字符串比较次数看，哈希表也
+明显少于两种树结构。伸展树的主要代价是 585 万次旋转，但它的中序遍历可以直接得到
+有序词项表。项目因此以伸展树作为主词典，以哈希表作为速度基线，以标准映射作为平衡树
+对照。第二版索引在第一版基础上降至 172 万字节，约为原来的 46.82\%。
 
 \subsubsection{查询结果}
 \label{sec:query}
 
-任务 3 的验收点是"给定单词或短语，返回包含它的文档 ID"，并要求结果可解释。本节用正式
-索引（\code{stopwords stemmed}）给出代表查询，原始索引作对照，
-表~\ref{tab:query-examples} 是汇总。
+本节使用正式索引测试单词、短语和布尔查询，并检查无结果时能否说明原因。
+代表性查询见表~\ref{tab:query-examples}。
 % src: tasks F27–F33
 \begin{table}[!htbp]
   \centering
-  \caption{代表性查询的实测输出（正式索引过滤停用词并做词干化，原始索引两者均不做）}
+  \caption{正式索引上的代表性查询结果}
   \label{tab:query-examples}
   \footnotesize
   \renewcommand{\arraystretch}{1.0}
-  \begin{tabularx}{\linewidth}{l l l r X}
+  \begin{tabularx}{\linewidth}{l l r X}
     \toprule
-    查询 & 索引 / 参数 & 归一后词项 & 结果数 & 说明与代表输出 \\
+    查询 & 类型 & 文档数 & 结果说明 \\
     \midrule
-    \code{--word osric} & 正式，\code{--pretty} & \code{osric} & 1 & 文档 30《Hamlet》；命中行 \code{> Osric, who brings back to him that you attend him in} \\
-    \code{--word love} & 正式 & \code{love} & 138 & 词频最高：文档 16（195）、文档 35（165）、文档 2（142） \\
-    \code{--phrase "king richard"} & 正式，\code{--top-x 3} & \code{king, richard} & 3 & 基线 7 篇；前 3 篇命中 2/2 个词，词频总和 193/191/140 \\
-    \code{--phrase "my lord"} & 正式 & \code{lord} & 42 & \code{my} 是停用词，打印退化说明后只查 \code{lord} \\
-    \code{--words "king queen"} & 正式，\code{--min-match 2} & \code{king, queen} & 5 & 截断前 33 篇（全部命中）；\code{--min-match 1} 为 43 篇 \\
-    \code{--word the} & 正式 & （无） & 0 & 说明：\code{the -- stop word (excluded from the index)} \\
-    \code{--word notaword} & 正式 & （无） & 0 & 说明：\code{notaword -- not in the index} \\
-    \code{--word loves} & 正式 / 原始 & \code{love} / \code{loves} & 138 / 43 & 词干化把 \code{loves} 归一到 \code{love}；原始索引上 \code{love} 为 127 篇 \\
-    \code{--word the} & 原始 & \code{the} & 3 & 原始索引未过滤停用词，同一查询可检索 \\
+    \code{osric} & 单词 & 1 & 文档 30《Hamlet》，可定位到原句 \\
+    \code{love} & 单词 & 138 & 高频内容词，返回全部包含该词的文档 \\
+    \code{good night} & 短语 & 23 & 两个词必须位置相邻 \\
+    \code{king richard} & 短语 & 7 & 两个词均存在并通过位置验证 \\
+    \code{my lord} & 短语 & 42 & \code{my} 被停用词过滤，实际只查 \code{lord} \\
+    \code{to be or not to be} & 短语 & 0 & 全部由停用词组成 \\
+    \code{king queen} & 布尔 & 33 & 默认要求两个词全部命中 \\
+    \code{the} & 单词 & 0 & 停用词未进入索引 \\
+    \code{notaword} & 单词 & 0 & 索引词典中没有该词 \\
     \bottomrule
   \end{tabularx}
-  \par\smallskip
-  \footnotesize 注：结果数分母为 195 篇；单词与布尔查询按命中词数降序、词频总和降序、
-  文档编号升序排序；\code{--pretty} 的命中行来自文本层行号映射。
 \end{table}
 
-这张表覆盖查询侧的全部语义分支。短语查询验证“相邻而非共现”（\code{king richard}
-命中 7 篇，前 3 篇均命中 2/2 个词）；布尔查询展示 \code{--min-match} 的松紧
-（\code{king queen} 默认要求全部命中，返回 33 篇；\code{--min-match 1} 返回 43 篇）。
-两类空结果被明确区分：\code{the} 为空是停用词未建索引，未登录词为空是词典里没有，
-说明信息会给出原因。原始索引的对照说明
-解释器完全由索引头处理标志驱动：同一个 \code{--word the} 在原始索引上返回 3 篇；
-\code{loves} 在正式索引上归一为 \code{love}、返回 138 篇，在原始索引上按原形只返回
-43 篇。
+单词查询直接返回包含目标词项的文档编号和标题。结果按命中词数、词频总和和文档编号
+稳定排序。加上 \code{--pretty} 后，程序会重新运行文本处理管线，在结果中附上词语
+所在的原句，便于核对命中位置。
 
-程序还提供结构化输出。JSON 顶层字段为查询、模式、词项、命中（每项包含文档、命中词数
-和词频）与说明（被丢弃词项及原因），代码中对应：
-\begin{lstlisting}[style=cli]
-{"query":"love","mode":"word","terms":["love"],
- "hits":[{"doc":16,"matched":1,"tf":195}, ...],"notes":[]}
-\end{lstlisting}
-短语查询只把 \code{mode} 换成 \code{phrase}；含停用词的短语在 \code{notes} 中记录
-原因，这是阈值实验能逐条归因的基础。
+短语查询要验证多个词项在过滤停用词后的词元序列中连续出现，不能只求两个倒排记录表
+的交集。\code{good night} 命中 23 篇，只有两个词完整相邻出现的文档会被保留。由于
+位置定义在过滤后的词元序列上，\code{my lord} 中的 \code{my} 不占位置，系统实际执行
+的是 \code{lord} 的单词查询。全部由停用词组成的短语没有可定位的词项，因此返回空结果。
 
-单次查询的墙钟中位数为 19.2\,ms（N$=$201，最小 17.1\,ms、最大 29.9\,ms，均值
-19.60\,ms），口径是包含进程启动与索引加载的端到端时间；201 次查询合计 4.05\,s。
-绝对时间受并行负载影响有约 $\pm$20\% 波动，只宜作量级参考；查询结果是确定性的。
+布尔查询默认要求所有查询词都命中。\code{king queen} 因此返回 33 篇；使用
+\code{--min-match 1} 后只需命中任意一个词，结果增加到 43 篇。无结果时，程序会区分
+“停用词未进入索引”和“索引词典中没有该词”，避免把所有空结果混为一类。
 
 \subsection{阈值实验与复杂度分析}
 
