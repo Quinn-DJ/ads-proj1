@@ -28,3 +28,5 @@ __pycache__/
 
 # clangd index cache (appears once build/compile_commands.json exists)
 .cache/
+
+reports/data/

@@ -1,0 +1,232 @@
+% =====================================================================
+% 附录（owner: writer-analysis）：A 复现命令与关键输出；B 数据格式速查
+%
+% 命令与读数来源：reports/data/results-tasks.md（F1–F42）、
+% reports/data/results-verify.md（F1–F18）、reports/data/results-preprocess.md
+% （P1–P6）与 reports/data/logs/ 下的原始日志；本附录不引入新测量。
+% 代码块内只用 ASCII（STYLE.md §3），中文说明写在代码块外。
+% =====================================================================
+
+\section{复现命令与关键输出}
+\label{app:reproduce}
+
+全部命令在项目根目录（\code{proj1/}）执行，读数来自本轮（2026-10-20）重新构建后的运行，
+原始输出在 \code{reports/data/logs/} 下，证据编号（F/P）与正文一致。命令中的 \code{.../}
+表示 \code{reports/data/work/} 下的同名路径（\code{tasks/} 或 \code{verify/}），完整
+路径见 results 文件中各 Fact 的命令行。
+
+\subsection{环境、构建与测试}
+
+环境：macOS 27.0.1（build 26A434）/ Apple M3 / 16\,GiB；CMake 4.4.3（Unix Makefiles）；
+Apple clang 21.0.0，C++17、\code{-Wall -Wextra}，Release（\code{-O3 -DNDEBUG}）；
+Catch2 v3 仅测试链接；\code{build/mse} 为 329\,136 字节，只链接系统库。
+% src: F5（tasks）、F17（verify）
+
+\begin{lstlisting}[style=cli]
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j8
+/usr/bin/time -p ctest --test-dir build --output-on-failure
+# -> 100% tests passed out of 18
+# -> Total Test time (real) =  40.90 sec
+\end{lstlisting}
+
+18 项由 8 个 Catch2 单元测试（46 个 TEST\_CASE、85\,155 条断言）、2 个语料冒烟测试与
+8 个独立实现对拍组成，本轮全部通过。% src: F1、F2、F3（verify）
+
+\subsection{任务 1 与任务 2}
+
+词频四种配置各跑 3 次取外部墙钟中位数；停用词推导、正式索引、三种词典、块式构建与
+磁盘词典 sidecar 的命令如下。% src: F6、F13、F18–F24（tasks）
+
+\begin{lstlisting}[style=cli]
+./build/mse count --top 50 --csv .../wordcount-default.csv
+./build/mse count --top 50 --stop-words data/stopwords.txt \
+    --csv .../wordcount-stop.csv
+./build/mse count --top 50 --stem --csv .../wordcount-stem.csv
+./build/mse count --top 50 --stop-words data/stopwords.txt --stem \
+    --csv .../wordcount-stem-stop.csv
+# default: 866626 tokens / 25705 distinct; formal: 556866 / 14937
+./build/mse stopwords --derive --min-df-ratio 0.4 --min-entropy-rate 0.93 \
+    --out .../derived-df0.40-er0.93.txt --compare data/stopwords.txt
+# -> overlap 35 / extra: hath o thee thou / missing: more or than their
+./build/mse build --index .../index-formal.bin \
+    --stop-words data/stopwords.txt --stem
+# -> 195 docs / 14937 terms / 117704 postings / 3685655 bytes / OK
+./build/mse build --index .../index-formal-v2.bin \
+    --stop-words data/stopwords.txt --stem --compress     # -> 1725694 bytes
+./build/mse build --dict splay --index .../index-dict-splay.bin \
+    --stop-words data/stopwords.txt --stem                # same for hash/map
+./build/mse build-blocks --index .../index-blocks.bin \
+    --stop-words data/stopwords.txt --stem
+# -> blocks 17 (budget 4096, peak 5129 live)
+./build/mse build --index .../formal-v2.bin --dict-file .../formal-v2.bpt \
+    --stop-words data/stopwords.txt --stem --compress
+./build/mse dump --index .../formal-v2.bin --dict-file .../formal-v2.bpt --verify-all
+# -> verified: 14937 terms, 0 mismatches
+# -> dict reads: 114 page reads, 29819 cache hits
+\end{lstlisting}
+
+\code{--verify-all} 只在 \code{--dict-file} 路径实现；冷查询 \code{banquo} 经 sidecar
+只发生 2 次页读、从索引只读 8\,308 字节（全量加载的 0.225\%）。% src: F8、F16、F23（verify）
+
+\subsection{任务 3、阈值实验与独立对拍}
+
+查询示例与 201 条阈值测量（正式索引 flags 为 \code{stopwords stemmed}）；随后是独立
+实现与 RFC 副语料的端到端复现（Python 侧自行切词、解析索引、扫描 token 流）。
+% src: F27–F38（tasks）、F7、F9、F10（verify）
+
+\begin{lstlisting}[style=cli]
+./build/mse query --index .../index-formal.bin --stop-words data/stopwords.txt \
+    --word osric --pretty        # -> 1 doc; doc 30 "Hamlet"
+./build/mse query --index .../index-formal.bin --stop-words data/stopwords.txt \
+    --word love                  # -> 138 documents
+./build/mse query --index .../index-formal.bin --stop-words data/stopwords.txt \
+    --phrase "king richard" --top-x 3        # -> 3 documents
+./build/mse query --index .../index-formal.bin --stop-words data/stopwords.txt \
+    --words "king queen" --min-match 2 --top-x 5   # -> 5 documents
+./build/mse query --index .../index-formal.bin --stop-words data/stopwords.txt \
+    --word love --max-df 0.7     # -> 0 documents; note: df ratio above --max-df
+python3 tools/threshold_matrix.py --index .../index-formal.bin \
+    --stop-words data/stopwords.txt \
+    --csv reports/data/csv/tasks/threshold_matrix.csv --svg .../threshold_matrix.svg
+# -> csv: ...threshold_matrix.csv  (201 measurements)
+
+python3 tools/check_wordcount.py --manifest data/manifest.tsv --stem \
+    --stop-words data/stopwords.txt > /tmp/wordcount-py.csv
+cmp /tmp/wordcount-py.csv .../wordcount-stem-stop.csv       # identical
+python3 tools/brute_force.py --manifest data/manifest.tsv \
+    --index .../formal-v1.bin --stop-words data/stopwords.txt --stem
+# -> 14937 terms, result: OK
+python3 tools/check_phrases.py --index .../formal-v1.bin \
+    --stop-words data/stopwords.txt --stem --queries 300
+# -> 305 sampled / 303 checked / 0 mismatches
+
+./build/mse stats --manifest data2/data/manifest.tsv
+./build/mse stopwords --derive --manifest data2/data/manifest.tsv \
+    --min-df-ratio 0.4 --min-entropy-rate 0.93 \
+    --out .../rfc-stopwords.txt --compare data/stopwords.txt   # -> 58 terms
+./build/mse build --manifest data2/data/manifest.tsv \
+    --stop-words .../rfc-stopwords.txt --stem --index .../rfc-formal.bin
+\end{lstlisting}
+
+\subsection{附加题：B+ 树 规模实验与 500\,000 文档语料}
+
+B+ 树规模实测（4\,KiB 页、bulk-load、1\,000 次随机查询全部校验）：
+% src: F11（verify）
+
+\begin{lstlisting}[style=cli]
+for keys in 100000 1000000 10000000 30000000 50000000; do
+  ./build/mse bptree-bench --keys "$keys" --lookups 1000 --out .../bpt-"$keys".bpt
+done
+# 50000000 keys -> height 4 / 184322 pages / 754987008 bytes
+#               -> 1000 verified, 4.00 page reads each
+# CSV: python3 .../parse_bptree.py -> reports/data/csv/verify/bptree-bench.csv
+\end{lstlisting}
+
+500\,000 文档合成语料：生成 → 统计 → 块式构建 v1/v2 → 内存构建，峰值内存用
+\code{/usr/bin/time -l} 的 \code{maximum resident set size}；采集后语料与临时索引
+已删除。% src: F12–F15（verify）、F18.8（清理记录）
+
+\begin{lstlisting}[style=cli]
+python3 tools/gen_synthetic_corpus.py --root /tmp/mse-scale-corpus-500k \
+    --docs 500000 --tokens-per-doc 40 --vocab 5000000
+# -> 500000 docs / 20000000 tokens / generate 73.67 s
+/usr/bin/time -l ./build/mse stats \
+    --manifest /tmp/mse-scale-corpus-500k/data/manifest.tsv   # RSS 463.9 MiB
+/usr/bin/time -l ./build/mse build-blocks \
+    --manifest /tmp/mse-scale-corpus-500k/data/manifest.tsv \
+    --block-terms 4096 --index .../scale-500k-v1.bin
+# -> blocks 4855 / terms 4908747 / scan 5.47 s + merge 125.08 s
+# -> 427603247 bytes / max RSS 1.01 GiB / real 168.16 s
+/usr/bin/time -l ./build/mse build \
+    --manifest /tmp/mse-scale-corpus-500k/data/manifest.tsv \
+    --index .../scale-500k-mem.bin
+# -> 427603247 bytes / max RSS 2.00 GiB / real 76.75 s
+# -> cmp with v1: identical (SHA-256 4fcb45...)
+\end{lstlisting}
+
+\code{reports/data/} 的组织：结果文件三份（\code{results-tasks.md}、\code{results-verify.md}、
+\code{results-preprocess.md}），\code{csv/} 下是图表输入（词频、阈值矩阵、B+ 树 bench），
+\code{logs/} 下按任务分 3 组共 53 个原始日志（30 + 20 + 3），\code{work/} 是临时索引与
+复现脚本、不作为证据。计时口径：本轮两位 analyst 同机并行测量，墙钟时间可能被并行负载
+抬高、只有量级意义；字节数、计数、页数、SHA-256 与对拍结果是确定性的。
+% src: F18.7（verify）、F41.3（tasks）
+
+\section{数据格式速查}
+\label{app:format}
+\enlargethispage{3\baselineskip}
+
+本附录汇总引擎读写的四份数据：语料清单、文本层、索引（v1/v2）与磁盘 B+ 树词典
+sidecar；格式规格来自实现与第~\ref{sec:persistence}、~\ref{sec:bptree-design}~节。
+
+\subsection{manifest.tsv 与文本层}
+
+\code{manifest.tsv} 为制表符分隔文本、首行表头，每个文档一行；\code{text} 列相对
+\emph{语料根}解析（引擎取 \code{dirname(dirname(manifest))}）。第 8 列 \code{format}
+可选：\code{marked}（缺省，行标记生效）或 \code{plain}（整行均为正文，RFC 语料用）。
+文本层每行一个单元，行首标记决定行类型；标题与舞台指示要求\emph{首尾同时匹配}，否则
+按正文处理（第~\ref{sec:preprocess-analysis}~节）。
+
+\begin{center}
+\footnotesize
+\begin{tabularx}{\linewidth}{l l X l}
+  \toprule
+  列 / 标记 & 类型 & 含义 & 默认行为 \\
+  \midrule
+  \code{docid} / \code{kind} / \code{category} & 整数 / 字符串 & 文档编号、作品类型与分类 & --- \\
+  \code{title} & 字符串 & 作品标题，输出与 \code{--pretty} 使用 & --- \\
+  \code{text} / \code{source} / \code{url} & 路径 / 字符串 & 文本层、原始文件路径与来源 URL & --- \\
+  \code{format} & 字符串（可选） & \code{marked} 或 \code{plain} & --- \\
+  \code{# ...} & 文件头注释 & 不参与统计 & 跳过 \\
+  \code{[ACT I]} 等 & 行首 \code{[} 且行尾 \code{]} & 标题 & 不参与切词 \\
+  \code{(Exit Ghost)} & 行首 \code{(} 且行尾 \code{)} & 舞台指示 & 不参与切词 \\
+  \code{@BERNARDO} & 行首 \code{@} & 说话人标签 & 不参与切词 \\
+  其余行 & 台词 / 诗行 / 散文正文 & 正文 & 参与切词 \\
+  \bottomrule
+\end{tabularx}
+\par\smallskip
+\footnotesize 注：三种标记行可用 \code{--keep-headings}/\code{--keep-speakers}/
+\code{--keep-stage} 逐类保留。
+\end{center}
+
+\subsection{索引 v1 布局与 v2 差异}
+
+所有整数为小端；字符串为 u32 字节长度前缀 + 原始字节。v1 顺序布局如下：
+
+\begin{lstlisting}[style=cli]
+header : magic "MSE1" | version u32 | flags u32 | docCount u32 |
+         termCount u32 | tokenCount u64                 (28 bytes)
+doc    : docID u32 | keptTokens u32 | titleLen u32 | title[...]   (12+len)
+term   : termLen u32 | term[...] | df u32 | tfTotal u64 |
+         blockOffset u64 | blockBytes u32                (28+len)
+block  : df x (docID u32, tf u32), then sum(tf) x position u32
+         blockBytes = 8*df + 4*sum(tf)
+\end{lstlisting}
+
+\code{flags} 第 0 位置停用词过滤、第 1 位置词干化，查询侧据此重放同一规范化管线；
+term 表严格升序，docID 稠密 1..N，posting 内 docID 严格递增、tf 等于其位置数，这些
+不变量在加载后由 \code{validateIndex()} 逐条校验。v2 的头、doc 表、term 表与 v1 相同，
+仅 \code{version}$\,=2$，把每个 postings 块换成"差分量 + 字节对齐变长码"：每条 posting
+依次写 docID 差（块内从 0 起，$\ge1$）、tf、tf 个位置增量（posting 内从 0 起，$\ge0$）；
+变长码首字节高 2 位给出总长，载荷 6/14/22/30 位（\code{01}/\code{10}/\code{11}/\code{00}
+分别为 1/2/3/4 字节），小端序。
+
+\subsection{磁盘 B+ 树 词典 sidecar}
+
+sidecar 是 4\,KiB 页文件（页大小可配置），第 0 页为头页、其后每页一个树节点，整数
+小端；键是变长字符串，扇出由字节预算决定，叶页用 \code{nextLeaf} 串成有序链。
+
+\begin{lstlisting}[style=cli]
+page 0 (header) : magic "BPT1" | version u32 | pageSize u32 |
+                  pageCount u32 | rootId u32 | height u32 |
+                  leafCount u64 | keyCount u64
+page i+1        : leaf u8 | keyCount u16 | nextLeaf u32 |
+                  leaf  : value u64[count] | blob[count]
+                  inner : child u32[count+1] | blob[count]
+blob            : length u8 | bytes
+value           : (posting blockOffset << 21) | blockBytes   (21-bit length)
+\end{lstlisting}
+
+查询时由 B+ 树定位 posting 块，无需加载完整 term 表。I1--I5 由
+\code{validate()} 校验；写文件采用 bulk-load，索引重建后 sidecar 同步重建。
+% 格式规格来自 include/bptree.hpp 与 src/bptree.cpp；不涉及测量数字

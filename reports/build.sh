@@ -1,21 +1,15 @@
 #!/usr/bin/env bash
-# Build all standalone test reports and copy the PDFs into pdf/.
-#
-# Requirements: XeLaTeX + latexmk with ctex/Fandol, DejaVu fonts, and the
-# packages listed in style.tex (booktabs, tabularx, longtable, listings,
-# fancyhdr, hyperref).
+# Build the project report: article + ctex, compiled with XeLaTeX.
 #
 # Usage: bash reports/build.sh
+# Output: reports/report.pdf (intermediates in reports/build/)
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-mkdir -p build pdf
+mkdir -p build
 
-for name in 01-unit-tests 02-correctness 03-thresholds 04-scale; do
-  echo "==> ${name}"
-  latexmk -xelatex -interaction=nonstopmode -halt-on-error \
-    -outdir=build "${name}.tex"
-  cp "build/${name}.pdf" "pdf/${name}.pdf"
-done
+latexmk -xelatex -interaction=nonstopmode -halt-on-error \
+  -file-line-error -outdir=build report.tex
 
-echo "PDFs written to reports/pdf/"
+cp build/report.pdf report.pdf
+echo "PDF: $(pwd)/report.pdf"

@@ -1,11 +1,12 @@
-# LaTeX build products; committed PDFs live in pdf/.
+# LaTeX intermediates (the rendered PDF is kept)
 build/
 *.aux
-*.fls
-*.fdb_latexmk
 *.log
-!data/*.log
 *.out
 *.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
 *.xdv
 *.synctex.gz

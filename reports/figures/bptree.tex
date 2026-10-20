@@ -1,0 +1,98 @@
+% figures/bptree.tex -- B+ 树 词典的规模实验：文件体积与查询页读
+%
+% 数据：reports/data/csv/verify/bptree-bench.csv（本轮 mse bptree-bench，
+% 4 KiB 页；100k/1M/10M/30M/50M 键各一次测量）。由
+% figures/data/make_figures_data.py 生成 figures/data/bptree-*.dat 与
+% bptree-meta.tex（线性拟合、4 亿键外推）。
+% 主文档只写 \input{figures/bptree}。
+\input{figures/data/bptree-meta}
+\begin{figure}[!htbp]
+\centering
+\captionsetup[subfigure]{font=scriptsize,skip=2pt}
+% ---------------- (a) file size ----------------
+\begin{subfigure}{0.49\linewidth}
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[
+    width=7.10cm, height=4.25cm,
+    xmode=log, ymode=log,
+    xmin=8e4, xmax=1e9, ymin=1e6, ymax=3e10,
+    xlabel={number of keys (log scale)}, ylabel={file size (log scale)},
+    xtick={1e5,1e6,1e7,1e8}, xticklabels={100k,1M,10M,100M},
+    extra x ticks={4e8}, extra x tick labels={400M},
+    extra x tick style={tick label style={font=\scriptsize}},
+    ytick={1e6,1e7,1e8,1e9,1e10},
+    yticklabels={1 MB,10 MB,100 MB,1 GB,10 GB},
+    tick label style={font=\scriptsize},
+    label style={font=\small},
+    grid=major, grid style={black!8},
+    legend style={draw=none, fill=none, font=\scriptsize,
+                  at={(0.02,0.98)}, anchor=north west},
+    legend cell align=left,
+  ]
+    % 实测点
+    \addplot[only marks, mark=*, mark size=1.4pt, color=mseblue]
+      table[x=keys, y=file_bytes] {figures/data/bptree-size.dat};
+    \addlegendentry{measured (4 KiB pages)}
+    % 15.1 B/key 线性拟合（对数坐标下为直线）
+    \addplot[dashed, line width=0.8pt, color=msegray]
+      table[x=keys, y=fit_bytes] {figures/data/bptree-size-fit.dat};
+    \addlegendentry{linear fit (\BptSlope{} B/key)}
+    % 4 亿键外推点（空心）
+    \addplot[only marks, mark=o,
+             mark options={draw=mseblue, fill=white, line width=0.7pt},
+             mark size=2.2pt]
+      table[x=keys, y=fit_bytes] {figures/data/bptree-extrap.dat};
+    \addlegendentry{400M-key extrapolation}
+  \end{axis}
+  \end{tikzpicture}
+  \caption{文件字节 $=$ \BptSlope{} B/键 $\times$ 键数，严格线性}
+\end{subfigure}\hfill
+% ---------------- (b) page reads ----------------
+\begin{subfigure}{0.49\linewidth}
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[
+    width=7.10cm, height=4.25cm,
+    xmode=log,
+    xmin=8e4, xmax=1e9, ymin=0, ymax=5,
+    xlabel={number of keys (log scale)},
+    ylabel={page reads per lookup},
+    xtick={1e5,1e6,1e7,1e8}, xticklabels={100k,1M,10M,100M},
+    extra x ticks={4e8}, extra x tick labels={400M},
+    extra x tick style={tick label style={font=\scriptsize}},
+    ytick={0,1,2,3,4,5},
+    tick label style={font=\scriptsize},
+    label style={font=\small},
+    grid=major, grid style={black!8},
+    legend style={draw=none, fill=none, font=\scriptsize,
+                  at={(0.02,0.98)}, anchor=north west},
+    legend cell align=left,
+  ]
+    % 实测页读（点旁标树高）
+    \addplot[only marks, mark=*, mark size=1.4pt, color=mseblue]
+      table[x=keys, y=page_reads] {figures/data/bptree-reads.dat};
+    \addlegendentry{measured (h $=$ tree height)}
+    % 4 亿键外推（虚线延到空心点）
+    \addplot[dashed, line width=0.8pt, color=msegray]
+      table[x=keys, y=page_reads] {figures/data/bptree-reads-fit.dat};
+    \addlegendentry{extrapolated}
+    \addplot[only marks, mark=o,
+             mark options={draw=mseblue, fill=white, line width=0.7pt},
+             mark size=2.2pt]
+      table[x=keys, y=page_reads] {figures/data/bptree-extrap.dat};
+    % 外推读数标注（放在数据点下方的空白处）
+    \node[font=\scriptsize, text=msegray, align=right, anchor=south east]
+      at (rel axis cs:0.98,0.04)
+      {\BptExtrapM{}M keys: height \BptExtrapH{},\\
+       \BptExtrapPages{} page reads $=$ \BptExtrapKiB{} KiB};
+  \end{axis}
+  \end{tikzpicture}
+  \caption{每次查询只读树高页：4 亿键也只需 4 页 $=$ 16 KiB}
+\end{subfigure}
+\caption{B+ 树 词典的规模实验：文件体积严格线性（\BptSlope{} B/键），而每次
+随机查询的页读等于树高、随高度对数增长；按实测扇外出推，4 亿个不同词只需
+\BptExtrapH{} 层、每次查询 \BptExtrapPages{} 页（\BptExtrapKiB{} KiB），文件约
+\BptExtrapGB{} GB。}%
+\label{fig:bptree}
+\end{figure}

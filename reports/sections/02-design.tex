@@ -1,0 +1,204 @@
+% 第 1 章（续）：词频、停用词、词干化、索引、词典与查询设计。
+\subsection{词频统计}
+\label{sec:count-design}
+
+\subsubsection{设计原理}
+
+统计程序回答两个基础量：tf（term frequency，词项在语料中的总出现次数）与
+df（document frequency，包含该词项的文档数）。对词项 $t$：
+\begin{equation}
+  \mathrm{tf}(t)=\sum_{d}\mathrm{tf}(t,d),\qquad
+  \mathrm{df}(t)=|\{d:\mathrm{tf}(t,d)>0\}|.
+\end{equation}
+同时计算 $df\_ratio(t)=\mathrm{df}(t)/195$ 与
+$tf\_share(t)=\mathrm{tf}(t)/866\,626$。前一个指标描述“覆盖面”，后一个描述
+“token 质量”；只看其中一个，很容易把短诗稀释的对话词误判为稀有词。
+
+统计程序复用正式规范化管线：切词后可选停用词过滤，再可选 Porter 词干化。
+默认、仅停用词、仅词干化和正式配置分别对应四种统计数据，后续索引与查询均使用
+同一组处理顺序。% src: F6、F7
+
+\subsubsection{算法设计}
+
+程序按 manifest 顺序逐文档扫描。每个词项除累计 tf 外，还保存最近一次出现的 docID；
+只有当前 docID 与 \code{lastDoc} 不同时，df 才加一。这样同一篇作品内的重复出现不会重复
+计算文档频率：
+
+\begin{lstlisting}[style=cli]
+for each document d:
+    for each token t in tokenize(d):
+        row = table[t]
+        row.tf += 1
+        if row.lastDoc != d.id:
+            row.df += 1
+            row.lastDoc = d.id
+\end{lstlisting}
+% src: F6、F15
+
+\subsection{停用词选择}
+\label{sec:stopwords}
+
+\paragraph{统计学手段进行选择}
+\label{sec:entropy}
+
+一般的候选规则只要求“广”和“重”：
+\begin{equation}
+  df\_ratio(t)\ge 0.75
+  \quad\land\quad
+  tf\_share(t)\ge 0.001.
+\end{equation}
+它只得到 9 个词。考虑到 154 首的短诗占文档总数 79\%，
+很多对话功能词不会出现在每一首诗里，df 比值被稀释。例如 \code{a} 只有 70.77\%，
+刚好落在 0.75 线下；如果将阈值放宽到 0.40 后则得到 48 个候选，但 \code{love}、\code{time} 等有内容
+的词也进入候选带。% src: F7、F10、F11
+
+为了把“均匀分布在很多文档中”与“只是总次数高”分开，我们计算文档长度归一化
+速率熵。设 $L_d$ 为文档 $d$ 的保留 token 数，
+\begin{equation}
+  r_{t,d}=\frac{\mathrm{tf}(t,d)}{L_d},\qquad
+  q_{t,d}=\frac{r_{t,d}}{\sum_{d'}r_{t,d'}},\qquad
+  \widehat H(t)=\frac{-\sum_{d}q_{t,d}\log_2 q_{t,d}}{\log_2\mathrm{df}(t)}.
+  \label{eq:rate-entropy}
+\end{equation}
+长度归一化后，功能词稳定在 0.95 以上，
+\code{love}、\code{king}、\code{heart} 等内容词明显更低，df$=$1 的专名定义为 0。% src: F9
+
+最终规则同时要求“宽、重、平”：
+\begin{equation}
+  df\_ratio\ge r
+  \quad\land\quad
+  tf\_share\ge s
+  \quad\land\quad
+  \widehat H\ge h.
+\end{equation}
+默认 $(r,s,h)=(0.75,0.001,0.93)$ 只产生 9 词；实验参数
+$(0.40,0.001,0.93)$ 产生 39 词，与人工表重叠 35 个。自动表多收
+\code{hath/o/thee/thou}，少收 \code{more/or/than/their}，差异可以由速率熵逐词解释。
+% src: F13
+
+\subsection{词干化}
+\label{sec:stemmer}
+
+\subsubsection{网上方案选择与分析}
+
+我们参考并比较了四份词干化方案：Porter 1980 论文、作者官网的 canonical C 实现、
+NLTK 的 \code{PorterStemmer} 三种兼容模式，以及 Snowball 的 Porter2 算法
+~\cite{porter1980,porter-c,nltk,snowball}。
+
+最终选择采用 Porter 1980 论文和 canonical C 的三处 \code{--DEPARTURE--}”。三处差异是：
+两字母及以下的词不改，\code{bli} 改为 \code{ble}，\code{logi} 改为 \code{log}。% src: F6、F15
+
+\subsubsection{算法设计}
+
+进入 Porter 规则前先处理收缩词：按最长匹配剥掉 \code{n't/'s/'d/'ll/'re/'ve/'t/'m}，
+再删除剩余撇号。因此 \code{o'er} 变为 \code{oer}，\code{marry'd} 变为 \code{marryd}。不规则拼写
+保留其规则结果，例如 \code{can't}$\to$\code{ca}、\code{won't}$\to$\code{wo}。
+
+Porter 主流程依次执行 step 1a、1b、1c、2、3、4、5a、5b。核心条件是 measure $m$
+（V-C 序列数）以及 \code{*v*}、\code{*d}、\code{*o} 谓词。实现遵循“首个匹配后缀说了算”：
+某个后缀匹配后，只检查该条规则的条件；条件失败就停止，不再退回尝试更短后缀。
+% src: F6、F15
+
+\subsection{倒排索引}
+\label{sec:posting}
+
+每个词项对应一条按 docID 升序的倒排记录表。记录项保存
+$(\mathrm{docID},\mathrm{posStart},\mathrm{tf})$，其中 \code{posStart} 是 posting
+在独立位置 arena 中的起点，\code{tf} 是本文档内的出现次数。位置采用停用词过滤后的
+token 偏移，因此短语查询可以在不回到原文的情况下验证相邻关系。
+
+索引加载时检查四类结构不变量：docID 稠密 1..N 且 posting 内严格递增；每条 posting
+的 tf 等于其位置个数；位置总数等于 tokenCount；term 表严格按字典序排列。构建过程
+按文档流增量追加，最后将词典冻结为有序 term 表：
+
+\begin{lstlisting}[style=cli]
+for each document D:
+    pos = 0
+    for token t in tokenize(D):
+        if stop_words.contains(t): continue
+        term = stem(t) if stem_flag else t
+        dict.upsert(term).append(D.id, pos)
+        pos += 1
+    index.docs.push({D.id, D.title, pos})
+index.terms = dict.sorted_entries()
+\end{lstlisting}
+
+正式配置得到 14,937 个词项、117,704 条 posting、556,866 个位置和 3,685,655 字节
+的 v1 索引，文件布局如图~\ref{fig:index-layout}。% src: F18
+
+\input{figures/index-layout}
+
+持久化格式也属于倒排索引设计的一部分。v1 顺序写出固定头、文档表、term 表和
+postings 块，写入前预计算所有偏移，不 seek、不回填；读取端按同一规格解析并校验
+不变量。这样同一 \code{Index} 总能写出同一字节序列，三种词典实现、块式构建和黄金样例
+都能用逐字节比较验证。
+
+v2 只替换 postings 段：docID 存差分，位置存差分，tf 与差分值使用 1--4 字节的
+字节对齐变长码；头部、文档表和 term 表保持不变。正式索引由 3,685,655 字节降到
+1,725,694 字节，为 v1 的 46.82\%，查询输出与 v1 一致。% src: F21
+
+\subsection{词典结构}
+\label{sec:dict}
+\label{sec:persistence}
+
+构建期词典接口只有三个操作：\code{upsert}、\code{find}、\code{sortedEntries}。主实现是自实现的伸展树。% src: F19、F20
+
+主结构选伸展树的原因是本题操作序列比较特殊。索引只插不删，红黑树最复杂的删除情形
+不存在；词流呈 Zipf 分布，访问后把节点旋到根，可以让高频词长期靠近树顶；构建结束时
+中序遍历直接得到字典序 term 表，正好用于冻结有序词典。
+
+\subsection{磁盘 B+ 树和块式构建}
+\label{sec:bptree-design}
+\label{sec:spimi}
+
+十四万词以内，term 表与 postings 可以整体放入内存。四亿词规模下，这个假设不成立。
+项目为此实现两条扩展路径：查询侧使用磁盘 B+ 树 sidecar，构建侧使用 SPIMI 式块式
+外部构建。
+
+磁盘 sidecar 把每个 term 映射到 posting 偏移和块长。B+ 树节点按 4 KiB 页预算序列化，
+叶子用 \code{nextLeaf} 串成有序链。一次点查只读取树根到叶子的 $O(h)$ 个页，再 seek 到
+主索引中的 posting 块，不加载完整 term 表。内部路由使用左闭区间
+$[\text{key}_{i-1},\text{key}_i)$，因为分隔键是右子树最小键的真实副本。变长键下
+按字节中点分裂，并用 \code{pageSize/2 - maxEntry} 作为可证的填充下界。
+
+块式构建把内存中的活词典限制为预算 $B$。程序按文档流扫描，达到 \code{--block-terms}
+后排序写 run，再对所有 run 做按词归并。块边界只落在文档之间，所以后一块中同一词的
+docID 一定更大，归并时可以直接拼接 posting。正式语料预算 4,096 时产生 17 个 run，
+峰值活词 5,129，产物与全内存构建逐字节一致。% src: F22
+
+\subsection{查询设计与阈值设计}
+\label{sec:query-design}
+
+查询文本先执行与建索引相同的 tokenizer、停用词和词干化步骤。索引头 flags 决定是否
+过滤停用词、是否调用 stemmer；被过滤、未登录或被阈值丢弃的词项都会写入 note。
+
+单词查询要求归一后恰好剩一个词项；多词查询使用 \code{--words}，短语查询使用
+\code{--phrase}。短语先选 df 最小的词作为候选文档，再对候选文档验证后续词是否位于
+\code{start+1, start+2, ...}。位置数组按升序保存，所以每一步使用二分查找。
+
+布尔查询默认要求全部可检索词命中。评分向量为
+\code{(matched, tfSum, docID)}，依次按降序、降序、升序排序，保证同一查询结果确定。
+\code{--min-match k} 表示至少命中 $k$ 个词，超过可用词数时钳制到词项数。
+
+四个阈值全部在查询期生效，索引只构建一次：
+
+\begin{table}[!ht]
+  \centering
+  \caption{查询阈值的作用位置与默认值}
+  \label{tab:threshold-params}
+  \small
+  \begin{tabularx}{\linewidth}{l l l X}
+    \toprule
+    参数 & 默认值 & 作用位置 & 含义 \\
+    \midrule
+    \code{--max-df} & 1.0 & 查询词筛选 & 丢弃 df 比值超过阈值的词 \\
+    \code{--min-df} & 1 & 查询词筛选 & 丢弃 df 低于阈值的词 \\
+    \code{--min-match} & 0 & 布尔条件 & 至少命中的词数；0 等价于 AND \\
+    \code{--top-x} & 0 & 结果截断 & 排序后只保留前 $x$ 篇 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+短语查询有意绕过 \code{--max-df} 和 \code{--min-df}：短语必须整段匹配，删除任何一个词都会
+改变语义。停用词查询同样始终为空，因为停用词从一开始就没有进入索引；程序用 note
+区分“停用词”和“词典中不存在”两种情况。

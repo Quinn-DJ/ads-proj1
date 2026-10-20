@@ -1,0 +1,113 @@
+% 第 4 章：项目评价（推广、局限与改进）。
+
+\section{项目评价}
+\label{sec:analysis}
+
+前面的结果证明了当前实现能完成课程任务，也给出了规模扩展的两条路径。项目评价主要
+回答两个问题：同一套引擎能否换一份语料工作，以及当前实现距离更通用的搜索引擎还差
+什么。
+
+\subsection{推广：第二语料 RFC}
+\label{sec:rfc}
+\label{sec:granularity}
+
+项目另备第二语料：IETF RFC 1035（DNS）、5321（SMTP）、7231（HTTP 语义）
+~\cite{rfc1035,rfc5321,rfc7231}。三篇文档通过通用导入器转成 plain 格式，manifest
+与文本层是唯一接口；同一套 C++ 二进制没有修改任何代码，即可完成统计、建索引、
+查询和独立对拍。% src: verify F10、tasks F2
+
+\begin{table}[!htbp]
+  \centering
+  \caption{第二语料 RFC 的端到端实测}
+  \label{tab:rfc}
+  \footnotesize
+  \begin{tabular}{l r r}
+    \toprule
+    指标 & raw（无过滤、无词干） & 正式（58 词停用词 + 词干） \\
+    \midrule
+    文档数 & 3 & 3 \\
+    tokens & 75\,250 & 45\,370 \\
+    terms & 4\,328 & 2\,660 \\
+    postings & 7\,006 & 4\,594 \\
+    索引字节 & 510\,181 & 308\,164 \\
+    \code{brute_force.py} 对拍 & 4\,328 词全项一致 & 2\,660 词全项一致 \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize 注：RFC 语料共 9\,946 行、81\,848 个空白切分词。  % src: verify F10、tasks F2
+\end{table}
+
+RFC 语料最能说明停用词没有万能表。用与莎士比亚相同的三特征规则
+$(0.40,0.001,0.93)$，RFC 本轮推导出 58 个停用词，与莎士比亚 39 词表只重叠 26 个。
+RFC 2119 的 \code{must}、\code{may}、\code{should} 覆盖三篇文档，df 比值都是 1，
+但速率熵只有 0.809、0.899、0.885，低于 0.93，因此没有被误判为停用词；
+\code{server}、\code{page}、\code{rfc} 的速率熵接近 1，反而被收入推导表。
+% src: F10
+
+查询侧也按预期工作：\code{zone} 命中 3 篇，\code{postmaster} 命中 SMTP 一篇并归一为
+\code{postmast}；\code{name server} 中 \code{server} 被 58 词表过滤，程序用 note
+解释后只查 \code{name}。这说明概念上“引擎部分”和“制作语料部分”已经分开，换语料
+需要新的 producer 规则和停用词阈值，但不需要改索引与查询代码。
+
+推广也有边界。RFC 的 plain 导入没有做分页脚注清洗，\code{[Page N]} 中的
+\code{page} 进入词表并成为停用词；这个噪声属于 producer 侧，而不是引擎侧。换语料时
+仍要重新检查分词、文档粒度和停用词分布，不能认为“同一二进制可运行”等于“无需任何
+数据工程”。
+
+\subsection{局限与改进}
+\label{sec:dict-analysis}
+\label{sec:threshold-semantics}
+
+索引与查询部分的主要边界见表~\ref{tab:limits}。其中短语语义和排序模型影响最大：
+位置定义在过滤后的 token 流上，因此 \code{my lord} 会退化为只查 \code{lord}；
+全由停用词组成的短语返回空。排序只使用命中词数和 tf 总和，没有 idf 或长度归一化，
+长剧更容易占据靠前位置。
+
+\begin{table}[H]
+  \centering
+  \caption{系统局限、影响与改进方向}
+  \label{tab:limits}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{l X X}
+    \toprule
+    局限 & 影响 & 改进方向 \\
+    \midrule
+    短语在过滤后 token 流上匹配 & 含停用词的短语退化；全停用词短语返回空 &
+      保留停用词位置，或为短语另建有停用词的索引 \\
+    切词器仅支持 ASCII & Unicode 语料不能直接使用 &
+      UTF-8 解码与 Unicode 类别切词，并重跑全部对拍 \\
+    plain 导入无清洗 & RFC 页码等样板文字进入词表 &
+      清洗放在 producer 侧，保持可审计、可关闭 \\
+    排序只用 matched 与 tf 总和 & 没有 idf 与长度归一化 &
+      实现 TF-IDF/BM25，并重新设计相关性实验 \\
+    查询与构建为单线程 & 201 次阈值实验串行约 4.05 s &
+      posting 并行扫描；构建端按块并行 \\
+    文档粒度固定为整篇作品 & scene 级粒度没有正式接入选型实验 &
+      粒度参数化，比较 scene 与合并短诗的停用词分布 \\
+    无增量索引 & 更新一篇文档需要重建整份索引 &
+      段式索引与定期合并 \\
+    单机、无分布式 & 4 亿词的真实部署仍受构建时间和磁盘限制 &
+      按词范围分片构建与查询 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+词典选择的结论也应当如实表述。哈希在纯构建速度上明显快于伸展树；正式配置下
+伸展树约 0.19 s、哈希约 0.09 s，但伸展树中序遍历直接得到有序 term 表，并且符合
+课程对自实现数据结构的要求。三种实现写出的索引逐字节相同，说明词典结构改变的是
+构建过程，不改变持久化结果。% src: F19、F20、F5
+
+阈值部分最容易被误解的是“参数收紧会使结果减少”。实际上 \code{--max-df} 与
+\code{--min-df} 先筛选查询词，可能让单词查询归零，也可能使多词 AND 退化后结果变多。
+\code{--min-match} 改变布尔条件，\code{--top-x} 才是结果截断。短语查询不受词侧
+阈值影响，这是短语必须整段匹配的语义结果。% src: F36–F39
+
+从项目本身看，最有价值的不是某一个墙钟数字，而是可复现的验证链：同一份文本层能由
+独立 Python 实现重建 posting，三种词典能写出完全相同字节，块式构建与内存构建一致，
+v2 能由独立解析器还原，磁盘词典与全量加载逐词一致。这些约束把很多“最后看起来能跑”
+的实现错误提前暴露出来。% src: F5–F15
+
+后续工作按收益排序：先补 scene 级和合并十四行诗的粒度实验，再补 BM25/TF-IDF 与
+相关性评价，然后把 SPIMI 的归并输出直接写成 B+ 树，跑一次真正的 500k/400M 端到端
+构建。分布式分片、增量索引和 Unicode 切词属于下一阶段，不应与当前已经验证的
+单机范围混在一起表述。

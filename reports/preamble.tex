@@ -1,0 +1,154 @@
+% preamble.tex -- 项目报告的共享导言区（由 Lead 维护，章节作者不要修改）
+%
+% 文档主类在 report.tex 中固定为 article + ctex：
+%   \documentclass[11pt,a4paper]{article}
+%   \usepackage[UTF8,fontset=fandol]{ctex}
+% 因此本文件只放导言区设置，不放 \documentclass。
+
+% ---------- 字体 ----------
+% 按文件名加载 TeX Gyre（TeX Live 自带），不依赖系统字体名。
+\setmainfont{texgyretermes}[
+  Extension=.otf,
+  UprightFont=*-regular,
+  BoldFont=*-bold,
+  ItalicFont=*-italic,
+  BoldItalicFont=*-bolditalic]
+\setsansfont{texgyreheros}[
+  Extension=.otf,
+  UprightFont=*-regular,
+  BoldFont=*-bold,
+  ItalicFont=*-italic,
+  BoldItalicFont=*-bolditalic]
+\setmonofont{texgyrecursor}[
+  Extension=.otf,
+  UprightFont=*-regular,
+  BoldFont=*-bold,
+  ItalicFont=*-italic,
+  BoldItalicFont=*-bolditalic,
+  Scale=0.9]
+
+% ---------- 版面 ----------
+\usepackage{geometry}
+\geometry{top=2.4cm,bottom=2.4cm,left=2.6cm,right=2.6cm,headheight=15pt,footskip=1.0cm}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.25em}
+\setlength{\emergencystretch}{3em}
+\renewcommand{\arraystretch}{1.15}
+
+% 章节间距收紧（报告表格/图多，缩短标题前后留白）
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{2.0ex plus 0.4ex minus 0.2ex}{1.0ex plus 0.2ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus 0.3ex minus 0.2ex}{0.6ex plus 0.2ex}
+\titlespacing*{\subsubsection}{0pt}{1.2ex plus 0.3ex minus 0.2ex}{0.5ex plus 0.2ex}
+
+% 浮动体与正文的间距（表格密集，统一收紧）
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{9pt plus 2pt minus 2pt}
+\setlength{\intextsep}{9pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{5pt}
+\setlength{\belowcaptionskip}{2pt}
+
+% ---------- 数学与表格 ----------
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{enumitem}
+\setlist{itemsep=0.2em,topsep=0.3em}
+
+% ---------- 图形 ----------
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{font=small,labelfont=bf,skip=5pt}
+
+% ---------- 颜色与代码 ----------
+\usepackage{xcolor}
+\definecolor{mseblue}{RGB}{26,74,122}
+\definecolor{msegray}{RGB}{95,99,104}
+\definecolor{codebg}{gray}{0.96}
+\definecolor{codeframe}{gray}{0.45}
+
+\usepackage{listings}
+\lstdefinestyle{cli}{%
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framerule=0.3pt,
+  rulecolor=\color{codeframe},
+  backgroundcolor=\color{codebg},
+  showstringspaces=false,
+  tabsize=2,
+  aboveskip=0.7em,
+  belowskip=0.7em,
+  xleftmargin=0.4em,
+  xrightmargin=0.2em,
+}
+\lstdefinestyle{code}{%
+  style=cli,
+  language=C++,
+  keywordstyle=\color{mseblue}\bfseries,
+  commentstyle=\color{msegray}\itshape,
+  stringstyle=\color{teal},
+}
+
+% 行内代码：\code{./build/mse build --stem}。
+% \detokenize 保留空格与下划线等特殊字符；参数里不要出现字面百分号。
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+% ---------- 页眉页脚 ----------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{msegray}迷你搜索引擎项目报告}
+\fancyhead[R]{\small\color{msegray}2026 年 10 月}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}[fancy]{%
+  \fancyhf{}%
+  \fancyfoot[C]{\small\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+}
+
+% ---------- 标题名（中文，显式设置以免依赖 ctex 默认值） ----------
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+\renewcommand{\contentsname}{目录}
+\renewcommand{\listfigurename}{插图目录}
+\renewcommand{\listtablename}{表格目录}
+\renewcommand{\refname}{参考文献}
+\renewcommand{\appendixname}{附录}
+
+% ---------- 超链接 ----------
+\usepackage[hidelinks,bookmarksnumbered=true]{hyperref}
+\usepackage{url}
+
+% ---------- 报告内约定宏 ----------
+% 结论高亮：\finding{一句话结论}
+\newcommand{\finding}[1]{%
+  \par\medskip\noindent
+  \begin{minipage}{\linewidth}%
+    \colorbox{codebg}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
+      \noindent\textbf{\color{mseblue}结论：}#1}}%
+  \end{minipage}%
+  \par\medskip
+}
+
+% 未完成标记（终稿应为 0 处；用 \TODO{...} 可被 grep 出来）
+\newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+% 表格数字右对齐的简写列类型
+\newcolumntype{N}{>{\raggedleft\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}r}

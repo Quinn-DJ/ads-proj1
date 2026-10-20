@@ -1,0 +1,89 @@
+% 参考文献（由 Lead 维护）
+% 引用 key 清单见 reports/STYLE.md §7；新增条目需先与 Lead 对齐。
+
+\refstepcounter{section}
+\renewcommand{\refname}{\texorpdfstring{\thesection\quad 参考文献}{\thesection~参考文献}}
+
+\begin{thebibliography}{99}
+  \addcontentsline{toc}{section}{\thesection\quad 参考文献}
+
+  \bibitem{problem}
+  课程项目说明. \emph{8-1 Roll Your Own Mini Search Engine}.
+  数据结构课程项目材料（对应 \code{problem.md} 与 \code{problem\_zh.md}）.
+
+  \bibitem{lecture-index}
+  课程讲义. \emph{Inverted Index（倒排索引）}. 第 3 讲配套材料.
+
+  \bibitem{lecture-build}
+  课程讲义. \emph{Building an Inverted Index}. 第 3 讲配套材料.
+
+  \bibitem{lecture-compress}
+  课程讲义. \emph{Index Compression（索引压缩）}. 第 3 讲配套材料.
+
+  \bibitem{manning-ir}
+  C. D. Manning, P. Raghavan, and H. Sch\"utze.
+  \emph{Introduction to Information Retrieval}.
+  Cambridge University Press, 2008.
+  \url{https://nlp.stanford.edu/IR-book/}
+
+  \bibitem{shakespeare}
+  \emph{The Complete Works of William Shakespeare}.
+  MIT Shakespeare, \url{http://shakespeare.mit.edu/}（访问日期 2026-10-20）.
+
+  \bibitem{shakespeare-gh}
+  \emph{MIT Shakespeare 站点 GitHub 镜像}.
+  commit \code{6b82db8}（完整哈希见 \code{data/raw/SOURCE.txt}）,
+  \url{https://github.com/TheMITTech/shakespeare}（抓取日期 2026-10-10，
+  来源记录见 \code{data/raw/SOURCE.txt}）.
+
+  \bibitem{porter1980}
+  M. F. Porter.
+  An algorithm for suffix stripping.
+  \emph{Program}, 14(3):130--137, 1980.
+
+  \bibitem{porter-c}
+  M. F. Porter.
+  \emph{The Porter Stemming Algorithm}（作者 canonical C 实现与说明）.
+  \url{https://tartarus.org/martin/PorterStemmer/}.
+
+  \bibitem{nltk}
+  NLTK Project.
+  \emph{\code{nltk.stem.PorterStemmer}（Porter 词干化参考实现，三种兼容模式）}.
+  \url{https://www.nltk.org/api/nltk.stem.porter.html}.
+
+  \bibitem{snowball}
+  Snowball Project.
+  \emph{Snowball Stemming Algorithms}.
+  \url{https://snowballstem.org/}.
+
+  \bibitem{rfc1035}
+  P. Mockapetris.
+  \emph{RFC 1035: Domain Names --- Implementation and Specification}, 1987.
+  \url{https://www.rfc-editor.org/rfc/rfc1035}.
+
+  \bibitem{rfc5321}
+  J. Klensin.
+  \emph{RFC 5321: Simple Mail Transfer Protocol}, 2008.
+  \url{https://www.rfc-editor.org/rfc/rfc5321}.
+
+  \bibitem{rfc7231}
+  R. Fielding and J. Reschke.
+  \emph{RFC 7231: Hypertext Transfer Protocol (HTTP/1.1): Semantics and Content}, 2014.
+  \url{https://www.rfc-editor.org/rfc/rfc7231}.
+
+  \bibitem{zipf1949}
+  G. K. Zipf.
+  \emph{Human Behavior and the Principle of Least Effort}.
+  Addison-Wesley, 1949.
+
+  \bibitem{gfs}
+  S. Ghemawat, H. Gobioff, and S.-T. Leung.
+  The Google File System.
+  In \emph{Proceedings of the 19th ACM Symposium on Operating Systems Principles
+  (SOSP)}, 2003.
+
+  \bibitem{catch2}
+  Catch2 Project.
+  \emph{Catch2 v3: A modern, C++-native, test framework for unit-tests, TDD and BDD}.
+  \url{https://github.com/catchorg/Catch2}.
+\end{thebibliography}

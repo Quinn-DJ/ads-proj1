@@ -1,0 +1,118 @@
+% figures/threshold.tex -- 四个查询阈值对返回文档数的影响（2x2 面板）
+%
+% 数据：reports/data/csv/tasks/threshold_matrix.csv（本轮 tools/threshold_matrix.py
+% 的 201 条测量；off 行即无阈值基线）。由 figures/data/make_figures_data.py
+% 生成 figures/data/threshold-*.dat。主文档只写 \input{figures/threshold}。
+\pgfplotsset{
+  % 面板公共设置
+  figthaxis/.style={
+    width=7.10cm, height=2.90cm,
+    ymin=0,
+    xtick style={draw=black!40},
+    tick label style={font=\scriptsize},
+    label style={font=\small},
+    title style={font=\small},
+    grid=major, grid style={black!8},
+    unbounded coords=discard,
+  },
+  % 每条查询一条曲线：颜色/线型/标记三者组合区分
+  figthlove/.style={color=mseblue, line width=0.9pt, mark=*, mark size=1.1pt},
+  figthsword/.style={color=mseblue, dashed, line width=0.9pt,
+                     mark=square*, mark size=1.0pt},
+  figthphrase/.style={color=msegray, line width=0.9pt,
+                      mark=triangle*, mark size=1.3pt},
+  figthkq/.style={color=msegray, dashed, line width=0.9pt,
+                  mark=diamond*, mark size=1.1pt},
+  figthssm/.style={color=black!65, densely dotted, line width=1.0pt,
+                   mark=o, mark size=1.1pt},
+}
+\begin{figure}[!htbp]
+\centering
+\captionsetup[subfigure]{font=scriptsize,skip=2pt}
+% ---------------- (a) max-df ----------------
+\begin{subfigure}{0.49\linewidth}
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[figthaxis,
+    xlabel={max-df threshold}, ylabel={result documents},
+    xtick={0,1,2,3,4,5}, xticklabels={0.1,0.3,0.5,0.7,0.9,off},
+    xmin=-0.55, xmax=5.55,
+    legend to name={figthresholdlegend}, legend columns=3,
+    legend style={draw=none, font=\scriptsize},
+  ]
+    \addplot[figthlove] table[x=idx, y=love] {figures/data/threshold-max-df.dat};
+    \addlegendentry{love (word)}
+    \addplot[figthsword] table[x=idx, y=sword] {figures/data/threshold-max-df.dat};
+    \addlegendentry{sword (word)}
+    \addplot[figthphrase] table[x=idx, y=kr_phrase] {figures/data/threshold-max-df.dat};
+    \addlegendentry{king richard (phrase)}
+    \addplot[figthkq] table[x=idx, y=kq_bool] {figures/data/threshold-max-df.dat};
+    \addlegendentry{king queen (bool)}
+    \addplot[figthssm] table[x=idx, y=ssm_bool] {figures/data/threshold-max-df.dat};
+    \addlegendentry{sweet sword moon (bool)}
+  \end{axis}
+  \end{tikzpicture}
+  \caption{max-df：裁掉 df 比例过高的查询词}
+\end{subfigure}\hfill
+% ---------------- (b) min-df ----------------
+\begin{subfigure}{0.49\linewidth}
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[figthaxis,
+    xlabel={min-df threshold},
+    xtick={0,1,2,3,4}, xticklabels={off,2,5,20,50},
+    xmin=-0.55, xmax=4.55,
+  ]
+    \addplot[figthlove, forget plot] table[x=idx, y=love] {figures/data/threshold-min-df.dat};
+    \addplot[figthsword, forget plot] table[x=idx, y=sword] {figures/data/threshold-min-df.dat};
+    \addplot[figthphrase, forget plot] table[x=idx, y=kr_phrase] {figures/data/threshold-min-df.dat};
+    \addplot[figthkq, forget plot] table[x=idx, y=kq_bool] {figures/data/threshold-min-df.dat};
+    \addplot[figthssm, forget plot] table[x=idx, y=ssm_bool] {figures/data/threshold-min-df.dat};
+  \end{axis}
+  \end{tikzpicture}
+  \caption{min-df：按文档频率下限裁词}
+\end{subfigure}
+
+\vspace{0.15em}
+% ---------------- (c) min-match ----------------
+\begin{subfigure}{0.49\linewidth}
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[figthaxis,
+    xlabel={min-match $k$}, ylabel={result documents},
+    xtick={0,1,2}, xticklabels={1,2,3},
+    xmin=-0.55, xmax=2.55,
+  ]
+    % 只有布尔查询有 min-match 数据（词/短语查询没有 k-of-n 语义）
+    \addplot[figthkq, forget plot] table[x=idx, y=kq_bool] {figures/data/threshold-min-match.dat};
+    \addplot[figthssm, forget plot] table[x=idx, y=ssm_bool] {figures/data/threshold-min-match.dat};
+  \end{axis}
+  \end{tikzpicture}
+  \caption{min-match：要求命中 $k$ 个查询词（仅布尔查询）}
+\end{subfigure}\hfill
+% ---------------- (d) top-x ----------------
+\begin{subfigure}{0.49\linewidth}
+  \centering
+  \begin{tikzpicture}
+  \begin{axis}[figthaxis,
+    xlabel={top-x cap},
+    xtick={0,1,2}, xticklabels={5,10,20},
+    xmin=-0.55, xmax=2.55,
+  ]
+    \addplot[figthlove, forget plot] table[x=idx, y=love] {figures/data/threshold-top-x.dat};
+    \addplot[figthsword, forget plot] table[x=idx, y=sword] {figures/data/threshold-top-x.dat};
+    \addplot[figthphrase, forget plot] table[x=idx, y=kr_phrase] {figures/data/threshold-top-x.dat};
+    \addplot[figthkq, forget plot] table[x=idx, y=kq_bool] {figures/data/threshold-top-x.dat};
+    \addplot[figthssm, forget plot] table[x=idx, y=ssm_bool] {figures/data/threshold-top-x.dat};
+  \end{axis}
+  \end{tikzpicture}
+  \caption{top-x：只截断结果条数}
+\end{subfigure}
+
+\par\smallskip
+\pgfplotslegendfromname{figthresholdlegend}
+\caption{四个阈值改变的是查询语义而非结果数量：max-df/min-df 裁掉查询词
+（单词查询结果可在临界档归零，双词语句裁词后结果反而变多），min-match 改
+布尔条件，top-x 只截断条数；短语查询对前两个参数不敏感。}%
+\label{fig:threshold}
+\end{figure}

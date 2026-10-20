@@ -1,0 +1,644 @@
+% =====================================================================
+% 第 3 章 测试与结果（owner: writer-results）
+%
+% 数字来源约定（均为本轮 2026-10-20 重新构建/重新运行的结果）：
+%   % src: tasks F##  —— reports/data/results-tasks.md（任务 1–3 实测，F1–F42）
+%   % src: verify F## —— reports/data/results-verify.md（测试/交叉验证/Bonus，F1–F18）
+%   % src: pre P##    —— reports/data/results-preprocess.md（预处理复核，P1–P6）
+% 本章不使用 README.md/notes.md/plan.md 里的历史数字；开发期 bug 只作定性叙述，
+% 修复后的验证结论一律取本轮实测结果。每个表格/段落前标注其证据编号。
+% =====================================================================
+
+\section{测试与结果分析}
+\label{sec:results}
+
+% 本章有 14 张表、3 张图，局部收紧缩放间距，减少浮动体造成的整页空白；
+% 章末恢复 article 默认值，避免影响后续章节。
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+
+\subsection{上述设计的过程性结果及分析}
+
+本节集中给出各设计阶段的实测结果、正确性证据与阈值实验。全部数字来自
+2026-10-20 对项目的重新构建与重新运行，原始输出在 \code{reports/data/} 下，
+复现命令见附录~A；正文按证据编号标注。
+
+\subsubsection{验证方法总览}
+
+验证按独立性从弱到强分四层，每层能抓到不同的问题。
+
+第一层是 Catch2 单元测试~\cite{catch2}：8 个可执行文件覆盖切词、词干化、三种词典、
+索引构建/序列化/压缩、查询与阈值、停用词、词频统计、磁盘 B+ 树与块式构建，检验模块
+内部的规格与不变量（如一条 posting 的 tf 必须等于位置个数），属于白盒测试。
+
+第二层是讲义四文档黄金样例~\cite{lecture-index}：把讲义 §1.2 的四句话逐字建成索引，
+逐词比对倒排记录表与位置。它是最小的端到端测试，答案可手工验算，且期望值来自外部
+材料而非实现者本人。
+
+第三层是独立实现交叉验证：Python 侧重新实现切词、计数、索引解析与短语扫描，词干化
+采用参考实现 NLTK 的 \code{MARTIN_EXTENSIONS} 模式~\cite{nltk}，再与 C++ 输出逐字节
+或逐词比较。独立性在于两份代码；但两边必须遵守同一份写死的规格，否则"不一致"只反映
+规格分歧（第~\ref{sec:bugs}~节有实例）。
+
+第四层是端到端与规模实验：在真实 CLI 上检查用户可见行为（返回的文档 ID、
+\code{--pretty} 命中行、note、退出码），并用 15 条查询乘 4 个阈值共 201 条测量观察
+参数对结果集的影响；附加题的 50 万文档与 B+ 树规模实验见第~\ref{sec:bonus}~节。
+
+本轮 \code{ctest} 18 项全部通过、墙钟 40.90\,s，组成见表~\ref{tab:test-suite}。
+
+% src: verify F1（18/18、40.90 s）、verify F2（46 用例/85 155 断言）、verify F3（18 项组成）
+\begin{table}[!htbp]
+  \centering
+  \caption{本轮 CTest 测试套件的组成：四层验证中有三层被固化为可重放测试}
+  \label{tab:test-suite}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{l l X r}
+    \toprule
+    验证层 & CTest 条目 & 内容与规模 & 本轮结果 \\
+    \midrule
+    单元测试 & 8 项（\code{test_*}） & 46 个 TEST\_CASE、85\,155 条断言 & 全过 \\
+    语料冒烟 & 2 项 & 主语料断言 \code{documents: 195}，副语料断言 \code{documents: 3} & 全过 \\
+    独立实现对拍 & 8 项（\code{crosscheck_*}） & 词频 CSV、全词表 posting、短语、磁盘词典、v2 压缩链 & 全过 \\
+    \midrule
+    合计 & 18 项 & \code{ctest --test-dir build} & 18/18，40.90\,s \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注：总耗时取自 ctest 汇总行；单项受并行负载影响只作量级参考，  % src: verify F1、F3
+  ctest 计时精度 10\,ms，故部分单元测试显示 0.00\,s。
+\end{table}
+
+时间几乎全部花在两轮短语交叉对拍上（19.48\,s、18.21\,s），因为要在 Python 侧重建
+规范化 token 流并逐条扫描；其余层都很便宜，适合每次构建都跑。
+
+\subsubsection{单元测试}
+\label{sec:unit-tests}
+
+8 个可执行文件共 46 个 TEST\_CASE、85\,155 条断言，本轮全部通过，规模与覆盖见
+表~\ref{tab:unit-tests}。
+% src: verify F2
+\begin{table}[!htbp]
+  \centering
+  \caption{8 个单元测试可执行文件的规模与覆盖内容（本轮直接运行各可执行文件）}
+  \label{tab:unit-tests}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{l r r X c}
+    \toprule
+    可执行文件 & 用例数 & 断言数 & 覆盖内容 & 结果 \\
+    \midrule
+    \code{test_tokenizer} & 2 & 24 & 切词边界（撇号、连字符、数字、大小写）与行类型开关 & 全过 \\
+    \code{test_stemmer} & 7 & 101 & Porter step 1a--5b、收缩词、护栏词 & 全过 \\
+    \code{test_dict} & 6 & 50 & 三种词典行为脚本、随机负载互验、旋转与 rehash & 全过 \\
+    \code{test_index} & 8 & 248 & 黄金样例、splay/hash 逐字节、停用词重编号、坏文件、块式=内存、varint、v2 往返、sidecar & 全过 \\
+    \code{test_query} & 7 & 26 & word/phrase/boolean、四个阈值、停用词两态语义、词干化、\code{--pretty} & 全过 \\
+    \code{test_stopwords} & 3 & 11 & 39 个结构词、内容与古体词可检索、缺文件报错 & 全过 \\
+    \code{test_count} & 3 & 47 & golden4 熵特征手算、plain 标记行可检索、推导规则边界 & 全过 \\
+    \code{test_bptree} & 10 & 84\,648 & 逐键 oracle、批量装载、upsert、叶链扫描、两种构建等价、不变量、文件往返、页读计数 & 全过 \\
+    \midrule
+    合计 & 46 & 85\,155 & --- & 全过 \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注：断言数由 Catch2 末行汇总，用例数由 \code{grep -c TEST_CASE tests/*.cpp}  % src: verify F2
+  核对；断言数反映检查密度，不是代码覆盖率。
+\end{table}
+
+断言数高度集中在 \code{test_bptree}（10 个用例 84\,648 条，占 99.3\%，其余 7 个共
+507 条）：它用 \code{std::map} 作 oracle 逐键对拍并穷举页宽与文件往返，检查密不等于
+被测代码更复杂。本项目没有接入 gcov/llvm-cov，因此不声称任何行覆盖率；期望本身是否
+正确由第~\ref{sec:golden}~与第~\ref{sec:crosscheck}~节回答。
+
+\subsubsection{黄金样例：讲义四文档}
+\label{sec:golden}
+
+黄金样例把讲义 §1.2 的四句话逐字建成索引：Doc~1 "Gold silver truck"（3 个 token）、
+Doc~2 "Shipment of gold damaged in a fire"（7）、Doc~3 "Delivery of silver arrived
+in a silver truck"（8）、Doc~4 "Shipment of gold arrived in a truck"（7）。本轮
+raw 构建得到 4 篇文档、25 个 token、11 个词项、24 条 posting、750 字节索引，
+表~\ref{tab:golden} 给出逐词结果。
+% src: verify F4
+\begin{table}[!htbp]
+  \centering
+  \caption{讲义四文档黄金样例：按原句建索引的期望与实测（raw 配置）}
+  \label{tab:golden}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{l l l c}
+    \toprule
+    词项 & 讲义倒排表（docID, times） & 本轮实测（docID, tf, 位置） & 判定 \\
+    \midrule
+    \code{a}        & (2,1)(4,1)          & (2,1,5)(3,1,5)(4,1,5) & 差异，见注 \\
+    \code{arrived}  & (3,1)(4,1)          & (3,1,3)(4,1,3)        & 一致 \\
+    \code{damaged}  & (2,1)               & (2,1,3)               & 一致 \\
+    \code{delivery} & (3,1)               & (3,1,0)               & 一致 \\
+    \code{fire}     & (2,1)               & (2,1,6)               & 一致 \\
+    \code{gold}     & (1,1)(2,1)(4,1)     & (1,1,0)(2,1,2)(4,1,2) & 一致 \\
+    \code{in}       & (2,1)(3,1)(4,1)     & (2,1,4)(3,1,4)(4,1,4) & 一致 \\
+    \code{of}       & (2,1)(3,1)(4,1)     & (2,1,1)(3,1,1)(4,1,1) & 一致 \\
+    \code{shipment} & (2,1)(4,1)          & (2,1,0)(4,1,0)        & 一致 \\
+    \code{silver}   & (1,1)(3,2)          & (1,1,1)(3,2,2,6)      & 一致 \\
+    \code{truck}    & (1,1)(3,1)(4,1)     & (1,1,2)(3,1,7)(4,1,6) & 一致 \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize 注："位置"为过滤后 token 流中从 0 开始的偏移；讲义矩阵把 \code{a} 记为  % src: verify F4
+  (2,1)(4,1)（times$=$2），但 Doc~3 的原句含 "a"，按原句应为 (2,1)(3,1)(4,1)。
+\end{table}
+
+11 个词项中 10 个与讲义逐项一致。唯一差异是 \code{a}：讲义矩阵只记了两个文档，而按
+原句 Doc~3 也有 \code{a}；\code{tests/test_index.cpp} 行 125--130 有显式注释记录该
+差异，fixture 采用讲义原句。我们没有为了与表格一致改 fixture 或改期望：句子可以逐字
+复核，矩阵则可能是课件排版疏漏——这本身就是"对参考材料的复核"。
+
+去停用词版进一步锁定位置语义：25 个 token 过滤后剩 16 个、词项 11 个剩 8 个、索引
+553 字节；\code{a}/\code{in}/\code{of} 从词表消失，Doc~3 的 \code{silver} 位置由
+$(2,6)$ 重编号为 $(1,3)$。该期望写在 \code{tests/test_index.cpp} 行 190--200：位置
+必须定义在过滤后的 token 流上，短语查询的相邻判定才自洽（第~\ref{sec:posting}~节）。
+
+\subsubsection{独立实现交叉验证}
+\label{sec:crosscheck}
+
+独立实现对拍是正确性证据的主干：它不依赖 C++ 内部结构，只依赖写死的规格。
+表~\ref{tab:crosscheck} 汇总 8 路对拍。
+% src: tasks F15（4 配置 CSV 逐字节）、tasks F20/F22/F24、verify F5–F9
+\begin{table}[!htbp]
+  \centering
+  \caption{独立实现交叉验证：对拍对象、独立实现与规模、本轮结果}
+  \label{tab:crosscheck}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+    \toprule
+    对拍对象 & 独立实现与规模 & 本轮结果 \\
+    \midrule
+    词频 CSV（4 配置） & \code{check_wordcount.py} 独立切词/计数，词干化用 NLTK；四份 CSV 为 1\,677\,253 / 1\,674\,689 / 958\,633 / 957\,871 字节 & \code{cmp} 逐字节一致，sha256 相同 \\
+    倒排全词表 & \code{brute_force.py} 重建 posting 并独立解析 v1/v2；正式 14\,937、raw 25\,705、v2 14\,937 词 & df/tf/docID/positions 全项一致 \\
+    短语语义 & \code{check_phrases.py} 在规范化 token 流上连续子串扫描；采样 305 条、检查 303 条、跳过 2 条 & 0 不一致，21.20\,s \\
+    三词典互验 & splay/hash/map 分别构建后 \code{cmp} 加 sha256，3\,685\,655 字节 × 3 & 逐字节相同 \\
+    块式 vs 内存构建 & 17 个 run 的块式构建对照单趟内存构建，v1 与 v2 两种编码 & 逐字节相同 \\
+    磁盘词典双路径 & 全词表双路径校验，14\,937 词 × v1/v2 & 0 差异，114 次页读 / 29\,819 次缓存命中 \\
+    v2 压缩链 & 独立解析器按版本字段解压比较，14\,937 词 & 全项一致 \\
+    dict-file 查询路径 & 加/不加 \code{--dict-file} 的 \code{--word osric --pretty} 输出 \code{cmp}，v1/v2 & 逐字节相同 \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注："词频脚本"等指 \code{tools/} 下三个 Python 工具，表注不展开  % src: tasks F15、verify F7、F9、F5、F6、F8
+  文件全名；它们与 C++ 实现相互独立，但共享同一份规格模块（独立性针对被测实现）。
+\end{table}
+
+逐字节比"数值相等"更强：词频 CSV 的 10 列（tf、df、两种占比、三列熵等）四配置全部
+相同，说明切词边界、df 的"每文档只计一次"、熵公式与浮点输出格式没有分歧。全词表对拍
+同时验证文件格式：另一套解析代码读取 v1/v2 二进制，逐词比较 df、tf 与每条 posting 的
+docID/tf/positions。三组结构等价（三词典、块式/内存、dict-file/全载）说明这些实现选择
+只影响过程、不影响结果。短语对拍补上"相邻关系解释正确"这一层：303 条被检查短语零
+不一致，2 条因全停用词等退化情形被跳过，跳过行为与 CLI 一致。
+
+独立实现的前提是"同一份规格"而非"另一套规则"。开发期曾出现对拍脚本用"行首匹配"
+判定、C++ 用"首尾同时匹配"判定，两者 token 数对不上，一度被误当成程序缺陷；本轮按
+错误规格在已提交文本层上复算，会误删 5 行、37 个 token（pre P5）。因此切词规则被同时
+写进头文件、数据格式说明与测试，三个 Python 工具共享同一个规格模块。
+
+\finding{正确性结论由三层证据支撑：单元测试锁定模块规格，黄金样例复核参考材料并锁定
+端到端行为，独立 Python 实现在词频、倒排、短语、压缩、磁盘词典五条路径上给出逐字节/
+逐词一致。}
+
+\subsubsection{词频统计结果}
+\label{sec:wordcount}
+
+任务 1 要统计词频并回答"有趣词与噪声词的界线画在哪里"。表~\ref{tab:wordcount} 是四种
+配置的总表。
+% src: tasks F6（四配置总表）、tasks F16（计时口径）
+\begin{table}[!htbp]
+  \centering
+  \caption{词频统计四种配置的实测规模（主语料，195 篇 / 152\,632 行）}
+  \label{tab:wordcount}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{l r r r r r r}
+    \toprule
+    配置 & tokens & distinct & hapax & removed & CSV 字节 & 耗时中位 \\
+    \midrule
+    默认（raw） & 866\,626 & 25\,705 & 9\,753 & --- & 1\,677\,253 & 0.1344\,s \\
+    \code{--stop-words} & 556\,866 & 25\,666 & 9\,753 & 309\,760 & 1\,674\,689 & 0.1447\,s \\
+    \code{--stem} & 866\,626 & 14\,947 & 4\,843 & --- & 958\,633 & 0.1529\,s \\
+    正式（\code{--stem --stop-words}） & 556\,866 & 14\,937 & 4\,846 & 309\,760 & 957\,871 & 0.1575\,s \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize 注：tokens 为过滤行标记后的正文 token 数；distinct 为 CSV 行数；  % src: tasks F6
+  hapax 为 tf$=$1 的词数；removed 为停用词剔除的 token 数，两行均为 309\,760，占
+  866\,626 的 35.74\%；耗时是包住整个进程的外部墙钟、3 次中位数。
+\end{table}
+
+停用词只让词形减少 39 个（25\,705 到 25\,666），却移除 309\,760 个 token（35.74\%），
+因为它们是极高频功能词；词干化相反，token 不变、词形压掉 41.85\%（14\,947 个），
+hapax 从 9\,753 降到 4\,843。两者叠加的正式配置是 556\,866 个 token、14\,937 个词干，
+比只做词干化时少 10 个词干、hapax 多 3 个：剔除停用词后部分词干的 tf 由 2 变 1，这是
+两种变换的交互，不是计数错误。
+
+默认配置 tf 最高的 10 个词项见表~\ref{tab:top10}。
+% src: tasks F7
+\begin{table}[!htbp]
+  \centering
+  \caption{默认配置下 tf 最高的 10 个词项（含 df 与两种占比）}
+  \label{tab:top10}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{r l r r r r}
+    \toprule
+    rank & 词项 & tf & df & df 比值 & tf 占比 \\
+    \midrule
+    1 & \code{the} & 28\,436 & 177 & 0.9077 & 0.032812 \\
+    2 & \code{and} & 25\,553 & 189 & 0.9692 & 0.029486 \\
+    3 & \code{i}   & 21\,131 & 154 & 0.7897 & 0.024383 \\
+    4 & \code{to}  & 20\,302 & 187 & 0.9590 & 0.023426 \\
+    5 & \code{of}  & 16\,976 & 175 & 0.8974 & 0.019589 \\
+    6 & \code{a}   & 14\,527 & 138 & 0.7077 & 0.016763 \\
+    7 & \code{you} & 13\,998 & 75  & 0.3846 & 0.016152 \\
+    8 & \code{my}  & 12\,934 & 159 & 0.8154 & 0.014925 \\
+    9 & \code{that}& 11\,513 & 172 & 0.8821 & 0.013285 \\
+    10& \code{in}  & 11\,479 & 181 & 0.9282 & 0.013246 \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize 注：df 比值为 df/195，tf 占比为 tf/866\,626；数值取自  % src: tasks F7
+  \code{wordcount-default.csv} 的权威副本。
+\end{table}
+
+前 10 个词几乎全是功能词，合计占 20.41\% 的 token；但 tf 与 df 排序不同：
+\code{the} 的 df 为 177 篇（90.77\%），\code{you} 的 tf 排第 7、df 却只有 75 篇
+（38.46\%），\code{a} 的 df 为 138（70.77\%）。这种分歧正是"只看 tf 或只看 df 都不
+足以定义停用词"的直接证据。尾部长得多：hapax 占词形的 37.94\%（9\,753 个），却只占
+token 的 1.125\%；df$=$1 的词形有 10\,957 个（如 \code{banquo} 的 tf 为 22、df 为 1），
+前 1\,000 个词项覆盖 80.26\% 的 token、前 100 个覆盖 54.30\%。图~\ref{fig:zipf} 用
+双对数坐标画词频—排名关系，并给出 $1/\mathrm{rank}$ 参考线与 hapax 标注。
+
+\input{figures/zipf}
+
+% src: tasks F10、F11
+表~\ref{tab:candidates} 是候选规则对 df 阈值的敏感性扫描：固定 tf 占比 $\ge 0.001$，
+把 df 比值阈值从 0.90 降到 0.40。
+\begin{table}[!htbp]
+  \centering
+  \caption{停用词候选带对 df 比值阈值的敏感性（固定 tf 占比 $\ge 0.001$）}
+  \label{tab:candidates}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{c c c X}
+    \toprule
+    df 比值阈值 $T$ & 候选数 & 相对上一档新增 & 新增词 \\
+    \midrule
+    0.90 & 4  & --- & \code{the and to in} \\
+    0.75 & 9  & +5  & \code{i of my that but} \\
+    0.70 & 14 & +5  & \code{a is not for with} \\
+    0.65 & 16 & +2  & \code{so love} \\
+    0.60 & 21 & +5  & \code{me be thou thy thee} \\
+    0.50 & 31 & +10 & \code{it this as by all do on from which when} \\
+    0.40 & 48 & +17 & \code{his have what no if are o or more then their hath than yet mine time doth} \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注：规则为 df 比值 $\ge T$ 且 tf 占比 $\ge 0.001$；静态 39 词表就是  % src: tasks F11
+  在 0.40 档 48 词候选带上人工取舍的结果。
+\end{table}
+
+0.75 档只有 9 个纯功能词；0.65 档内容词 \code{love} 进入候选（df 比值 0.651）；0.40
+档就混入 \code{time}、\code{thou/thee} 等不该一律删除的词。纯统计规则能可靠框出"最像
+停用词"的一小段，却无法自己决定线的位置——静态表是在 48 词候选带上人工保留结构性
+功能词的结果，下一节用速率熵自动完成同一步。
+
+\subsubsection{停用词推导结果}
+\label{sec:stopword-results}
+
+两特征候选带把最后一步留给人工审核；加上"平"（速率熵）后，规则能否自动得到与人工表
+几乎相同的停用词？表~\ref{tab:stopword-sweep} 是四组阈值与 39 词静态表的双向差集。
+% src: tasks F13、F14
+\begin{table}[!htbp]
+  \centering
+  \caption{三特征停用词推导的阈值扫描：与静态 39 词表的差异}
+  \label{tab:stopword-sweep}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{c c c c X}
+    \toprule
+    (df 比值, 速率熵) & 推导词数 & 重叠 & 静态表独有 & 推导表独有 \\
+    \midrule
+    (0.75, 0.93) & 9  & 9  & 30 & --- \\
+    (0.50, 0.95) & 23 & 23 & 16 & --- \\
+    (0.40, 0.93) & 39 & 35 & \code{more or than their} & \code{hath o thee thou} \\
+    (0.30, 0.93) & 50 & 35 & \code{more or than their} & \code{at hath he him how let now o thee there thou was well would you} \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注：tf 占比固定为 $\ge 0.001$，df 比值取第一列；  % src: tasks F13
+  (0.75,0.93) 档 9 词与两特征候选带一致，(0.40,0.93) 档复现静态表所在的 39 词带。
+\end{table}
+
+(0.40, 0.93) 档推导出 39 词、与静态表重叠 35 个；差异恰好是 4 对可解释的词：自动
+推导多收 \code{hath o thee thou} 四个古体功能词，静态表多收 \code{more or than
+their} 四个兼作比较、并列用的词。前者在原文本中同样"宽而平"，后者是人工按语义判断的
+取舍。也就是说，三特征规则把"是不是停用词"从人工经验变成可复算的判定，结果与人工表
+只差 4 个词且差异可逐词解释；换一档阈值只改变严格度（9/23/39/50 词），不改变规则
+结构。四个输出文件都带出处头且不含时间戳，重跑逐字节一致。
+
+图~\ref{fig:entropy} 把功能词、内容词与专名的速率熵画成条形图并标出 0.93 阈值线。
+
+\input{figures/entropy}
+
+功能词 the、and、i、to、of、is、it、that 的速率熵都在 0.95 以上（the 0.9748、
+and 0.9789），内容词 love、king、heart、sweet 落在 0.82--0.93（0.9271、0.8260、
+0.8313、0.8925），只出现在一篇文档的专名 osric、banquo 按定义为 0。0.93 的线正好切在
+功能词与内容词之间；\code{man} 的速率熵 0.9388 略高于阈值线，但 df 比值只有 0.2359，
+被"宽"这一条件挡在候选带外——三个条件是"与"关系，速率熵补上的正是前两个特征缺失的
+"分布是否均匀"这一维。
+
+静态表 39 词（按文件顺序）是 \code{the and i to of a my that in is not me it for
+with be his this but have as so what by no all do if are on from or which more then
+their when than yet}。它由本语料统计推导、不使用外部词表，并有意保留 \code{love}、
+\code{time} 与古体功能词 \code{thou/thee/thy/hath/doth/o/mine} 作对照；代价是只适配
+本语料与"整部作品"粒度（跨语料见第~\ref{sec:rfc}~节，粒度效应见
+第~\ref{sec:granularity}~节）。
+
+\subsubsection{倒排索引构建结果}
+\label{sec:index-build}
+
+任务 2 的验收点是索引内容正确、不变量成立、规模与构建代价可测。正确性已由
+第~\ref{sec:unit-tests}~节至第~\ref{sec:crosscheck}~节覆盖，表~\ref{tab:index-configs}
+给出四配置的规模与代价。
+% src: tasks F18（四配置）、tasks F19（正式配置确定性与计时）
+\begin{table}[!htbp]
+  \centering
+  \caption{四种构建配置的索引规模与构建代价（主语料，195 篇）}
+  \label{tab:index-configs}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{l r r r r}
+    \toprule
+    指标 & raw & stop & stem & 正式（stop+stem） \\
+    \midrule
+    flags & \code{(raw)} & \code{stopwords} & \code{stemmed} & \code{stopwords stemmed} \\
+    tokens & 866\,626 & 556\,866 & 866\,626 & 556\,866 \\
+    terms & 25\,705 & 25\,666 & 14\,947 & 14\,937 \\
+    postings & 152\,650 & 147\,909 & 121\,903 & 117\,704 \\
+    positions & 866\,626 & 556\,866 & 866\,626 & 556\,866 \\
+    索引字节 & 5\,598\,793 & 4\,320\,622 & 4\,958\,598 & \textbf{3\,685\,655} \\
+    内建构建时间 & 0.20\,s & 0.18\,s & 0.23\,s & 0.19\,s \\
+    相对 raw & 100\% & 77.17\% & 88.57\% & \textbf{65.83\%} \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize 注：flags 由索引头写出并由 \code{dump}/\code{query} 头部打印；  % src: tasks F18
+  postings 为词项$\times$文档对数，positions 为位置总数（等于保留 token 数）；内建
+  构建时间为 C++ 内部计时（正式配置取 3 次中位）；相对 raw 为索引字节之比。
+\end{table}
+
+stop 只删 token、几乎不动词表（词项仅少 39 个），体积却降到 raw 的 77.17\%：省的是
+posting 段与位置数组，它们的大小正比于保留 token 数。stem 不删 token、位置仍
+866\,626，但词表压到 14\,947 个，体积降到 88.57\%，省的是 term 表与 posting 条数
+（152\,650 降到 121\,903）。两者叠加的正式配置是 raw 的 65.83\%（3\,685\,655 字节）。
+位置总数等于 token 总数、每条 posting 的 tf 等于其位置数，这两条恒等式在四配置上都
+成立，也是不变量校验能抓出格式错误的原因。
+
+构建可重复：正式配置连续构建 3 次，外部墙钟 0.2563/0.2908/0.2583\,s、内建计时
+0.19/0.22/0.19\,s（中位 0.19\,s），三次产物字节数与 sha256 完全相同
+（\code{267c51a2...}），每次打印的词典统计也相同。确定性意味着"逐字节相同"可以成为
+可断言的结论，三词典互验与块式构建比对都依赖这一点。
+
+表~\ref{tab:dict-compare} 用同一套插桩计数比较三种词典实现。
+% src: tasks F20（三词典）、tasks F19（产物 sha256）
+\begin{table}[!htbp]
+  \centering
+  \caption{三种词典实现的构建代价（正式配置，各构建 3 次）}
+  \label{tab:dict-compare}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{l r r r l}
+    \toprule
+    词典 & comparisons & rotations & rehashes & 构建时间（内建 / 外部中位） \\
+    \midrule
+    splay（主） & 6\,392\,724 & 5\,850\,795 & 0 & 0.19\,s / 0.2610\,s \\
+    hash & 688\,494 & 0 & 11 & 0.09\,s / \textbf{0.1603\,s} \\
+    \code{std::map}（对照） & 9\,435\,694 & 0 & 0 & 0.14\,s / 0.2084\,s \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize 注：comparisons/rotations/rehashes 为 C++ 内建计数；外部墙钟含进程  % src: tasks F20
+  启动与文件读写，受并行负载影响只作量级比较；三者产物 sha256 均为 \code{267c51a2...}。
+\end{table}
+
+三种词典的差别只在构建过程：哈希比较次数约为伸展树的 10.8\%、构建最快，伸展树有
+5\,850\,795 次旋转，\code{std::map} 比较次数最多；三者产物逐字节相同，说明词典只影响
+"怎么找到词项"，不影响"写出什么字节"。主结构为何仍选伸展树、三者取舍见
+第~\ref{sec:dict-analysis}~节。v2 压缩把正式索引从 3\,685\,655 字节降到 1\,725\,694
+字节（46.82\%，省 53.18\%），压缩链正确性已验证，字段级原因见
+第~\ref{sec:compression}~节。
+
+\subsubsection{查询结果}
+\label{sec:query}
+
+任务 3 的验收点是"给定单词或短语，返回包含它的文档 ID"，并要求结果可解释。本节用正式
+索引（\code{stopwords stemmed}）给出代表查询，raw 索引作对照，
+表~\ref{tab:query-examples} 是汇总。
+% src: tasks F27–F33
+\begin{table}[!htbp]
+  \centering
+  \caption{代表性查询的实测输出（正式索引为 stop+stem，raw 索引无过滤无词干）}
+  \label{tab:query-examples}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{l l l r X}
+    \toprule
+    查询 & 索引 / 参数 & 归一后词项 & 结果数 & 说明与代表输出 \\
+    \midrule
+    \code{--word osric} & 正式，\code{--pretty} & \code{osric} & 1 & doc 30 "Hamlet"；命中行 \code{> Osric, who brings back to him that you attend him in} \\
+    \code{--word love} & 正式 & \code{love} & 138 & tf 最高：doc16（195）、doc35（165）、doc2（142） \\
+    \code{--phrase "king richard"} & 正式，\code{--top-x 3} & \code{king, richard} & 3 & 基线 7 篇；前 3 篇 matched 2/2，tf 193/191/140 \\
+    \code{--phrase "my lord"} & 正式 & \code{lord} & 42 & \code{my} 是停用词，打印退化 note 后只查 \code{lord} \\
+    \code{--words "king queen"} & 正式，\code{--min-match 2} & \code{king, queen} & 5 & 截断前 33 篇（AND）；\code{--min-match 1} 为 43 篇 \\
+    \code{--word the} & 正式 & （无） & 0 & note：\code{the -- stop word (excluded from the index)} \\
+    \code{--word notaword} & 正式 & （无） & 0 & note：\code{notaword -- not in the index} \\
+    \code{--word loves} & 正式 / raw & \code{love} / \code{loves} & 138 / 43 & 词干化把 \code{loves} 归一到 \code{love}；raw 上 \code{love} 为 127 篇 \\
+    \code{--word the} & raw & \code{the} & 3 & raw 索引未过滤停用词，同一查询可检索 \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注：结果数分母为 195 篇；单词与布尔查询按 matched 降序、tfSum 降序、  % src: tasks F27–F33
+  docID 升序排序；\code{--pretty} 的命中行来自文本层行号映射。
+\end{table}
+
+这张表覆盖查询侧的全部语义分支。短语查询验证"相邻而非共现"（"king richard" 命中
+7 篇，前 3 篇 matched 2/2）；布尔查询展示 \code{--min-match} 的松紧（"king queen"
+默认 AND 33 篇，\code{--min-match 1} 为 43 篇）。两类空结果被明确区分：\code{the}
+为空是停用词未建索引，未登录词为空是词典里没有，note 同时给出原因。raw 索引的对照说明
+解释器完全由索引头 flags 驱动：同一个 \code{--word the} 在 raw 上返回 3 篇；\code{loves}
+在正式索引上归一为 \code{love}、返回 138 篇，在 raw 上按原形只返回 43 篇。
+
+程序还提供结构化输出。JSON 顶层字段为 \code{query}、\code{mode}、\code{terms}、
+\code{hits}（每项 \code{doc/matched/tf}）与 \code{notes}（被丢弃词项及原因）：
+\begin{lstlisting}[style=cli]
+{"query":"love","mode":"word","terms":["love"],
+ "hits":[{"doc":16,"matched":1,"tf":195}, ...],"notes":[]}
+\end{lstlisting}
+短语查询只把 \code{mode} 换成 \code{phrase}；含停用词的短语在 \code{notes} 中记录
+原因，这是阈值实验能逐条归因的基础。
+
+单次查询的墙钟中位数为 19.2\,ms（N$=$201，最小 17.1\,ms、最大 29.9\,ms，均值
+19.60\,ms），口径是包含进程启动与索引加载的端到端时间；201 次查询合计 4.05\,s。
+绝对时间受并行负载影响有约 $\pm$20\% 波动，只宜作量级参考；查询结果是确定性的。
+
+\subsubsection{阈值实验结果}
+\label{sec:threshold}
+
+四个阈值参数全部作用在查询侧、默认关闭，"不带参数的查询"就是基线：
+\code{--max-df} 丢弃 df 比值过高的查询词，\code{--min-df} 丢弃 df 过低的词，
+\code{--min-match} 控制多词查询至少命中几个词，\code{--top-x} 在排序后截断结果
+（语义与默认值见表~\ref{tab:threshold-params}）。本节回答它们分别把结果集改变了多少、
+改变方式是否符合设计语义。
+
+实验采用"一次只动一个参数"：15 条查询（高频词 love/sweet、中频词 good/night、低频词
+sword/moon、专名 banquo/osric、短语 king richard、含停用词短语 my lord、布尔 king
+queen 与 sweet sword moon、停用词 the/of），每条取无阈值结果为基线，再分别在 max-df
+（5 档）、min-df（4 档）、top-x（3 档）、min-match（3 档）下重跑，共 201 条测量
+（15 条基线，加 max-df 75、min-df 60、top-x 45、min-match 6 条），每条记录结果数、
+与基线的 Jaccard、被丢弃词数（notes）与耗时。全部测量共用同一份正式索引，CSV 为
+202 行；图~\ref{fig:threshold} 给出四个参数对返回文档数的影响。
+
+\input{figures/threshold}
+
+% src: tasks F37、F38、F39
+表~\ref{tab:threshold-rows} 抽出代表性读数，覆盖"参数收紧使结果变少、变多、不变"
+三种情况。
+\begin{table}[!htbp]
+  \centering
+  \caption{阈值矩阵的代表性读数：基线返回数、取值后返回数与 Jaccard 相似度}
+  \label{tab:threshold-rows}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{l l l c X}
+    \toprule
+    查询 & 参数与取值 & 基线 $\to$ 结果 & Jaccard & 解释 \\
+    \midrule
+    love（word） & max-df 0.9 / 0.7 & 138 $\to$ 138 / 0 & 1.00 / 0.00 & df 比 0.7077，0.7 档起被丢（notes 1） \\
+    sweet（word） & max-df 0.3 / 0.1 & 90 $\to$ 90 / 0 & 1.00 / 0.00 & df 比 0.4615，0.3 档起被丢 \\
+    good / night & max-df 0.1 & 57 / 56 $\to$ 0 & 0.00 & df 比约 0.29，仅最严档丢弃 \\
+    king queen（bool） & max-df 0.1 & 33 $\to$ 0 & 0.00 & 任一词被丢则 AND 失败 \\
+    sweet sword moon & min-df 50 & 30 $\to$ 90 & 0.3333 & sword/moon（df 37/35）被丢，AND 退化为单词 sweet（notes 2） \\
+    sword / moon & min-df 50 & 37 / 35 $\to$ 0 & 0.00 & 单词查询被自身 df 阈值丢弃 \\
+    banquo / osric & min-df 2 & 1 $\to$ 0 & 0.00 & df$=$1 $<$ 2 \\
+    king queen（bool） & min-match 1/2/3 & 33 $\to$ 43/33/33 & 0.7674/1.00/1.00 & 1 为并集；$k$ 超过词项数时按 2 计 \\
+    sweet sword moon & min-match 1/2/3 & 30 $\to$ 93/39/30 & 0.3226/0.7692/1.00 & 1=并集，2=任两词，3=AND \\
+    love（word） & top-x 5/10/20 & 138 $\to$ 5/10/20 & 0.0362/0.0725/0.1449 & 纯截断，Jaccard 近似 $x/138$ \\
+    king richard（phrase） & max-df/min-df 全部档 & 7 $\to$ 7 & 1.00 & 短语绕过词项筛选，语义要求每词都在 \\
+    the / of（stopword） & 全部档 & 0 $\to$ 0 & 1.00 & 停用词不可检索，与阈值无关（note 不变） \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注：Jaccard 为结果文档集合与基线集合的交并比；"基线"是同一查询  % src: tasks F38、F39
+  在无阈值时的返回数；bool 指 \code{--words} 多词查询，phrase 指短语查询。
+\end{table}
+
+最重要的读数是"反直觉"的那一行：\code{--min-df 50} 作用在 sweet sword moon 上，
+结果从 30 篇增加到 90 篇。原因不是精度提高，而是语义变了——sword 与 moon 的 df 分别
+为 37、35，低于阈值被丢，剩下唯一的 sweet 使三词 AND 退化成了单词查询，而 sweet 单独
+就有 90 篇。同类现象在 max-df 上表现为"全丢"：love 在 0.7 档、sweet 在 0.3 档、单词
+查询被自身 df 阈值丢弃后返回 0。min-match 按设计在 AND 与 OR 之间移动，top-x 是纯
+截断，Jaccard 近似等于 $x$ 与基线结果数之比。
+
+两处"不受影响"同样重要：短语查询的 Jaccard 在所有 max-df/min-df 档上恒为 1.00，
+因为短语必须整段匹配、丢弃任何词都会改变含义（要么全有、要么失败）；停用词查询
+\code{the}/\code{of} 恒为空并给出 note，也与阈值无关。201 条测量中 Jaccard$=$0 的
+有 23 条，分布为 max-df 0.7 及以下档的 love/sweet/good/night/sword/moon、max-df 0.1
+档的 king queen 与 sweet sword moon、min-df 2 档的 banquo/osric、min-df 50 档的
+sword/moon 与 king queen，全部是"查询词被自身阈值丢弃"。notes 分布同样可解释：
+max-df 0.9/0.7/0.5 档各有 3--4 条 notes$=$1，0.3 档 6 条，0.1 档 9 条 notes$=$1、
+1 条 notes$=$2、1 条 notes$=$3；min-df 2/5/20 档各 5 条 notes$=$1，50 档 7 条
+notes$=$1、2 条 notes$=$2；off 与 top-x 档的 notes 来自 my lord、the、of 三个含停用
+词的查询。每条变化都能归因到具体被丢弃的词项。
+
+\finding{阈值改变的是查询语义而不是单纯精度：丢弃查询词会改变约束（AND 退化、单词
+查询归零），min-match 在 AND/OR 之间移动，top-x 只截断；短语查询与停用词查询在词项
+筛选下保持不变。展开与对"检索质量"的含义见第~\ref{sec:threshold-semantics}~节。}
+
+\subsection{测试发现的问题及分析}
+\label{sec:bugs}
+
+测试的价值在于抓出真问题。表~\ref{tab:bugs} 记录 9 个由单元测试、对拍或预处理复核抓出
+的问题及其修复。其中 7 个是开发期记录，本轮只做回归验证（说明"现在没坏"）；行标记与
+方括号两项另有本轮可复算的数字（pre P3--P5）。
+% src: pre P3–P5（本轮可复算）、tasks F15/F20/F21/F22、verify F2/F4/F5/F6/F7（修复后回归）
+\begin{table}[!htbp]
+  \centering
+  \caption{测试与对拍抓出的问题：现象、根因、修复与本轮验证}
+  \label{tab:bugs}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabularx}{\linewidth}{c X X X}
+    \toprule
+    \# & 问题（现象与根因） & 修复 & 本轮验证 \\
+    \midrule
+    1 & 对拍脚本 token 数与 C++ 对不上：行标记判定写成"行首匹配"，规格是"首尾同时匹配" & 规则写进头文件、格式说明与测试，脚本改用同一规格 & 错误规格在已提交文本层会误删 5 行/37 token（pre P5）；修复后全词表一致（verify F7） \\
+    2 & 方括号舞台提示混入正文词表：提取器未识别行首与整行方括号片段 & A/B 类重定位为舞台行，C 类保持可检索 & 若不移出，正文 token 应为 866\,626$+$849$=$867\,475，与修复前吻合（pre P4） \\
+    3 & 过滤版词频整表与 Python 不一致：\code{tf_share} 以过滤前 token 数作分母 & \code{tokens} 只计保留 token，\code{stopwordTokens} 单列 & 四配置 CSV 与 Python 逐字节一致（tasks F15） \\
+    4 & 词干化期望与实现不符：误把论文示例列当最终输出；条件失败应即停 & 期望改为管线最终输出；规则改为"首个匹配、失败即停" & 全词表与 NLTK 逐字节一致（tasks F15）；7 用例/101 断言（verify F2） \\
+    5 & 伸展树单测段错误：插入分支保留 \code{Node*&} 引用，旋转重接线后读到错误位置 & 先把新节点指针复制到局部变量再 splay & \code{test_dict} 6 用例/50 断言 + 跨实现互验（verify F2）；三词典产物相同（tasks F20） \\
+    6 & 黄金样例误报"index file is truncated"：\code{Reader} 持有整文件临时 vector 的引用，语句结束即悬垂 & 文件内容先存入具名变量 & 黄金样例与往返测试通过，\code{test_index} 248 断言（verify F2、F4） \\
+    7 & 随机对拍时 \code{sortedEntries} 产出空词表：\code{MapDictionary} 的 \code{try_emplace} 只填 map 键，term 未镜像 & 插入后手动写回 \code{TermEntry::term} & 三词典产物逐字节相同（tasks F20；verify F5） \\
+    8 & 压缩索引读取越界：postings 块 offset 漏加词表自身大小 & 与 v1 的 offset 计算对齐，含所有前置段 & varint 各长度档单测 + v2 全词表对拍（verify F7）；压缩比 46.82\%（tasks F21） \\
+    9 & 真语料块式构建报"截断"：run 文件未以 \code{std::ios::binary} 打开，CRLF 翻译破坏二进制流 & 所有 run 读写显式 binary & 块式与内存构建逐字节一致（verify F6；tasks F22） \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize 注："本轮验证"列全部取自本轮实测；问题 3--9 的发生属开发期记录，  % src: tasks F15、F20–F22、verify F2–F7、pre P3–P5
+  只作定性叙述，不用其历史数字作证据（问题 2 的 849 与 867\,475 由本轮 P3/P4 复算）。
+\end{table}
+
+九条问题归成四类教训：规格要先写死（\#1、\#4 不是代码写错，而是对规格的理解不一致）；
+对象生命周期（\#5、\#6 是引用别名在对象重排后失效）；二进制 I/O 必须显式（\#8、\#9 只在
+真实规模上暴露）；统计口径要写明分母（\#3）。验证闭环全部落在本轮可重跑的输出上：词频
+CSV 逐字节（tasks F15）、三词典 sha256（tasks F20）、块式与内存逐字节（tasks F22）、
+v2 独立解析（verify F7）、黄金样例断言（verify F2、F4）。开发期记录只解释"为什么会
+出错"，不提供进入正文的数字。
+
+\subsection{复杂度分析}
+\label{sec:complexity}
+
+主要操作的时间与空间复杂度见表~\ref{tab:complexity}。表中的 $N$、$T$、$P$、$D$、
+$k$、$R$、$B$ 分别表示 token 数、词项数、posting 数、文档数、查询词数、run 数与
+块预算。统计成本以一次 token 扫描为主；查询成本由词典定位、posting 遍历和最终排序
+组成；磁盘词典用页读次数替代常驻内存。
+
+\begin{table}[!htbp]
+  \centering
+  \caption{主要操作的时间与空间复杂度}
+  \label{tab:complexity}
+  \small
+  \begin{tabularx}{\linewidth}{l l l X}
+    \toprule
+    操作 & 时间 & 空间 & 说明 \\
+    \midrule
+    建索引（内存） & $O(N+\sum \mathrm{df}\cdot C)$ & $O(T+P+N)$ & $C$ 为词典比较成本 \\
+    建索引（块式） & $O(N+RB\log B+TR)$ & $O(B+\text{块内 posting})$ & $B$ 为活词预算 \\
+    单词查询 & $O(\log T+\mathrm{df})$ & $O(D)$ & 二分定位后遍历 posting \\
+    短语查询 & $O(\mathrm{df}_{\min}\cdot\mathrm{tf}_1\cdot k\log\mathrm{tf})$ &
+      $O(D+k)$ & 稀有词候选加位置验证 \\
+    布尔查询 & $O(\sum \mathrm{df}+D\log D)$ & $O(D)$ & 累加、过滤与排序 \\
+    v2 编码 & $O(\sum \mathrm{df}+\sum \text{position})$ & $O(\text{单块})$ &
+      与 v1 同阶，常数更大 \\
+    B+ 树查找 & $O(h\log F)$ & $O(\text{缓存页})$ & $h$ 为树高，$F$ 为扇出 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+这些复杂度解释了后续实验结果中的几个现象：建索引的主要成本是 token 扫描和词典
+访问；短语查询先选择 df 最小的词，能显著减少候选文档；块式构建限制的是活词数量，
+但 run 数增加会把成本转移到归并；磁盘 B+ 树用少量页读换取词典不必常驻内存。
+
+本章的结果可以概括为：正确性上，独立实现对五条路径给出逐字节或逐词一致；任务结果上，
+词频、索引、查询和阈值都有可复现读数；复杂度上，内存构建、块式构建、查询和磁盘词典
+分别对应不同的资源瓶颈。
+\setlength{\textfloatsep}{20pt plus 2pt minus 4pt}
+\setlength{\floatsep}{12pt plus 2pt minus 2pt}
+\setlength{\intextsep}{12pt plus 2pt minus 2pt}

@@ -1,0 +1,91 @@
+% report.tex -- 迷你搜索引擎项目报告（主文件）
+%
+% 文档类为 article，中文由 ctex 宏包支持（课程要求）。
+% 编译（推荐）：
+%   bash reports/build.sh
+% 或手动：
+%   cd reports
+%   latexmk -xelatex -interaction=nonstopmode -halt-on-error -outdir=build report.tex
+%
+% 文件分工（详见 reports/STYLE.md）：
+%   preamble.tex            导言区（Lead）
+%   sections/00-abstract    摘要（Lead）
+%   sections/01-introduction 第 1 章：设计流程（语料收集）
+%   sections/02-design      第 1 章：设计流程（统计、索引与查询）
+%   sections/03-results     第 2 章：测试与结果分析
+%   sections/03-bonus       第 3 章：Bonus 的结果与分析
+%   sections/04-analysis    第 4 章：项目评价
+%   sections/05-references  参考文献（Lead）
+%   sections/06-appendix    附录（writer-analysis）
+%   figures/*.tex           插图（figure-maker）
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[UTF8,fontset=fandol]{ctex}
+\usepackage{amsmath,amssymb,amsthm,amsfonts}
+\usepackage{enumerate}
+\input{preamble}
+
+% PDF 元数据保持匿名（正文/属性均不含个人信息）
+\hypersetup{
+  pdftitle={迷你搜索引擎项目报告},
+  pdfauthor={},
+  pdfsubject={倒排索引的构建、查询与阈值分析},
+  pdfkeywords={倒排索引, 词频统计, 停用词, Porter 词干化, 伸展树, B+ 树, 查询阈值},
+  pdfcreator={XeLaTeX},
+}
+
+\title{迷你搜索引擎项目报告}
+\author{}
+\date{}
+
+\begin{document}
+
+% % ================= 封面 =================
+% \begin{titlepage}
+%   \thispagestyle{empty}
+%   \centering
+%   \vspace*{1.9cm}
+%   {\Large\sffamily 数据结构课程项目报告}\\[2.3em]
+%   {\Huge\bfseries 迷你搜索引擎}\\[0.7em]
+%   {\LARGE 倒排索引的构建、查询与阈值分析}\\[3.0em]
+%   {\large 项目 8-1\quad Roll Your Own Mini Search Engine}\\[1.0em]
+%   {\large C++17\quad 主语料：莎士比亚全集（195 篇）\quad 副语料：IETF RFC（3 篇）}\\[4.6em]
+%   \begin{tabular}{rl}
+%     \sffamily 报告日期 & 2026 年 10 月 20 日\\[0.35em]
+%     \sffamily 构建环境 & macOS 27.0.1\quad Apple M3\quad Apple clang 21.0.0\\[0.35em]
+%     \sffamily 证据目录 & \code{reports/data/}（全部命令与原始输出）\\
+%   \end{tabular}
+%   \vfill
+%   {\small 本报告按课程要求匿名提交，正文与元数据中不含任何个人信息。}
+% \end{titlepage}
+
+\maketitle
+
+% ================= 摘要 =================
+\begin{abstract}
+\input{sections/00-abstract}
+\end{abstract}
+\addcontentsline{toc}{section}{摘要}
+
+% ================= 目录 =================
+\clearpage
+\setcounter{tocdepth}{3}
+\tableofcontents
+
+% ================= 正文 =================
+\clearpage
+\input{sections/01-introduction}
+\input{sections/02-design}
+\input{sections/03-results}
+\input{sections/03-bonus}
+\input{sections/04-analysis}
+
+% ================= 参考文献 =================
+\clearpage
+\input{sections/05-references}
+
+% ================= 附录 =================
+\appendix
+\input{sections/06-appendix}
+
+\end{document}

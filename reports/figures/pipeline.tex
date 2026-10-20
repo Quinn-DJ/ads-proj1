@@ -1,0 +1,112 @@
+% figures/pipeline.tex -- 系统总体数据流（离线构建 + 在线查询）
+%
+% 纯 TikZ 示意图，无数据依赖：图中只出现阶段名、文件名与机制名，
+% 不引用任何运行读数（读数见第三章）。
+% 主文档只写 \input{figures/pipeline}；本文件自带 caption 与 label。
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >=Stealth,
+  x=1cm, y=1cm,
+  % 数据（文件 / 中间产物）
+  data/.style={draw=black!55, rounded corners=2pt, line width=0.5pt,
+               fill=black!4, inner sep=3pt, align=center},
+  % 处理阶段
+  proc/.style={draw=mseblue, rounded corners=2pt, line width=0.6pt,
+               fill=mseblue!6, text=mseblue, inner sep=3pt, align=center},
+  % 说明文字
+  note/.style={font=\scriptsize, text=msegray, align=center},
+  % 分组框
+  group/.style={draw=black!18, rounded corners=6pt, line width=0.5pt,
+                dashed, fill=black!1},
+  grouplabel/.style={font=\scriptsize, text=msegray, fill=white,
+                     inner sep=1.5pt},
+  arr/.style={->, line width=0.6pt, draw=black!65},
+  darr/.style={->, dashed, line width=0.7pt, draw=mseblue},
+  fork/.style={circle, fill=black!60, inner sep=0pt, minimum size=2.4pt},
+]
+
+% ---------------------------------------------------------------- 分组背景
+% 离线构建（语料预处理 → 词频统计/停用词推导 → 倒排索引落盘）
+\draw[group] (-0.12,2.68) rectangle (15.42,7.80);
+\node[grouplabel] at (1.55,7.80) {离线构建（offline build）};
+% 在线查询（同一规范化管线 → 查找/求交 → 阈值 → 结果）
+\draw[group] (-0.12,0.20) rectangle (15.42,1.70);
+\node[grouplabel] at (1.55,1.70) {在线查询（online query）};
+
+% ---------------------------------------------------------------- 语料层
+\node[data] (raw) at (1.85,7.15) {\texttt{data/raw/*.html}};
+\node[proc] (extract) at (4.75,7.15) {\texttt{extract.py}};
+\node[data] (text) at (8.02,7.15) {\texttt{data/text/*.txt}\\[1pt]\texttt{manifest.tsv}};
+\node[proc] (tokenizer) at (11.22,7.15) {\texttt{tokenizer}\\[1pt]{\scriptsize 逐行切词}};
+\node[data] (tokens) at (13.85,7.15) {token 流\\[1pt]{\scriptsize 小写 · 字母/撇号}};
+
+\draw[arr] (raw) -- (extract);
+\draw[arr] (extract) -- (text);
+\draw[arr] (text) -- (tokenizer);
+\draw[arr] (tokenizer) -- (tokens);
+
+% 语料层说明：extract.py 的标记行约定
+\node[note] at (7.62,6.40) {标记行：\texttt{@SPEAKER} / \texttt{(stage)} / \texttt{[ACT]}};
+
+% ---------------------------------------------------------------- 分叉：词频统计旁路
+% 干线：token 流 -> 停用词过滤（下折到第 3 行左端）
+\coordinate (fork) at (13.85,6.05);
+\draw[arr] (tokens.south) -- (fork);
+\node[fork] at (fork) {};
+\draw[arr] (fork) -- (fork -| 0.85,0) -- (0.85,3.75);
+% 旁路：token 流 -> count -> wordcount.csv -> 三特征规则 -> stopwords.txt
+\draw[arr] (fork) -- (13.85,5.72);
+\node[proc] (count) at (13.85,5.20) {\texttt{count}\\[1pt]{\scriptsize tf · df}};
+\node[data] (wc) at (11.15,5.20) {\texttt{wordcount.csv}};
+\node[proc] (rule) at (8.30,5.20) {三特征规则\\[1pt]{\scriptsize df · tf · 熵}};
+\node[data] (sw) at (5.00,5.20) {\texttt{data/stopwords.txt}};
+\draw[arr] (count) -- (wc);
+\draw[arr] (wc) -- (rule);
+\draw[arr] (rule) -- (sw);
+% 停用词表 -> 停用词过滤（虚线反馈）
+\draw[darr] (sw.south) -- (5.00,4.28) -- (1.90,4.28) -- (1.90,3.75);
+\node[note] at (3.55,4.28) {停用词表};
+
+% ---------------------------------------------------------------- 倒排索引构建
+\node[proc] (stop) at (1.32,3.25) {\texttt{stop filter}\\[1pt]{\scriptsize 停用词过滤}};
+\node[proc] (stem) at (3.88,3.25) {\texttt{Porter}\\[1pt]{\scriptsize stemmer}};
+\node[proc] (dict) at (6.32,3.25) {\texttt{dictionary}\\[1pt]{\scriptsize splay/hash/map}};
+\node[proc] (post) at (9.20,3.25) {\texttt{postings}\\[1pt]{\scriptsize docID·tf·pos}};
+\node[proc] (ser) at (12.00,3.25) {\texttt{serialize}\\[1pt]{\scriptsize v1 / v2}};
+\node[data] (idx) at (14.38,3.25) {\texttt{index.bin}\\[1pt]\texttt{index.bpt}\\[1pt]{\scriptsize sidecar}};
+
+\draw[arr] (stop) -- (stem);
+\draw[arr] (stem) -- (dict);
+\draw[arr] (dict) -- (post);
+\draw[arr] (post) -- (ser);
+\draw[arr] (ser) -- (idx);
+
+% ---------------------------------------------------------------- 查询侧
+\node[proc] (query) at (1.30,0.95) {\texttt{mse query}\\[1pt]{\scriptsize word/phrase}};
+\node[proc] (norm) at (4.10,0.95) {同一规范化管线\\[1pt]{\scriptsize 切词→停用→词干}};
+\node[proc] (lookup) at (6.70,0.95) {词典查找\\[1pt]{\scriptsize O(log T)}};
+\node[proc] (intersect) at (9.10,0.95) {\texttt{posting} 求交\\[1pt]{\scriptsize 位置验证}};
+\node[proc] (thresh) at (12.05,0.95) {四阈值与排序\\[1pt]{\scriptsize max-df/min-df}\\[1pt]{\scriptsize min-match/top-x}};
+\node[data] (hits) at (14.65,0.95) {文档 ID\\[1pt]{\scriptsize 列表}};
+
+\draw[arr] (query) -- (norm);
+\draw[arr] (norm) -- (lookup);
+\draw[arr] (lookup) -- (intersect);
+\draw[arr] (intersect) -- (thresh);
+\draw[arr] (thresh) -- (hits);
+
+% 索引文件 -> 词典查找：全量加载 或 B+ 树 惰性读取
+\draw[darr] (idx.south) -- (14.38,2.10) -- (6.70,2.10) -- (lookup.north);
+\node[note, fill=white, inner sep=2pt] at (10.55,2.10)
+  {\texttt{loadIndex}：全量词表\\[1pt]
+   \texttt{index.bpt} + \texttt{LazyIndexReader}：O(树高) 页读};
+
+\end{tikzpicture}
+\caption{系统总体数据流：离线侧把 HTML 语料抽取为文本层，经切词、停用词过滤与
+Porter 词干化后写入倒排索引，词频统计与停用词推导为旁路；在线侧复用同一规范化
+管线，经词典查找、posting 求交与位置验证、四个阈值后返回文档。虚线为
+\texttt{-{}-dict-file} 生成的 B+ 树 sidecar，查询只读 O(树高) 页。}
+\label{fig:pipeline}
+\end{figure}

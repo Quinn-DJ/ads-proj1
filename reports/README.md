@@ -1,43 +1,94 @@
-# 迷你搜索引擎项目：独立测试报告
+# 项目报告（reports/）
 
-本目录把测试证据拆成四份独立报告，避免全部堆进主报告。每份报告都是自包含的
-LaTeX 文档，并提交编译好的 PDF。
+本目录是迷你搜索引擎课程项目的**项目报告**：一份用 LaTeX 排版的中文文档
+（文档类 `article`，中文由 `ctex` 宏包支持，XeLaTeX 编译），以及报告用到的
+全部插图与实测证据。
 
-| 报告 | 文件 | 内容 |
-|---|---|---|
-| TR-01 | `01-unit-tests.pdf` | Catch2 单元测试、CTest 集成测试、46 个 TEST_CASE / 85,155 条断言 |
-| TR-02 | `02-correctness.pdf` | 黄金样例、独立 Python 实现、全词表 brute-force、短语对拍、磁盘词典、RFC 第二语料 |
-| TR-03 | `03-thresholds.pdf` | 四个查询阈值的 201 条测量、Jaccard、阈值语义分析 |
-| TR-04 | `04-scale.pdf` | SPIMI、v2 压缩、磁盘 B+Tree、500k 文件跑批、50M 键规模实测 |
-
-## 构建
+## 编译
 
 ```bash
-bash reports/build.sh
+bash reports/build.sh        # 产物：reports/report.pdf
 ```
 
-依赖：XeLaTeX / latexmk、ctex + Fandol 中文字体、DejaVu 字体，以及 `style.tex`
-中列出的 LaTeX 包。中间文件写入 `reports/build/`（已忽略），PDF 复制到
-`reports/pdf/`。
-
-只编译一份：
+等价命令：
 
 ```bash
 cd reports
-latexmk -xelatex -interaction=nonstopmode -halt-on-error \
-  -outdir=build 03-thresholds.tex
+latexmk -xelatex -interaction=nonstopmode -halt-on-error -outdir=build report.tex
 ```
 
-## 原始证据
+依赖：TeX Live（XeLaTeX、ctex、fandol 字体、pgfplots、booktabs 等常规宏包）；
+不需要额外安装 Python/字体。中间文件写入 `reports/build/`（已忽略）。
 
-- `data/threshold_matrix.csv`：TR-03 的 201 条原始测量；
-- `data/ctest.log`：本分支上 `ctest --test-dir build --output-on-failure` 的完整输出；
-- `data/unit-tests.txt`：八个 Catch2 可执行文件的断言数汇总；
-- `figures/threshold_matrix.png`、`figures/bptree_scale.png`：报告使用的图。
+## 目录结构
 
-## 与主报告的关系
+```text
+reports/
+├── report.tex              # 主文件：article + ctex，封面/摘要/目录/各章 include
+├── preamble.tex            # 导言区：字体、版面、表格、代码、页眉页脚、宏
+├── build.sh                # 一键编译，输出 reports/report.pdf
+├── report.pdf              # 编译产物（提交物）
+├── STYLE.md                # 写作与协作约定（章节分工、图表登记、数据契约）
+├── REVIEW.md               # 独立评审报告（编译/数字/视觉/匿名/复现逐项结论）
+├── README.md               # 本文件
+├── sections/               # 正文章节
+│   ├── 00-abstract.tex     #   摘要与关键词
+│   ├── 01-introduction.tex #   第 1 章 设计流程：语料收集
+│   ├── 02-design.tex       #   第 1 章 设计流程：统计、索引与查询
+│   ├── 03-results.tex      #   第 2 章 测试与结果分析
+│   ├── 03-bonus.tex        #   第 3 章 Bonus 的结果与分析
+│   ├── 04-analysis.tex     #   第 4 章 项目评价
+│   ├── 05-references.tex   #   参考文献
+│   └── 06-appendix.tex     #   附录 A 复现命令 / 附录 B 数据格式
+├── figures/                # 全部插图（矢量：TikZ / pgfplots）
+│   ├── pipeline.tex        #   fig:pipeline     系统总体数据流
+│   ├── index-layout.tex    #   fig:index-layout 索引文件与 posting 布局
+│   ├── zipf.tex            #   fig:zipf         词频—排名分布
+│   ├── entropy.tex         #   fig:entropy      速率熵判别
+│   ├── threshold.tex       #   fig:threshold    四阈值对返回数的影响
+│   ├── bptree.tex          #   fig:bptree       B+Tree 规模实测与外推
+│   └── data/               #   pgfplots 数据文件与生成脚本（确定性）
+└── data/                   # 本轮重新运行项目得到的实测证据
+    ├── results-tasks.md        # 任务 1–3 测量（F1–F42）
+    ├── results-verify.md       # 测试/交叉验证/Bonus（F1–F18）
+    ├── results-preprocess.md   # 预处理复核（P1–P6）
+    ├── logs/tasks|verify|preprocess/   # 原始命令输出
+    ├── csv/tasks|verify/               # 报告图表输入 CSV
+    └── work/                          # 临时索引/中间产物与复现脚本
+```
 
-这些报告不依赖主报告的 `.tex` 文件，也不修改主报告。主报告可以引用本目录的
-结论与数据；如果需要合并排版，直接复制对应章节或表格即可。
+## 证据与可复现性
 
-测试日期为 2026-10-19；报告版本 1.0。提交前请按课程要求检查匿名信息与文件命名。
+报告中的**每一个数字**都来自 2026-10-20 对项目的重新构建与重新运行
+（旧的 `build/` 产物已删除、重新 `cmake` 配置编译，`ctest` 18/18 通过），
+而不是开发过程中的历史记录。`reports/data/results-*.md` 中每条事实都给出
+数值、口径、执行命令与原始日志路径；报告 `.tex` 中用 `% src: F##` 注释标注
+数字来源，便于审计。
+
+重建全部证据的最小流程：
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j8
+ctest --test-dir build --output-on-failure
+bash reports/build.sh
+```
+
+- 词频/索引/查询/阈值实验：见 `reports/data/results-tasks.md` 各条的"命令"；
+- 单元测试、交叉验证、B+Tree/50 万文档规模实验：见 `reports/data/results-verify.md`；
+- 预处理事实（方括号舞台提示、行标记规则、ASCII 前提）：见 `reports/data/results-preprocess.md`。
+
+## 说明
+
+- 报告按课程要求**匿名**：正文、封面与 PDF 元数据中不含姓名/学号/组号等信息。
+- `reports/data/work/` 下的索引文件是测量过程的中间产物，可随时删除；
+  保留的脚本与日志足以复现全部读数。
+- 报告只依赖本仓库的数据与工具：莎士比亚语料与 RFC 第二语料均已随仓库提交，
+  无需联网即可重新生成报告 PDF。
+
+## 质量验收
+
+本轮已按“设计流程、测试与结果分析、Bonus、项目评价、参考文献”重排章节，
+并重新编译当前 PDF（31 页、0 error、0 undefined reference、0 Overfull hbox）。
+原有的数字一致性审计记录保留在 `reports/REVIEW.md`；重排后的目录、章节编号
+与页面以当前 `reports/build/report.toc` 和 `reports/report.pdf` 为准。

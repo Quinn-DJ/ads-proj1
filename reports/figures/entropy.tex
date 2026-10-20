@@ -1,0 +1,51 @@
+% figures/entropy.tex -- 速率熵（entropy_rate_norm）判别停用词
+%
+% 数据：reports/data/csv/tasks/wordcount-default.csv（本轮 mse count，默认管线）
+% 由 figures/data/make_figures_data.py 生成 figures/data/entropy-*.dat。
+% 主文档只写 \input{figures/entropy}。
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.96\linewidth, height=5.3cm,
+  ymin=0, ymax=1.06,
+  ytick={0,0.2,0.4,0.6,0.8,1.0},
+  ylabel={entropy\_rate\_norm},
+  symbolic x coords={the,and,i,to,of,is,it,that,love,king,heart,sweet,man,osric,banquo},
+  xtick={the,and,i,to,of,is,it,that,love,king,heart,sweet,man,osric,banquo},
+  xticklabel style={font=\scriptsize, rotate=40, anchor=north east, inner sep=1pt},
+  tick label style={font=\scriptsize},
+  label style={font=\small},
+  enlarge x limits=0.04,
+  grid=major, grid style={black!8},
+  legend columns=4,
+  legend style={at={(0.5,-0.23)}, anchor=north, draw=none, font=\scriptsize},
+  legend cell align=left,
+]
+  % 功能词：速率熵接近 1
+  \addplot[ycomb, color=mseblue, line width=1.0pt,
+           mark=*, mark size=1.8pt, mark options={fill=mseblue}]
+    table[x=term, y=rate] {figures/data/entropy-function.dat};
+  \addlegendentry{function words}
+  % 内容词：明显偏低
+  \addplot[ycomb, color=msegray, line width=0.9pt,
+           mark=square*, mark size=1.6pt, mark options={fill=msegray}]
+    table[x=term, y=rate] {figures/data/entropy-content.dat};
+  \addlegendentry{content words}
+  % 专名：df=1 时按定义为 0
+  \addplot[ycomb, color=black!35, line width=0.9pt,
+           mark=triangle*, mark size=2.0pt, mark options={fill=black!35}]
+    table[x=term, y=rate] {figures/data/entropy-name.dat};
+  \addlegendentry{proper nouns (df $=1$)}
+  % 规则阈值 0.93
+  \addplot[dashed, line width=0.8pt, color=black!65, mark=none]
+    table[x=term, y=threshold] {figures/data/entropy-threshold.dat};
+  \addlegendentry{0.93 threshold}
+\end{axis}
+\end{tikzpicture}
+\caption{速率熵判别：功能词全部贴近 1（均在 0.96 以上），专名（df${}=1$）
+按定义为 0，内容词落在 0.83–0.94 的低区间；0.93 一条横线即可把功能词与其余
+词分开，个别越线的内容词再被 df 比例门（$\ge 0.4$）挡住，说明该特征能替代
+人工逐个审核。}%
+\label{fig:entropy}
+\end{figure}
