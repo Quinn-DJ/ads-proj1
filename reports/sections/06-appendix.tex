@@ -36,7 +36,7 @@ cmake --build build -j8
 \subsection{任务 1 与任务 2}
 
 词频四种配置各跑 3 次取外部墙钟中位数；停用词推导、正式索引、三种词典、块式构建与
-磁盘词典 sidecar 的命令如下。% src: F6、F13、F18–F24（tasks）
+磁盘附属词典文件的命令如下。% src: F6、F13、F18–F24（tasks）
 
 \begin{lstlisting}[style=cli]
 ./build/mse count --top 50 --csv .../wordcount-default.csv
@@ -66,13 +66,13 @@ cmake --build build -j8
 # -> dict reads: 114 page reads, 29819 cache hits
 \end{lstlisting}
 
-\code{--verify-all} 只在 \code{--dict-file} 路径实现；冷查询 \code{banquo} 经 sidecar
+\code{--verify-all} 只在 \code{--dict-file} 路径实现；冷查询 \code{banquo} 经附属词典
 只发生 2 次页读、从索引只读 8\,308 字节（全量加载的 0.225\%）。% src: F8、F16、F23（verify）
 
 \subsection{任务 3、阈值实验与独立对拍}
 
-查询示例与 201 条阈值测量（正式索引 flags 为 \code{stopwords stemmed}）；随后是独立
-实现与 RFC 副语料的端到端复现（Python 侧自行切词、解析索引、扫描 token 流）。
+查询示例与 201 条阈值测量（正式索引处理标志为 \code{stopwords stemmed}）；随后是独立
+实现与 RFC 副语料的端到端复现（Python 侧自行切词、解析索引、扫描词元流）。
 % src: F27–F38（tasks）、F7、F9、F10（verify）
 
 \begin{lstlisting}[style=cli]
@@ -111,7 +111,7 @@ python3 tools/check_phrases.py --index .../formal-v1.bin \
 
 \subsection{附加题：B+ 树 规模实验与 500\,000 文档语料}
 
-B+ 树规模实测（4\,KiB 页、bulk-load、1\,000 次随机查询全部校验）：
+B+ 树规模实测（4\,KiB 页、批量装载、1\,000 次随机查询全部校验）：
 % src: F11（verify）
 
 \begin{lstlisting}[style=cli]
@@ -123,7 +123,7 @@ done
 # CSV: python3 .../parse_bptree.py -> reports/data/csv/verify/bptree-bench.csv
 \end{lstlisting}
 
-500\,000 文档合成语料：生成 → 统计 → 块式构建 v1/v2 → 内存构建，峰值内存用
+500\,000 文档合成语料：生成 → 统计 → 块式构建第一版/第二版索引 → 内存构建，峰值内存用
 \code{/usr/bin/time -l} 的 \code{maximum resident set size}；采集后语料与临时索引
 已删除。% src: F12–F15（verify）、F18.8（清理记录）
 
@@ -156,12 +156,12 @@ python3 tools/gen_synthetic_corpus.py --root /tmp/mse-scale-corpus-500k \
 \label{app:format}
 \enlargethispage{3\baselineskip}
 
-本附录汇总引擎读写的四份数据：语料清单、文本层、索引（v1/v2）与磁盘 B+ 树词典
-sidecar；格式规格来自实现与第~\ref{sec:persistence}、~\ref{sec:bptree-design}~节。
+本附录汇总引擎读写的四份数据：语料清单、文本层、索引（第一版/第二版）与磁盘 B+ 树词典
+附属词典文件；格式规格来自实现与第~\ref{sec:persistence}、~\ref{sec:bptree-design}~节。
 
-\subsection{manifest.tsv 与文本层}
+\subsection{语料清单与文本层}
 
-\code{manifest.tsv} 为制表符分隔文本、首行表头，每个文档一行；\code{text} 列相对
+\code{manifest.tsv} 是语料清单文件，采用制表符分隔、首行表头，每个文档一行；\code{text} 列相对
 \emph{语料根}解析（引擎取 \code{dirname(dirname(manifest))}）。第 8 列 \code{format}
 可选：\code{marked}（缺省，行标记生效）或 \code{plain}（整行均为正文，RFC 语料用）。
 文本层每行一个单元，行首标记决定行类型；标题与舞台指示要求\emph{首尾同时匹配}，否则
@@ -189,9 +189,9 @@ sidecar；格式规格来自实现与第~\ref{sec:persistence}、~\ref{sec:bptre
 \code{--keep-stage} 逐类保留。
 \end{center}
 
-\subsection{索引 v1 布局与 v2 差异}
+\subsection{第一版索引布局与第二版索引差异}
 
-所有整数为小端；字符串为 u32 字节长度前缀 + 原始字节。v1 顺序布局如下：
+所有整数为小端；字符串为 u32 字节长度前缀 + 原始字节。第一版索引（v1）顺序布局如下：
 
 \begin{lstlisting}[style=cli]
 header : magic "MSE1" | version u32 | flags u32 | docCount u32 |
@@ -204,16 +204,18 @@ block  : df x (docID u32, tf u32), then sum(tf) x position u32
 \end{lstlisting}
 
 \code{flags} 第 0 位置停用词过滤、第 1 位置词干化，查询侧据此重放同一规范化管线；
-term 表严格升序，docID 稠密 1..N，posting 内 docID 严格递增、tf 等于其位置数，这些
-不变量在加载后由 \code{validateIndex()} 逐条校验。v2 的头、doc 表、term 表与 v1 相同，
-仅 \code{version}$\,=2$，把每个 postings 块换成"差分量 + 字节对齐变长码"：每条 posting
-依次写 docID 差（块内从 0 起，$\ge1$）、tf、tf 个位置增量（posting 内从 0 起，$\ge0$）；
+词项表严格升序，文档编号稠密为 1 到 \(N\)，倒排记录内文档编号严格递增、词频等于其
+位置数，这些
+不变量在加载后由 \code{validateIndex()} 逐条校验。第二版索引（v2）的文件头、
+文档表、词项表与第一版相同，仅 \code{version}$\,=2$，把每个倒排记录块换成
+"差分量 + 字节对齐变长码"：每条倒排记录
+依次写文档编号差（块内从 0 起，$\ge1$）、词频、词频个位置增量（记录内从 0 起，$\ge0$）；
 变长码首字节高 2 位给出总长，载荷 6/14/22/30 位（\code{01}/\code{10}/\code{11}/\code{00}
 分别为 1/2/3/4 字节），小端序。
 
-\subsection{磁盘 B+ 树 词典 sidecar}
+\subsection{磁盘 B+ 树附属词典文件}
 
-sidecar 是 4\,KiB 页文件（页大小可配置），第 0 页为头页、其后每页一个树节点，整数
+附属词典文件是 4\,KiB 页文件（页大小可配置），第 0 页为文件头页、其后每页一个树节点，整数
 小端；键是变长字符串，扇出由字节预算决定，叶页用 \code{nextLeaf} 串成有序链。
 
 \begin{lstlisting}[style=cli]
@@ -227,6 +229,6 @@ blob            : length u8 | bytes
 value           : (posting blockOffset << 21) | blockBytes   (21-bit length)
 \end{lstlisting}
 
-查询时由 B+ 树定位 posting 块，无需加载完整 term 表。I1--I5 由
-\code{validate()} 校验；写文件采用 bulk-load，索引重建后 sidecar 同步重建。
+查询时由 B+ 树定位倒排记录块，无需加载完整词项表。I1--I5 由
+\code{validate()} 校验；写文件采用批量装载，索引重建后附属词典同步重建。
 % 格式规格来自 include/bptree.hpp 与 src/bptree.cpp；不涉及测量数字

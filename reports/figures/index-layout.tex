@@ -74,7 +74,7 @@
   {一条 term 记录 = 28 + len(term) B；\texttt{offset} 指向该词 postings 块的起始字节。};
 
 % --- postings 块（两条记录对齐摆放；字段均为 u32）
-\draw[structbox] (9.45,0.10) rectangle (15.42,2.40);
+\draw[structbox] (9.45,-0.10) rectangle (15.42,2.40);
 
 % 第 1 条 posting：docID、tf，紧跟该条的 tf 个位置
 \node[cell, minimum width=0.95cm] at (10.12,2.04) {docID};

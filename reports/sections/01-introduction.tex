@@ -10,8 +10,8 @@
 外部构建、查询”的顺序展开，每一阶段都留下可重跑的命令和输出。% src: 本轮任务复跑
 
 系统的总数据流如图~\ref{fig:pipeline}：预处理阶段使用 Python 把 HTML 转成文本层，再交由
-C++ 进行处理；切词后的 token 同时进入统计与索引两条路径；查询侧按索引头
-记录的 flags 重放停用词与词干化步骤。这样可以把网页解析错误、统计口径错误和索引错误
+C++ 进行处理；切词后的词元同时进入统计与索引两条路径；查询侧按索引头
+记录的处理标志重放停用词与词干化步骤。这样可以把网页解析错误、统计口径错误和索引错误
 分开定位。% src: F1、F3、P1
 \label{sec:architecture}
 
@@ -32,9 +32,9 @@ Moby 纯文本版本，我们以 MIT Shakespeare 站点首页的目录作为作�
 \code{tools/extract.py} 把每个 HTML 页面转换成“一行一个语义单元”的文本文件，
 同时生成 \code{manifest.tsv} 作为整个语料的文档目录和映射表。% src: P1
 
-考虑到语料为英文，因此切词器把“连续 ASCII 字母并允许内部撇号”的极大串定义为 token。\code{don't} 与
+考虑到语料为英文，因此切词器把“连续 ASCII 字母并允许内部撇号”的极大串定义为词元。\code{don't} 与
 \code{o'er} 保持为一个词，行首撇号被丢弃（例如\code{'Tis}$\to$\code{tis}），行尾撇号
-作为分隔（例如\code{friends'}$\to$\code{friends}）；连字符、数字和普通标点均为分隔符（例如\code{to-day}$\to$\code{to,day}，\code{1660s}$\to$\code{s}）。所有 token
+作为分隔（例如\code{friends'}$\to$\code{friends}）；连字符、数字和普通标点均为分隔符（例如\code{to-day}$\to$\code{to,day}，\code{1660s}$\to$\code{s}）。所有词元
 均进行小写化。
 
 \subsubsection{特殊情况处理}
