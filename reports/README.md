@@ -89,6 +89,6 @@ bash reports/build.sh
 ## 质量验收
 
 本轮已按“设计流程、测试与结果分析、Bonus、项目评价、参考文献”重排章节，
-并重新编译当前 PDF（25 页、0 error、0 undefined reference、0 Overfull hbox）。
+并重新编译当前 PDF（21 页、0 error、0 undefined reference、0 Overfull hbox）。
 原有的数字一致性审计记录保留在 `reports/REVIEW.md`；重排后的目录、章节编号
 与页面以当前 `reports/build/report.toc` 和 `reports/report.pdf` 为准。

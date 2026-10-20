@@ -120,11 +120,11 @@ reports/
 - 第 4 章：表 `tab:bptree-scale`、`tab:extrapolate`、`tab:500k`、
   `tab:compression`、`tab:limits`。
 
-## 7. 参考文献 key（只能引用这些；需要新增先告知 Lead）
+## 7. 参考文献 key
 
-`problem`、`lecture-index`、`lecture-build`、`lecture-compress`、`manning-ir`、
-`shakespeare`、`shakespeare-gh`、`porter1980`、`porter-c`、`nltk`、`snowball`、
-`rfc1035`、`rfc5321`、`rfc7231`、`zipf1949`、`gfs`、`catch2`。
+报告只保留课程语料网站和词干化参考资料：
+
+`shakespeare`、`porter1980`、`porter-c`、`nltk`、`snowball`。
 
 引用放句末标点前，如"……的倒排记录表~\cite{manning-ir}。"
 
