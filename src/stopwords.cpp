@@ -17,30 +17,30 @@ namespace mse {
 // Throws std::runtime_error naming the path when the file cannot be opened.
 // Complexity: O(file size) time, O(#words) memory.
 StopWords StopWords::load(const std::string& path) {
-    std::ifstream in(path);
-    if (!in) {
-        throw std::runtime_error("cannot open stop word list: " + path);
-    }
+  std::ifstream in(path);
+  if (!in) {
+    throw std::runtime_error("cannot open stop word list: " + path);
+  }
 
-    StopWords result;
-    std::string line;
-    while (std::getline(in, line)) {
-        if (!line.empty() && line.back() == '\r') {
-            line.pop_back();  // tolerate CRLF endings
-        }
-        if (line.empty() || line.front() == '#') {
-            continue;
-        }
-        result.words_.insert(line);
+  StopWords result;
+  std::string line;
+  while (std::getline(in, line)) {
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();  // tolerate CRLF endings
     }
-    return result;
+    if (line.empty() || line.front() == '#') {
+      continue;
+    }
+    result.words_.insert(line);
+  }
+  return result;
 }
 
 // True when `term` is in the list. Average O(1) via the hash set; the caller
 // is responsible for passing a *normalized* token (lowercase, as produced by
 // the tokenizer), because the comparison is exact.
 bool StopWords::contains(const std::string& term) const {
-    return words_.find(term) != words_.end();
+  return words_.find(term) != words_.end();
 }
 
 }  // namespace mse

@@ -52,100 +52,102 @@ namespace mse {
 // layout (bptree.cpp), so "fits in the budget" means the same thing in
 // memory (B1) and on disk (B2).
 struct BTreeStats {
-    std::uint32_t height = 0;        // number of levels (single leaf = 1)
-    std::size_t pageCount = 0;       // nodes currently allocated
-    std::size_t leafCount = 0;
-    std::size_t keyCount = 0;        // entries stored in the leaves
-    std::uint32_t pageSize = 0;      // per-node byte budget (as configured)
-    std::uint64_t minFillBytes = ~0ull;  // smallest non-root node payload
-    std::uint64_t maxFillBytes = 0;      // largest node payload
-    std::uint64_t minFanout = ~0ull;     // smallest inner child count
-    std::uint64_t maxFanout = 0;         // largest inner child count
+  std::uint32_t height = 0;   // number of levels (single leaf = 1)
+  std::size_t pageCount = 0;  // nodes currently allocated
+  std::size_t leafCount = 0;
+  std::size_t keyCount = 0;            // entries stored in the leaves
+  std::uint32_t pageSize = 0;          // per-node byte budget (as configured)
+  std::uint64_t minFillBytes = ~0ull;  // smallest non-root node payload
+  std::uint64_t maxFillBytes = 0;      // largest node payload
+  std::uint64_t minFanout = ~0ull;     // smallest inner child count
+  std::uint64_t maxFanout = 0;         // largest inner child count
 };
 
 class BTree {
-public:
-    // pageSize is the per-node byte budget (default 4096, the disk page).
-    // Must be >= 4 * (maxKeyLen + 9) so both halves of a split node can
-    // always accept one more maximum-size entry.
-    explicit BTree(std::uint32_t pageSize = 4096);
+ public:
+  // pageSize is the per-node byte budget (default 4096, the disk page).
+  // Must be >= 4 * (maxKeyLen + 9) so both halves of a split node can
+  // always accept one more maximum-size entry.
+  explicit BTree(std::uint32_t pageSize = 4096);
 
-    // Build from a strictly ascending, duplicate-free key/value range in
-    // one bottom-up pass. This is the index-build path: the sorted term
-    // table already exists when the dictionary is written out.
-    static BTree bulkLoad(const std::vector<std::pair<std::string, std::uint64_t>>& sorted,
-                          std::uint32_t pageSize = 4096);
+  // Build from a strictly ascending, duplicate-free key/value range in
+  // one bottom-up pass. This is the index-build path: the sorted term
+  // table already exists when the dictionary is written out.
+  static BTree bulkLoad(
+      const std::vector<std::pair<std::string, std::uint64_t>>& sorted,
+      std::uint32_t pageSize = 4096);
 
-    // Point operations. find() returns nullptr when the key is absent;
-    // insert() overwrites an existing key's value and returns whether a
-    // *new* key was added.
-    const std::uint64_t* find(const std::string& key) const;
-    bool insert(const std::string& key, std::uint64_t value);
+  // Point operations. find() returns nullptr when the key is absent;
+  // insert() overwrites an existing key's value and returns whether a
+  // *new* key was added.
+  const std::uint64_t* find(const std::string& key) const;
+  bool insert(const std::string& key, std::uint64_t value);
 
-    // All (key, value) pairs with lo <= key < hi in key order: descend
-    // once, then walk the leaf chain (the prefix query of the README).
-    std::vector<std::pair<std::string, std::uint64_t>> rangeScan(
-        const std::string& lo, const std::string& hi) const;
+  // All (key, value) pairs with lo <= key < hi in key order: descend
+  // once, then walk the leaf chain (the prefix query of the README).
+  std::vector<std::pair<std::string, std::uint64_t>> rangeScan(
+      const std::string& lo, const std::string& hi) const;
 
-    // Aggregate shape; the fill/fan-out extremes are refreshed by the
-    // latest validate() call (cheap enough to call before stats()).
-    BTreeStats stats() const;
+  // Aggregate shape; the fill/fan-out extremes are refreshed by the
+  // latest validate() call (cheap enough to call before stats()).
+  BTreeStats stats() const;
 
-    // Full invariant check (I1-I5); throws std::runtime_error naming the
-    // violated rule and page. Also refreshes the stats() extremes.
-    void validate() const;
+  // Full invariant check (I1-I5); throws std::runtime_error naming the
+  // violated rule and page. Also refreshes the stats() extremes.
+  void validate() const;
 
-    // Test hook: pages touched by the last find() -- the I/O count the
-    // disk-backed variant would pay for that lookup.
-    std::size_t lastFindPageReads() const { return lastFindPageReads_; }
+  // Test hook: pages touched by the last find() -- the I/O count the
+  // disk-backed variant would pay for that lookup.
+  std::size_t lastFindPageReads() const { return lastFindPageReads_; }
 
-    // Serialize the whole tree into a freshly created page file (B2; the
-    // layout is documented next to BTreeFile). Throws on any I/O error.
-    void writeFile(const std::string& path) const;
+  // Serialize the whole tree into a freshly created page file (B2; the
+  // layout is documented next to BTreeFile). Throws on any I/O error.
+  void writeFile(const std::string& path) const;
 
-private:
-    static constexpr std::uint32_t kMaxKeyLen = 255;
+ private:
+  static constexpr std::uint32_t kMaxKeyLen = 255;
 
-    struct Node {
-        bool leaf = true;
-        std::vector<std::string> keys;        // strictly ascending
-        std::vector<std::uint32_t> children;  // inner: keys.size()+1 page ids
-        std::vector<std::uint64_t> values;    // leaf: keys.size() values
-        std::uint32_t nextLeaf = 0;           // 0 = chain end (id 0 is never a leaf target)
-    };
+  struct Node {
+    bool leaf = true;
+    std::vector<std::string> keys;        // strictly ascending
+    std::vector<std::uint32_t> children;  // inner: keys.size()+1 page ids
+    std::vector<std::uint64_t> values;    // leaf: keys.size() values
+    std::uint32_t nextLeaf = 0;  // 0 = chain end (id 0 is never a leaf target)
+  };
 
-    // Bytes this node occupies in the serialized layout (bptree.cpp).
-    std::size_t nodeBytes(const Node& node) const;
-    bool nodeHasRoom(const Node& node, const std::string& key) const;
+  // Bytes this node occupies in the serialized layout (bptree.cpp).
+  std::size_t nodeBytes(const Node& node) const;
+  bool nodeHasRoom(const Node& node, const std::string& key) const;
 
-    Node& page(std::uint32_t id) { return pages_[id]; }
-    const Node& page(std::uint32_t id) const { return pages_[id]; }
-    // NOTE: references into pages_ are invalidated by newPage() (the
-    // vector may reallocate) -- never hold one across a call that can
-    // allocate (the dangling-reference lesson of notes.md 4.2, designed
-    // out by re-fetching through the id after every allocation).
+  Node& page(std::uint32_t id) { return pages_[id]; }
+  const Node& page(std::uint32_t id) const { return pages_[id]; }
+  // NOTE: references into pages_ are invalidated by newPage() (the
+  // vector may reallocate) -- never hold one across a call that can
+  // allocate (the dangling-reference lesson of notes.md 4.2, designed
+  // out by re-fetching through the id after every allocation).
 
-    std::uint32_t newPage(Node node);
+  std::uint32_t newPage(Node node);
 
-    // First key stored anywhere in the subtree rooted at `id`.
-    const std::string* firstKeyOfSubtree(std::uint32_t id) const;
+  // First key stored anywhere in the subtree rooted at `id`.
+  const std::string* firstKeyOfSubtree(std::uint32_t id) const;
 
-    // Routing: index of the child slot whose subtree owns `key`.
-    std::size_t slotFor(const Node& node, const std::string& key) const;
+  // Routing: index of the child slot whose subtree owns `key`.
+  std::size_t slotFor(const Node& node, const std::string& key) const;
 
-    // Recursive insert. Returns the split (separator key, new right page)
-    // when this level split, so the caller can absorb it.
-    std::optional<std::pair<std::string, std::uint32_t>> insertRec(
-        std::uint32_t id, const std::string& key, std::uint64_t value, bool& inserted);
+  // Recursive insert. Returns the split (separator key, new right page)
+  // when this level split, so the caller can absorb it.
+  std::optional<std::pair<std::string, std::uint32_t>> insertRec(
+      std::uint32_t id, const std::string& key, std::uint64_t value,
+      bool& inserted);
 
-    std::uint32_t pageSize_;
-    std::uint32_t root_ = 0;
-    std::vector<Node> pages_;  // B1 store: page id -> node (B2: pager)
-    std::size_t keyCount_ = 0;
-    std::size_t leafCount_ = 0;
-    mutable BTreeStats cached_;        // extremes refreshed by validate()
-    mutable bool validated_ = false;
-    mutable std::size_t lastFindPageReads_ = 0;
+  std::uint32_t pageSize_;
+  std::uint32_t root_ = 0;
+  std::vector<Node> pages_;  // B1 store: page id -> node (B2: pager)
+  std::size_t keyCount_ = 0;
+  std::size_t leafCount_ = 0;
+  mutable BTreeStats cached_;  // extremes refreshed by validate()
+  mutable bool validated_ = false;
+  mutable std::size_t lastFindPageReads_ = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -170,59 +172,59 @@ private:
 // Read-side dictionary over a page file. Values are returned by copy: a
 // cached page can be evicted at any load, so no references escape.
 class BTreeFile {
-public:
-    // Opens the file and reads the header page only. `cachePages` bounds
-    // the LRU cache (>= 1); the sweep experiment varies it.
-    explicit BTreeFile(const std::string& path, std::size_t cachePages = 8);
+ public:
+  // Opens the file and reads the header page only. `cachePages` bounds
+  // the LRU cache (>= 1); the sweep experiment varies it.
+  explicit BTreeFile(const std::string& path, std::size_t cachePages = 8);
 
-    // Point lookup: nullopt when the key is absent.
-    std::optional<std::uint64_t> findValue(const std::string& key) const;
+  // Point lookup: nullopt when the key is absent.
+  std::optional<std::uint64_t> findValue(const std::string& key) const;
 
-    // All (key, value) with lo <= key < hi, walking the leaf chain.
-    std::vector<std::pair<std::string, std::uint64_t>> rangeScan(
-        const std::string& lo, const std::string& hi) const;
+  // All (key, value) with lo <= key < hi, walking the leaf chain.
+  std::vector<std::pair<std::string, std::uint64_t>> rangeScan(
+      const std::string& lo, const std::string& hi) const;
 
-    // Shape + I/O counters (pageReads counts actual file reads; hits are
-    // answered from the cache).
-    std::uint32_t pageCount() const { return header_.pageCount; }
-    std::uint32_t pageSize() const { return header_.pageSize; }
-    std::uint32_t height() const { return header_.height; }
-    std::uint64_t keyCount() const { return header_.keyCount; }
-    std::uint64_t pageReads() const { return pageReads_; }
-    std::uint64_t cacheHits() const { return cacheHits_; }
+  // Shape + I/O counters (pageReads counts actual file reads; hits are
+  // answered from the cache).
+  std::uint32_t pageCount() const { return header_.pageCount; }
+  std::uint32_t pageSize() const { return header_.pageSize; }
+  std::uint32_t height() const { return header_.height; }
+  std::uint64_t keyCount() const { return header_.keyCount; }
+  std::uint64_t pageReads() const { return pageReads_; }
+  std::uint64_t cacheHits() const { return cacheHits_; }
 
-private:
-    struct NodeView {
-        bool leaf = true;
-        std::uint32_t nextLeaf = 0;
-        std::vector<std::string> keys;
-        std::vector<std::uint32_t> children;
-        std::vector<std::uint64_t> values;
-    };
+ private:
+  struct NodeView {
+    bool leaf = true;
+    std::uint32_t nextLeaf = 0;
+    std::vector<std::string> keys;
+    std::vector<std::uint32_t> children;
+    std::vector<std::uint64_t> values;
+  };
 
-    struct Header {
-        std::uint32_t pageSize = 0;
-        std::uint32_t pageCount = 0;
-        std::uint32_t rootId = 0;
-        std::uint32_t height = 0;
-        std::uint64_t leafCount = 0;
-        std::uint64_t keyCount = 0;
-    };
+  struct Header {
+    std::uint32_t pageSize = 0;
+    std::uint32_t pageCount = 0;
+    std::uint32_t rootId = 0;
+    std::uint32_t height = 0;
+    std::uint64_t leafCount = 0;
+    std::uint64_t keyCount = 0;
+  };
 
-    // Load one tree page through the LRU cache.
-    const NodeView& load(std::uint32_t id) const;
+  // Load one tree page through the LRU cache.
+  const NodeView& load(std::uint32_t id) const;
 
-    Header header_;
-    std::string path_;
-    std::size_t cachePages_;
-    mutable std::ifstream file_;
-    mutable std::uint64_t pageReads_ = 0;
-    mutable std::uint64_t cacheHits_ = 0;
-    // LRU: front = most recently used; map for O(1) lookup.
-    mutable std::list<std::pair<std::uint32_t, NodeView>> lru_;
-    mutable std::unordered_map<std::uint32_t,
-                               std::list<std::pair<std::uint32_t, NodeView>>::iterator>
-        lruIndex_;
+  Header header_;
+  std::string path_;
+  std::size_t cachePages_;
+  mutable std::ifstream file_;
+  mutable std::uint64_t pageReads_ = 0;
+  mutable std::uint64_t cacheHits_ = 0;
+  // LRU: front = most recently used; map for O(1) lookup.
+  mutable std::list<std::pair<std::uint32_t, NodeView>> lru_;
+  mutable std::unordered_map<
+      std::uint32_t, std::list<std::pair<std::uint32_t, NodeView>>::iterator>
+      lruIndex_;
 };
 
 }  // namespace mse

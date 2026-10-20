@@ -29,40 +29,40 @@
 namespace mse {
 
 struct TermEntry {
-    std::string term;
-    PostingList postings;
+  std::string term;
+  PostingList postings;
 };
 
 // Instrumentation for the Chapter 4 comparison experiment: string
 // comparisons are a timing-independent cost metric (splay vs hash).
 struct DictStats {
-    std::uint64_t stringComparisons = 0;
-    std::uint64_t rotations = 0;  // splay tree only
-    std::uint64_t rehashes = 0;   // hash table only
+  std::uint64_t stringComparisons = 0;
+  std::uint64_t rotations = 0;  // splay tree only
+  std::uint64_t rehashes = 0;   // hash table only
 };
 
 class Dictionary {
-public:
-    virtual ~Dictionary() = default;
-    Dictionary(const Dictionary&) = delete;
-    Dictionary& operator=(const Dictionary&) = delete;
+ public:
+  virtual ~Dictionary() = default;
+  Dictionary(const Dictionary&) = delete;
+  Dictionary& operator=(const Dictionary&) = delete;
 
-    // Find the entry for `term`, inserting an empty one when absent.
-    virtual TermEntry& upsert(const std::string& term) = 0;
+  // Find the entry for `term`, inserting an empty one when absent.
+  virtual TermEntry& upsert(const std::string& term) = 0;
 
-    // Lookup without insertion; nullptr when the term is absent.
-    virtual TermEntry* find(const std::string& term) = 0;
+  // Lookup without insertion; nullptr when the term is absent.
+  virtual TermEntry* find(const std::string& term) = 0;
 
-    // Entries sorted by term (splay: in-order traversal; hash: collect+sort).
-    virtual std::vector<TermEntry*> sortedEntries() = 0;
+  // Entries sorted by term (splay: in-order traversal; hash: collect+sort).
+  virtual std::vector<TermEntry*> sortedEntries() = 0;
 
-    std::size_t size() const { return size_; }
-    DictStats stats() const { return stats_; }
+  std::size_t size() const { return size_; }
+  DictStats stats() const { return stats_; }
 
-protected:
-    Dictionary() = default;
-    std::size_t size_ = 0;
-    DictStats stats_;
+ protected:
+  Dictionary() = default;
+  std::size_t size_ = 0;
+  DictStats stats_;
 };
 
 // ---------------------------------------------------------------------------
@@ -70,32 +70,32 @@ protected:
 // ---------------------------------------------------------------------------
 
 class SplayDictionary : public Dictionary {
-public:
-    SplayDictionary() = default;
-    ~SplayDictionary() override;
+ public:
+  SplayDictionary() = default;
+  ~SplayDictionary() override;
 
-    TermEntry& upsert(const std::string& term) override;
-    TermEntry* find(const std::string& term) override;
-    std::vector<TermEntry*> sortedEntries() override;
+  TermEntry& upsert(const std::string& term) override;
+  TermEntry* find(const std::string& term) override;
+  std::vector<TermEntry*> sortedEntries() override;
 
-    // Test/diagnostics hook: the term currently at the root ("" when empty).
-    std::string rootTermForTesting() const;
+  // Test/diagnostics hook: the term currently at the root ("" when empty).
+  std::string rootTermForTesting() const;
 
-private:
-    struct Node {
-        TermEntry entry;
-        Node* parent = nullptr;
-        Node* left = nullptr;
-        Node* right = nullptr;
-        explicit Node(std::string term) : entry{std::move(term), {}} {}
-    };
+ private:
+  struct Node {
+    TermEntry entry;
+    Node* parent = nullptr;
+    Node* left = nullptr;
+    Node* right = nullptr;
+    explicit Node(std::string term) : entry{std::move(term), {}} {}
+  };
 
-    Node* root_ = nullptr;
+  Node* root_ = nullptr;
 
-    int compare(const std::string& a, const std::string& b);
-    void rotate(Node* x);
-    void splay(Node* x);
-    static void destroy(Node* node);
+  int compare(const std::string& a, const std::string& b);
+  void rotate(Node* x);
+  void splay(Node* x);
+  static void destroy(Node* node);
 };
 
 // ---------------------------------------------------------------------------
@@ -103,26 +103,26 @@ private:
 // ---------------------------------------------------------------------------
 
 class HashDictionary : public Dictionary {
-public:
-    HashDictionary() = default;
-    ~HashDictionary() override;
+ public:
+  HashDictionary() = default;
+  ~HashDictionary() override;
 
-    TermEntry& upsert(const std::string& term) override;
-    TermEntry* find(const std::string& term) override;
-    std::vector<TermEntry*> sortedEntries() override;
+  TermEntry& upsert(const std::string& term) override;
+  TermEntry* find(const std::string& term) override;
+  std::vector<TermEntry*> sortedEntries() override;
 
-private:
-    struct Node {
-        TermEntry entry;
-        Node* next = nullptr;
-        explicit Node(std::string term) : entry{std::move(term), {}} {}
-    };
+ private:
+  struct Node {
+    TermEntry entry;
+    Node* next = nullptr;
+    explicit Node(std::string term) : entry{std::move(term), {}} {}
+  };
 
-    std::vector<Node*> buckets_;
+  std::vector<Node*> buckets_;
 
-    static std::uint64_t hashOf(const std::string& term);  // FNV-1a 64
-    void rehash(std::size_t newBucketCount);
-    static void destroyChain(Node* node);
+  static std::uint64_t hashOf(const std::string& term);  // FNV-1a 64
+  void rehash(std::size_t newBucketCount);
+  static void destroyChain(Node* node);
 };
 
 // ---------------------------------------------------------------------------
@@ -131,30 +131,30 @@ private:
 // ---------------------------------------------------------------------------
 
 class MapDictionary : public Dictionary {
-public:
-    // The comparator must see this object's stats_ from the first insert;
-    // the base subobject is constructed before map_, so &stats_ is stable.
-    MapDictionary() : map_(CountingCompare{&stats_}) {}
+ public:
+  // The comparator must see this object's stats_ from the first insert;
+  // the base subobject is constructed before map_, so &stats_ is stable.
+  MapDictionary() : map_(CountingCompare{&stats_}) {}
 
-    TermEntry& upsert(const std::string& term) override;
-    TermEntry* find(const std::string& term) override;
-    std::vector<TermEntry*> sortedEntries() override;
+  TermEntry& upsert(const std::string& term) override;
+  TermEntry* find(const std::string& term) override;
+  std::vector<TermEntry*> sortedEntries() override;
 
-private:
-    // Instrumented comparator: std::map's internal comparisons are not
-    // observable, so the tree runs on our counting strict-weak-order --
-    // every key comparison the map performs lands in DictStats, making
-    // the three-way comparison metric machine-independent again.
-    struct CountingCompare {
-        DictStats* stats = nullptr;  // -> Dictionary::stats_ of the owner
-        bool operator()(const std::string& a, const std::string& b) const;
-    };
+ private:
+  // Instrumented comparator: std::map's internal comparisons are not
+  // observable, so the tree runs on our counting strict-weak-order --
+  // every key comparison the map performs lands in DictStats, making
+  // the three-way comparison metric machine-independent again.
+  struct CountingCompare {
+    DictStats* stats = nullptr;  // -> Dictionary::stats_ of the owner
+    bool operator()(const std::string& a, const std::string& b) const;
+  };
 
-    // map nodes are stable: references handed out by upsert()/find() stay
-    // valid for the dictionary's lifetime (same contract as the others).
-    // The comparator points at this object's stats_, so the map must never
-    // be copied out of the dictionary (Dictionary is non-copyable anyway).
-    std::map<std::string, TermEntry, CountingCompare> map_;
+  // map nodes are stable: references handed out by upsert()/find() stay
+  // valid for the dictionary's lifetime (same contract as the others).
+  // The comparator points at this object's stats_, so the map must never
+  // be copied out of the dictionary (Dictionary is non-copyable anyway).
+  std::map<std::string, TermEntry, CountingCompare> map_;
 };
 
 }  // namespace mse

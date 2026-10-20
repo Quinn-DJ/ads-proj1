@@ -15,12 +15,11 @@
 #include <string>
 #include <vector>
 
+#include "bptree.hpp"
 #include "corpus.hpp"
 #include "dict.hpp"
 #include "posting.hpp"
 #include "tokenizer.hpp"
-
-#include "bptree.hpp"
 
 namespace mse {
 
@@ -28,8 +27,9 @@ class StopWords;  // stopwords.hpp
 
 constexpr std::uint32_t kIndexVersion = 1;
 constexpr std::uint32_t kIndexVersionCompressed = 2;  // v2: gap+varint postings
-constexpr std::uint32_t kIndexFlagStopWords = 1u << 0;  // stop word filter applied
-constexpr std::uint32_t kIndexFlagStemmed = 1u << 1;    // Porter stemmer applied
+constexpr std::uint32_t kIndexFlagStopWords = 1u
+                                              << 0;  // stop word filter applied
+constexpr std::uint32_t kIndexFlagStemmed = 1u << 1;  // Porter stemmer applied
 
 // ---------------------------------------------------------------------------
 // Varint, the byte-aligned code of the Compression lecture (plan.md 6.4):
@@ -49,31 +49,32 @@ std::string encodeVarint(std::uint32_t value);
 
 // Decodes one varint at `cursor` (bounded by `end`); advances the cursor.
 // Throws std::runtime_error on truncation or a malformed prefix.
-std::uint32_t decodeVarint(const std::uint8_t*& cursor, const std::uint8_t* end);
+std::uint32_t decodeVarint(const std::uint8_t*& cursor,
+                           const std::uint8_t* end);
 
 struct IndexDoc {
-    std::uint32_t docID = 0;       // 1-based; docs[i].docID == i + 1
-    std::string title;
-    std::uint32_t keptTokens = 0;  // this document's tokens in the index
+  std::uint32_t docID = 0;  // 1-based; docs[i].docID == i + 1
+  std::string title;
+  std::uint32_t keptTokens = 0;  // this document's tokens in the index
 };
 
 struct IndexTerm {
-    std::string term;
-    std::vector<Posting> postings;         // docID strictly increasing
-    std::vector<std::uint32_t> positions;  // arena; slices via posStart/tf
+  std::string term;
+  std::vector<Posting> postings;         // docID strictly increasing
+  std::vector<std::uint32_t> positions;  // arena; slices via posStart/tf
 };
 
 struct Index {
-    std::uint32_t flags = 0;       // kIndexFlag* bits, recorded in the file
-    std::uint64_t tokenCount = 0;  // kept tokens across the corpus
-    std::vector<IndexDoc> docs;
-    std::vector<IndexTerm> terms;  // sorted by term
+  std::uint32_t flags = 0;       // kIndexFlag* bits, recorded in the file
+  std::uint64_t tokenCount = 0;  // kept tokens across the corpus
+  std::vector<IndexDoc> docs;
+  std::vector<IndexTerm> terms;  // sorted by term
 };
 
 struct BuildOptions {
-    TokenizerOptions tokenizer;
-    const StopWords* stopWords = nullptr;  // optional filter, applied first
-    bool stem = false;                     // Porter-stem the survivors
+  TokenizerOptions tokenizer;
+  const StopWords* stopWords = nullptr;  // optional filter, applied first
+  bool stem = false;                     // Porter-stem the survivors
 };
 
 // Build the full index over `corpus` using `dictionary` (any Dictionary
@@ -106,8 +107,8 @@ const IndexTerm* findIndexTerm(const Index& index, const std::string& term);
 
 // Human-readable posting dump (positions capped per posting). Returns false
 // when the term is not in the index.
-bool dumpTerm(const Index& index, const std::string& term, std::size_t maxPostings,
-              std::ostream& out);
+bool dumpTerm(const Index& index, const std::string& term,
+              std::size_t maxPostings, std::ostream& out);
 
 // ---------------------------------------------------------------------------
 // Disk dictionary sidecar (the B-series scaling path, plan.md 11).
@@ -136,44 +137,44 @@ void writeDictFile(const Index& index, const std::string& path,
 
 // Dictionary-driven reader over an existing index file + its sidecar.
 class LazyIndexReader {
-public:
-    // Reads the header and the doc table of the index file; the term table
-    // and the postings are never loaded as a whole.
-    LazyIndexReader(const std::string& indexPath, const std::string& dictPath,
-                    std::size_t cachePages = 8);
+ public:
+  // Reads the header and the doc table of the index file; the term table
+  // and the postings are never loaded as a whole.
+  LazyIndexReader(const std::string& indexPath, const std::string& dictPath,
+                  std::size_t cachePages = 8);
 
-    std::uint32_t flags() const { return flags_; }
-    std::uint64_t tokenCount() const { return tokenCount_; }
-    const std::vector<IndexDoc>& docs() const { return docs_; }
-    std::size_t termCount() const { return dict_.keyCount(); }
+  std::uint32_t flags() const { return flags_; }
+  std::uint64_t tokenCount() const { return tokenCount_; }
+  const std::vector<IndexDoc>& docs() const { return docs_; }
+  std::size_t termCount() const { return dict_.keyCount(); }
 
-    // Parse one term's postings from its byte range. Returns false when
-    // the term is absent. The parsed IndexTerm carries df (postings.size)
-    // and the position arena exactly like the fully loaded form, so query
-    // code can treat both interchangeably.
-    bool readTerm(const std::string& term, IndexTerm& out) const;
+  // Parse one term's postings from its byte range. Returns false when
+  // the term is absent. The parsed IndexTerm carries df (postings.size)
+  // and the position arena exactly like the fully loaded form, so query
+  // code can treat both interchangeably.
+  bool readTerm(const std::string& term, IndexTerm& out) const;
 
-    // Dictionary I/O counters (B+Tree page reads / cache hits) plus the
-    // raw bytes read from the index file itself (header + doc table at
-    // open, posting blocks per readTerm) -- the experiment's I/O measure.
-    std::uint64_t dictPageReads() const { return dict_.pageReads(); }
-    std::uint64_t dictCacheHits() const { return dict_.cacheHits(); }
-    std::uint32_t dictHeight() const { return dict_.height(); }
-    std::uint64_t bytesRead() const { return bytesRead_; }
+  // Dictionary I/O counters (B+Tree page reads / cache hits) plus the
+  // raw bytes read from the index file itself (header + doc table at
+  // open, posting blocks per readTerm) -- the experiment's I/O measure.
+  std::uint64_t dictPageReads() const { return dict_.pageReads(); }
+  std::uint64_t dictCacheHits() const { return dict_.cacheHits(); }
+  std::uint32_t dictHeight() const { return dict_.height(); }
+  std::uint64_t bytesRead() const { return bytesRead_; }
 
-    // Every (term -> packed location) pair in dictionary order: the
-    // verification sweep walks this and re-parses each posting block.
-    std::vector<std::pair<std::string, std::uint64_t>> allTerms() const;
+  // Every (term -> packed location) pair in dictionary order: the
+  // verification sweep walks this and re-parses each posting block.
+  std::vector<std::pair<std::string, std::uint64_t>> allTerms() const;
 
-private:
-    std::string indexPath_;
-    std::uint32_t version_ = kIndexVersion;  // postings encoding of index.bin
-    std::uint32_t flags_ = 0;
-    std::uint64_t tokenCount_ = 0;
-    std::vector<IndexDoc> docs_;
-    BTreeFile dict_;
-    mutable std::ifstream file_;  // index.bin, seeked per term (readTerm)
-    mutable std::uint64_t bytesRead_ = 0; // bytes read from index.bin so far
+ private:
+  std::string indexPath_;
+  std::uint32_t version_ = kIndexVersion;  // postings encoding of index.bin
+  std::uint32_t flags_ = 0;
+  std::uint64_t tokenCount_ = 0;
+  std::vector<IndexDoc> docs_;
+  BTreeFile dict_;
+  mutable std::ifstream file_;  // index.bin, seeked per term (readTerm)
+  mutable std::uint64_t bytesRead_ = 0;  // bytes read from index.bin so far
 };
 
 }  // namespace mse

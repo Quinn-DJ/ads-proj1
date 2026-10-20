@@ -26,33 +26,33 @@
 namespace mse {
 
 struct TokenizerOptions {
-    bool keepHeadings = false;  // [ACT I] / [SCENE ...] lines
-    bool keepSpeakers = false;  // @BERNARDO lines
-    bool keepStage = false;     // (Exit Ghost) lines
+  bool keepHeadings = false;  // [ACT I] / [SCENE ...] lines
+  bool keepSpeakers = false;  // @BERNARDO lines
+  bool keepStage = false;     // (Exit Ghost) lines
 };
 
 struct Token {
-    std::string text;           // normalized token, e.g. "who's", "king"
-    std::uint32_t line = 0;     // index into Document::lines it came from
+  std::string text;        // normalized token, e.g. "who's", "king"
+  std::uint32_t line = 0;  // index into Document::lines it came from
 };
 
 class Tokenizer {
-public:
-    explicit Tokenizer(const TokenizerOptions& options = TokenizerOptions{});
+ public:
+  explicit Tokenizer(const TokenizerOptions& options = TokenizerOptions{});
 
-    // Append the tokens of a whole document, in reading order.
-    void tokenize(const Document& doc, std::vector<Token>& out) const;
+  // Append the tokens of a whole document, in reading order.
+  void tokenize(const Document& doc, std::vector<Token>& out) const;
 
-    // Tokenize one line of plain text (marker already stripped). Exposed for
-    // unit tests, and later reused by the query side for input normalization.
-    void tokenizeText(const std::string& text, std::uint32_t line,
-                      std::vector<Token>& out) const;
+  // Tokenize one line of plain text (marker already stripped). Exposed for
+  // unit tests, and later reused by the query side for input normalization.
+  void tokenizeText(const std::string& text, std::uint32_t line,
+                    std::vector<Token>& out) const;
 
-    // Whether lines of this kind contribute tokens under the options.
-    bool wants(LineKind kind) const;
+  // Whether lines of this kind contribute tokens under the options.
+  bool wants(LineKind kind) const;
 
-private:
-    TokenizerOptions options_;
+ private:
+  TokenizerOptions options_;
 };
 
 }  // namespace mse

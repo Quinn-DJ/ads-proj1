@@ -18,21 +18,21 @@
 namespace mse {
 
 class StopWords {
-public:
-    // Read a stop word list. Comment ('#') and blank lines are skipped;
-    // words are stored exactly as written (the list is lowercase, matching
-    // the tokenizer's output). Throws std::runtime_error naming the file
-    // when it cannot be read.
-    static StopWords load(const std::string& path);
+ public:
+  // Read a stop word list. Comment ('#') and blank lines are skipped;
+  // words are stored exactly as written (the list is lowercase, matching
+  // the tokenizer's output). Throws std::runtime_error naming the file
+  // when it cannot be read.
+  static StopWords load(const std::string& path);
 
-    // True when the *normalized* token (as produced by the tokenizer) is a
-    // stop word. Average O(1).
-    bool contains(const std::string& term) const;
+  // True when the *normalized* token (as produced by the tokenizer) is a
+  // stop word. Average O(1).
+  bool contains(const std::string& term) const;
 
-    std::size_t size() const { return words_.size(); }
+  std::size_t size() const { return words_.size(); }
 
-private:
-    std::unordered_set<std::string> words_;
+ private:
+  std::unordered_set<std::string> words_;
 };
 
 }  // namespace mse

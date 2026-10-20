@@ -33,18 +33,18 @@
 namespace mse {
 
 struct BlockBuildOptions {
-    BuildOptions build;       // shared pipeline options (tokenizer/filter)
-    std::size_t blockTerms = 4096;  // in-memory vocabulary budget per block
-    std::string blockDir = "build/blockbuild";  // where run files are written
-    std::string blockPrefix = "run";           // run file names: run0000.bin
+  BuildOptions build;             // shared pipeline options (tokenizer/filter)
+  std::size_t blockTerms = 4096;  // in-memory vocabulary budget per block
+  std::string blockDir = "build/blockbuild";  // where run files are written
+  std::string blockPrefix = "run";            // run file names: run0000.bin
 };
 
 struct BlockBuildStats {
-    std::size_t blocks = 0;         // run files written
-    std::size_t maxLiveTerms = 0;   // high-water mark of the block dictionary
-    double scanSeconds = 0.0;       // phase 1 (tokenize + block writes)
-    double mergeSeconds = 0.0;      // phase 2 (k-way merge)
-    std::uint64_t blockBytes = 0;   // total run-file bytes (disk traffic)
+  std::size_t blocks = 0;        // run files written
+  std::size_t maxLiveTerms = 0;  // high-water mark of the block dictionary
+  double scanSeconds = 0.0;      // phase 1 (tokenize + block writes)
+  double mergeSeconds = 0.0;     // phase 2 (k-way merge)
+  std::uint64_t blockBytes = 0;  // total run-file bytes (disk traffic)
 };
 
 // Build `index` with the block-wise pipeline; fills `stats`. Throws on I/O

@@ -29,37 +29,37 @@ namespace mse {
 class StopWords;
 
 enum class QueryMode {
-    Word,     // exactly one (normalized) term
-    Phrase,   // the terms must occur adjacently in the filtered stream
-    Boolean,  // multiple terms combined by --min-match
+  Word,     // exactly one (normalized) term
+  Phrase,   // the terms must occur adjacently in the filtered stream
+  Boolean,  // multiple terms combined by --min-match
 };
 
 struct QueryOptions {
-    QueryMode mode = QueryMode::Word;
-    double maxDfRatio = 1.0;     // 1.0 = off
-    std::uint32_t minDf = 1;     // 1 = off
-    std::uint32_t minMatch = 0;  // 0 = require all searchable terms
-    std::size_t topX = 0;        // 0 = unlimited
+  QueryMode mode = QueryMode::Word;
+  double maxDfRatio = 1.0;     // 1.0 = off
+  std::uint32_t minDf = 1;     // 1 = off
+  std::uint32_t minMatch = 0;  // 0 = require all searchable terms
+  std::size_t topX = 0;        // 0 = unlimited
 };
 
 struct QueryHit {
-    std::uint32_t docID = 0;
-    std::uint32_t matched = 0;        // search terms that hit this document
-    std::uint64_t tfSum = 0;          // sum of their tf in this document
-    std::uint32_t firstPosition = 0;  // filtered-stream position of the match
+  std::uint32_t docID = 0;
+  std::uint32_t matched = 0;        // search terms that hit this document
+  std::uint64_t tfSum = 0;          // sum of their tf in this document
+  std::uint32_t firstPosition = 0;  // filtered-stream position of the match
 };
 
 // A query term that could not be used, with the reason shown to the user
 // (stop word, not in the index, dropped by a threshold, ...).
 struct TermNote {
-    std::string term;
-    std::string reason;
+  std::string term;
+  std::string reason;
 };
 
 struct QueryResult {
-    std::vector<QueryHit> hits;      // score order, capped by topX
-    std::vector<std::string> terms;  // searchable terms actually used
-    std::vector<TermNote> notes;     // dropped terms and why
+  std::vector<QueryHit> hits;      // score order, capped by topX
+  std::vector<std::string> terms;  // searchable terms actually used
+  std::vector<TermNote> notes;     // dropped terms and why
 };
 
 // Run a word / phrase / boolean query. `stopWords` should be the same list

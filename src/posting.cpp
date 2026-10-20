@@ -14,16 +14,16 @@ namespace mse {
 // positions[posStart .. posStart + tf), which is what phrase matching and
 // serialization rely on. Complexity: amortized O(1).
 void PostingList::append(std::uint32_t docID, std::uint32_t position) {
-    // New document (or first occurrence): record where its position slice
-    // starts. The tf field starts at zero and is incremented below, so the
-    // "tf == number of positions" invariant holds after every append.
-    if (postings_.empty() || postings_.back().docID != docID) {
-        postings_.push_back(
-            Posting{docID, static_cast<std::uint32_t>(positions_.size()), 0});
-    }
-    ++postings_.back().tf;
-    positions_.push_back(position);
-    ++tf_;
+  // New document (or first occurrence): record where its position slice
+  // starts. The tf field starts at zero and is incremented below, so the
+  // "tf == number of positions" invariant holds after every append.
+  if (postings_.empty() || postings_.back().docID != docID) {
+    postings_.push_back(
+        Posting{docID, static_cast<std::uint32_t>(positions_.size()), 0});
+  }
+  ++postings_.back().tf;
+  positions_.push_back(position);
+  ++tf_;
 }
 
 }  // namespace mse
