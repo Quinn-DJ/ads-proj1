@@ -199,6 +199,14 @@ TextFormat parseTextFormat(const std::string& value, const std::string& where) {
 // (about 5 MB of text for the Shakespeare set); the scaling discussion lives
 // in the Bonus analysis.
 Corpus Corpus::load(const std::string& manifestPath) {
+  Corpus corpus = loadManifest(manifestPath);
+  for (std::size_t i = 0; i < corpus.size(); ++i) {
+    corpus.docs_[i] = corpus.readDocument(i);
+  }
+  return corpus;
+}
+
+Corpus Corpus::loadManifest(const std::string& manifestPath) {
   const std::string manifest = readFile(manifestPath);
 
   // The manifest lives at <root>/data/manifest.tsv; paths inside it are
@@ -223,6 +231,7 @@ Corpus Corpus::load(const std::string& manifestPath) {
   }
 
   Corpus corpus;
+  corpus.root_ = root;
   corpus.docs_.reserve(rows.size() - 1);
 
   for (std::size_t i = 1; i < rows.size(); ++i) {
@@ -268,31 +277,37 @@ Corpus Corpus::load(const std::string& manifestPath) {
                                std::to_string(corpus.docs_.size() + 1) + ")");
     }
 
-    // Load the line-based text. '#' lines are producer header comments
-    // (docID/title/source) and empty lines carry no text; both are skipped
-    // so that Document::lines contains only searchable/annotated units.
-    // Marked documents get marker classification; plain documents skip it
-    // entirely, so "(a remark)" or "[note]" in ordinary prose stays
-    // searchable instead of being mistaken for a stage/heading marker.
-    // The line index inside Document::lines is what --pretty later maps a
-    // filtered-stream position back to.
-    const std::string textFile = joinPaths(root, doc.textPath);
-    for (const std::string& line : splitLines(readFile(textFile))) {
-      if (line.empty() || line.front() == '#') {
-        continue;
-      }
-      if (doc.format == TextFormat::Plain) {
-        doc.lines.push_back(TextLine{LineKind::Body, line});
-        continue;
-      }
-      std::string content;
-      const LineKind kind = classifyLine(line, content);
-      doc.lines.push_back(TextLine{kind, std::move(content)});
-    }
-
     corpus.docs_.push_back(std::move(doc));
   }
   return corpus;
+}
+
+Document Corpus::readDocument(std::size_t index) const {
+  Document doc = docs_.at(index);
+  doc.lines.clear();
+  // Load the line-based text. '#' lines are producer header comments
+  // (docID/title/source) and empty lines carry no text; both are skipped
+  // so that Document::lines contains only searchable/annotated units.
+  // Marked documents get marker classification; plain documents skip it
+  // entirely, so "(a remark)" or "[note]" in ordinary prose stays
+  // searchable instead of being mistaken for a stage/heading marker.
+  // The line index inside Document::lines is what --pretty later maps a
+  // filtered-stream position back to.
+  const std::string textFile = joinPaths(root_, doc.textPath);
+  for (const std::string& line : splitLines(readFile(textFile))) {
+    if (line.empty() || line.front() == '#') {
+      continue;
+    }
+    if (doc.format == TextFormat::Plain) {
+      doc.lines.push_back(TextLine{LineKind::Body, line});
+      continue;
+    }
+    std::string content;
+    const LineKind kind = classifyLine(line, content);
+    doc.lines.push_back(TextLine{kind, std::move(content)});
+  }
+
+  return doc;
 }
 
 // 1-based document lookup. The dense-ID check in load() makes this a direct

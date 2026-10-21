@@ -213,6 +213,7 @@ TEST_CASE("a corrupt index file must fail loudly", "[index]") {
 
 TEST_CASE("block-wise build equals the in-memory build byte for byte",
           "[index][blocks]") {
+  const bool compressed = GENERATE(false, true);
   const mse::Corpus corpus =
       mse::Corpus::load("tests/fixtures/golden4/data/manifest.tsv");
 
@@ -220,16 +221,24 @@ TEST_CASE("block-wise build equals the in-memory build byte for byte",
   mse::SplayDictionary splay;
   const mse::Index inMemory =
       mse::buildIndex(corpus, mse::BuildOptions{}, splay);
-  mse::writeIndex("build/test_index_memory.bin", inMemory);
+  if (compressed)
+    mse::writeIndexCompressed("build/test_index_memory.bin", inMemory);
+  else
+    mse::writeIndex("build/test_index_memory.bin", inMemory);
 
   // Block build with an absurdly small budget -- each golden4 document has
   // ~8 terms, so budget 2 spills after every document: 4 blocks, each term
   // split across as many blocks as documents it occurs in.
   mse::BlockBuildOptions options;
   options.blockTerms = 2;
+  options.mergeFanIn = 2;  // force an intermediate merge as well
+  options.compress = compressed;
   options.blockDir = "build/blockbuild_test";
   mse::BlockBuildStats stats;
-  const mse::Index blocked = mse::buildIndexBlocked(corpus, options, stats);
+  mse::buildIndexBlocked("tests/fixtures/golden4/data/manifest.tsv",
+                         "build/test_index_blocked.bin", options, stats);
+  // Full loads are confined to the test, after the external build returns.
+  const mse::Index blocked = mse::loadIndex("build/test_index_blocked.bin");
 
   CHECK(blocked.flags == inMemory.flags);
   CHECK(blocked.tokenCount == inMemory.tokenCount);
@@ -237,6 +246,11 @@ TEST_CASE("block-wise build equals the in-memory build byte for byte",
   CHECK(blocked.terms.size() == inMemory.terms.size());
   CHECK(stats.blocks >= 2);  // the budget must actually have forced spills
   CHECK(stats.maxLiveTerms >= 2);
+  CHECK(stats.documents == inMemory.docs.size());
+  CHECK(stats.terms == inMemory.terms.size());
+  CHECK(stats.tokenCount == inMemory.tokenCount);
+  CHECK(stats.maxMergeCursors <= options.mergeFanIn);
+  CHECK(stats.mergePasses >= 2);
 
   // Term tables identical (sorted, same postings and positions).
   for (std::size_t i = 0; i < inMemory.terms.size(); ++i) {
@@ -245,9 +259,114 @@ TEST_CASE("block-wise build equals the in-memory build byte for byte",
     CHECK(blocked.terms[i].positions == inMemory.terms[i].positions);
   }
   mse::validateIndex(blocked);
-  mse::writeIndex("build/test_index_blocked.bin", blocked);
   CHECK(readFile("build/test_index_memory.bin") ==
         readFile("build/test_index_blocked.bin"));
+}
+
+TEST_CASE(
+    "external build spills frequent terms by bytes and bounds merge fan-in",
+    "[index][blocks]") {
+  const bool compressed = GENERATE(false, true);
+  const std::string root = "build/block_frequency_fixture";
+  std::filesystem::create_directories(root + "/data");
+  {
+    std::ofstream text(root + "/data/text.txt");
+    for (int i = 0; i < 2048; ++i) text << "Running runner runs the\n";
+    std::ofstream manifest(root + "/data/manifest.tsv");
+    manifest << "docid\tkind\tcategory\ttitle\ttext\tsource\turl\tformat\n";
+    for (int i = 1; i <= 17; ++i)
+      manifest << i << "\ttest\tfixture\tDoc " << i
+               << "\tdata/text.txt\t-\t-\tplain\n";
+  }
+  const auto metadata = mse::Corpus::loadManifest(root + "/data/manifest.tsv");
+  REQUIRE(metadata.size() == 17);
+  CHECK(metadata[0].lines.empty());
+  CHECK(metadata.readDocument(0).lines.size() == 2048);
+  const auto stopWords = mse::StopWords::load("data/stopwords.txt");
+  mse::BlockBuildOptions options;
+  options.build.stem = true;
+  options.build.stopWords = &stopWords;
+  options.blockTerms = 100;  // only 2 stems: vocabulary alone never spills
+  options.blockBytes = 16 * 1024;
+  options.mergeFanIn = 2;
+  options.compress = compressed;
+  options.blockDir = root + "/runs";
+  // Initial runs must not collide with intermediate filenames.
+  options.blockPrefix = "merge-0-";
+  mse::BlockBuildStats stats;
+  stats.blocks = 999;  // stats are per build, even when reused
+  const std::string actual = root + "/actual.bin";
+  mse::buildIndexBlocked(root + "/data/manifest.tsv", actual, options, stats);
+  CHECK(stats.blocks == 17);
+  CHECK(stats.maxLiveTerms < options.blockTerms);
+  CHECK(stats.maxLiveBytes >= options.blockBytes);
+  CHECK(stats.maxMergeCursors == 2);
+  CHECK(stats.mergePasses == 5);
+  CHECK(std::filesystem::is_empty(options.blockDir));
+  const auto corpus = mse::Corpus::load(root + "/data/manifest.tsv");
+  mse::HashDictionary dictionary;
+  const auto expected = mse::buildIndex(corpus, options.build, dictionary);
+  const std::string reference = root + "/reference.bin";
+  if (compressed)
+    mse::writeIndexCompressed(reference, expected);
+  else
+    mse::writeIndex(reference, expected);
+  CHECK(readFile(actual) == readFile(reference));
+  const auto loaded = mse::loadIndex(actual);
+  CHECK(loaded.tokenCount == expected.tokenCount);
+  CHECK(loaded.flags == expected.flags);
+}
+
+TEST_CASE("external build handles empty postings and a single partial block",
+          "[index][blocks]") {
+  const bool compressed = GENERATE(false, true);
+  const std::string root = "build/block_empty_fixture";
+  std::filesystem::create_directories(root + "/data");
+  mse::BlockBuildOptions options;
+  options.compress = compressed;
+  options.blockDir = root + "/runs";
+  SECTION("empty corpus") {
+    std::ofstream manifest(root + "/data/manifest.tsv");
+    manifest << "docid\tkind\tcategory\ttitle\ttext\tsource\turl\n";
+  }
+  SECTION("all tokens filtered") {
+    std::ofstream text(root + "/data/text.txt");
+    text << "the the the\n";
+    std::ofstream manifest(root + "/data/manifest.tsv");
+    manifest << "docid\tkind\tcategory\ttitle\ttext\tsource\turl\n"
+             << "1\ttest\tfixture\tEmpty\tdata/text.txt\t-\t-\n";
+  }
+  SECTION("one partial block") {
+    std::ofstream text(root + "/data/text.txt");
+    text << "zebra apple zebra\n";
+    std::ofstream manifest(root + "/data/manifest.tsv");
+    manifest << "docid\tkind\tcategory\ttitle\ttext\tsource\turl\n"
+             << "1\ttest\tfixture\tWords\tdata/text.txt\t-\t-\n";
+  }
+  const auto stopWords = mse::StopWords::load("data/stopwords.txt");
+  options.build.stopWords = &stopWords;
+  const auto corpus = mse::Corpus::load(root + "/data/manifest.tsv");
+  mse::HashDictionary dictionary;
+  const auto expected = mse::buildIndex(corpus, options.build, dictionary);
+  const std::string reference = root + "/reference.bin";
+  const std::string actual = root + "/actual.bin";
+  if (compressed)
+    mse::writeIndexCompressed(reference, expected);
+  else
+    mse::writeIndex(reference, expected);
+  mse::BlockBuildStats stats;
+  mse::buildIndexBlocked(root + "/data/manifest.tsv", actual, options, stats);
+  CHECK(readFile(actual) == readFile(reference));
+  CHECK(stats.maxLiveTerms == expected.terms.size());
+  CHECK(std::filesystem::is_empty(options.blockDir));
+  CHECK_NOTHROW(mse::loadIndex(actual));
+  options.blockBytes = 0;
+  CHECK_THROWS(mse::buildIndexBlocked(root + "/data/manifest.tsv", actual,
+                                      options, stats));
+  options.blockBytes = 1;
+  options.mergeFanIn = 1;
+  CHECK_THROWS(mse::buildIndexBlocked(root + "/data/manifest.tsv", actual,
+                                      options, stats));
 }
 
 TEST_CASE("varint round trips across every length class", "[index][varint]") {

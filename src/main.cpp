@@ -123,6 +123,8 @@ void printUsage(const char* program) {
       << "build-blocks options (same pipeline flags as build, plus):\n"
       << "  --block-terms <n>    in-memory vocabulary budget per block "
          "(default 4096)\n"
+      << "  --block-bytes <n>    estimated allocation budget (default 8388608)\n"
+      << "  --merge-fan-in <n>   maximum input runs per merge (default 32)\n"
       << "\n"
       << "bptree-bench options:\n"
       << "  --keys <n>           synthetic key count (default 1000000; keys "
@@ -697,23 +699,24 @@ int commandBuild(int argc, char** argv) {
 
 // `build-blocks` -- build the index through the SPIMI block path.
 //
-// Documents are scanned in blocks bounded by a term budget; each block's
-// local index is spilled and the runs are merged at the end. This is the
-// bonus demonstration that dictionary memory is O(blockTerms), independent of
-// the total vocabulary size.
+// Text is read one document at a time. Blocks spill on vocabulary/byte budgets;
+// bounded fan-in merges stream the final index directly to disk.
 int commandBuildBlocks(int argc, char** argv) {
-  // Same pipeline options as `build`, plus the memory budget that drives
-  // the block spills -- the bonus demo: O(blockTerms) dictionary memory
-  // regardless of corpus vocabulary size.
   const std::string manifest =
       optionValue(argc, argv, "--manifest", "data/manifest.tsv");
   const std::string indexPath =
       optionValue(argc, argv, "--index", "build/index.bin");
   const std::string stopPath = optionValue(argc, argv, "--stop-words", "");
-  int blockTerms = intOption(argc, argv, "--block-terms", "4096");
+  const int blockTerms = intOption(argc, argv, "--block-terms", "4096");
+  const int blockBytes = intOption(argc, argv, "--block-bytes", "8388608");
+  const int mergeFanIn = intOption(argc, argv, "--merge-fan-in", "32");
   const bool compress = hasFlag(argc, argv, "--compress");
   if (blockTerms < 1) {
     throw std::runtime_error("--block-terms must be at least 1");
+  }
+  if (blockBytes < 1 || mergeFanIn < 2) {
+    throw std::runtime_error(
+        "--block-bytes must be positive; --merge-fan-in must be >= 2");
   }
 
   mse::StopWords stopWords;
@@ -725,23 +728,23 @@ int commandBuildBlocks(int argc, char** argv) {
   }
   options.build.stem = hasFlag(argc, argv, "--stem");
   options.blockTerms = static_cast<std::size_t>(blockTerms);
+  options.blockBytes = static_cast<std::size_t>(blockBytes);
+  options.mergeFanIn = static_cast<std::size_t>(mergeFanIn);
+  options.compress = compress;
 
-  const mse::Corpus corpus = mse::Corpus::load(manifest);
   mse::BlockBuildStats stats;
-  const mse::Index index = mse::buildIndexBlocked(corpus, options, stats);
-  mse::validateIndex(index);
-  if (compress) {
-    mse::writeIndexCompressed(indexPath, index);
-  } else {
-    mse::writeIndex(indexPath, index);
-  }
+  mse::buildIndexBlocked(manifest, indexPath, options, stats);
 
   std::cout << "blocks    : " << stats.blocks << " (budget "
             << options.blockTerms << " terms, peak " << stats.maxLiveTerms
             << " live)\n"
-            << "documents : " << index.docs.size() << "\n"
-            << "tokens    : " << index.tokenCount << "\n"
-            << "terms     : " << index.terms.size() << "\n"
+            << "live bytes: " << stats.maxLiveBytes << " (estimated; budget "
+            << options.blockBytes << ")\n"
+            << "merge     : " << stats.mergePasses << " passes, "
+            << stats.maxMergeCursors << " input cursors peak\n"
+            << "documents : " << stats.documents << "\n"
+            << "tokens    : " << stats.tokenCount << "\n"
+            << "terms     : " << stats.terms << "\n"
             << "run bytes : " << stats.blockBytes << " (temporary, removed)\n"
             << "scan time : " << std::fixed << std::setprecision(2)
             << stats.scanSeconds << " s\n"

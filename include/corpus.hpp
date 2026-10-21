@@ -8,7 +8,8 @@
 //
 //   data/manifest.tsv   one row per document (docID, kind, category, title,
 //   ...) data/text/*.txt     the line-based text of each document
-// This module loads both into memory. The whole corpus is ~5.5 MB of text, so
+// load() loads both into memory; loadManifest()/readDocument() support external
+// construction one document at a time. The corpus is ~5.5 MB of text, so
 // a resident copy is the simplest and fastest design (plan.md section 6.1);
 // the scaling question (500k files / 400M terms) is discussed separately in
 // the bonus analysis.
@@ -83,6 +84,10 @@ class Corpus {
   // Throws std::runtime_error naming the offending file/row on any problem.
   static Corpus load(const std::string& manifestPath);
 
+  // Load metadata without text. External builders read one document at a time.
+  static Corpus loadManifest(const std::string& manifestPath);
+  Document readDocument(std::size_t index) const;
+
   std::size_t size() const { return docs_.size(); }
   const Document& operator[](std::size_t index) const {
     return docs_.at(index);
@@ -105,6 +110,7 @@ class Corpus {
   Stats stats() const;
 
  private:
+  std::string root_;
   std::vector<Document> docs_;  // index i holds docID i+1
 };
 

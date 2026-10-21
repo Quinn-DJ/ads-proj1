@@ -355,12 +355,22 @@ python3 tools/brute_force.py --stop-words data/stopwords.txt --stem
 ```bash
 ./build/mse build-blocks [--manifest ...] [--index build/index.bin]
                          [--stop-words ...] [--stem] [--compress]
-                         [--block-terms 4096]
+                         [--block-terms 4096] [--block-bytes 8388608]
+                         [--merge-fan-in 32]
 ```
 
-SPIMI 式两阶段：文档流式扫描，块内词典达到预算即排序落盘成 run 文件，最后按词 k 路归并
-——**内存 O(预算)**，与语料词表大小无关（500 000 文件场景的构建侧答案）。产物与
-`mse build` **逐字节一致**；输出块数/峰值活词/两阶段耗时，run 文件用后即删。
+SPIMI 式两阶段：只加载 manifest 元数据，逐文档读取正文；块内词典达到词数或估算字节预算
+即排序落盘成 run 文件。字节估算计入 postings/positions 的 vector 容量，避免低词汇量、
+高重复语料一直不落盘；词干缓存也有独立词数上限，并在落盘时清空。
+
+归并每次最多打开 `--merge-fan-in` 个输入 run，超过时分轮归并。cursor 只保留当前词的
+头部，倒排记录和位置逐个读写；普通、压缩格式都将 postings 与词表元数据暂存磁盘，最后用
+固定缓冲区组装索引，**不会构造完整的内存 Index，也不会缓存全部压缩块**。产物与同配置
+`mse build` **逐字节一致**。
+
+内存仍包含文档元数据、run 路径和文件缓冲区；正文/分词最多保留一个文档。预算在文档边界
+检查，所以单个大文档可使块超出预算，`--block-bytes` 是估算块分配量，并非进程 RSS 硬上限。
+输出块数、峰值活词/估算字节、归并轮数/并发 cursor 数和耗时；临时文件按调用隔离，用后删除。
 
 ### `mse bptree-bench` — B+Tree 规模实测（Bonus）
 

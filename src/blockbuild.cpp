@@ -1,387 +1,455 @@
-// blockbuild.cpp -- implementation of the SPIMI-style block build (see
-// blockbuild.hpp). Two phases: document-streamed block runs with a bounded
-// in-memory dictionary, then a k-way merge by term into the final Index.
-
 #include "blockbuild.hpp"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
-#include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
+#include <queue>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include "posting.hpp"
 #include "stemmer.hpp"
 #include "stopwords.hpp"
-#include "tokenizer.hpp"
 
 namespace mse {
-
 namespace {
 
-// ---------------------------------------------------------------------------
-// little-endian helpers (block run files use the same conventions as the
-// index format; kept local so this module stays self-contained)
-// ---------------------------------------------------------------------------
-
 void putU32(std::ostream& out, std::uint32_t value) {
-  const char bytes[4] = {static_cast<char>(value & 0xFFu),
-                         static_cast<char>((value >> 8) & 0xFFu),
-                         static_cast<char>((value >> 16) & 0xFFu),
-                         static_cast<char>((value >> 24) & 0xFFu)};
+  const char bytes[4] = {
+      static_cast<char>(value), static_cast<char>(value >> 8),
+      static_cast<char>(value >> 16), static_cast<char>(value >> 24)};
   out.write(bytes, sizeof(bytes));
 }
 
+void putU64(std::ostream& out, std::uint64_t value) {
+  putU32(out, static_cast<std::uint32_t>(value));
+  putU32(out, static_cast<std::uint32_t>(value >> 32));
+}
+
 std::uint32_t getU32(std::istream& in) {
-  char bytes[4];
-  in.read(bytes, sizeof(bytes));
-  if (!in || in.gcount() != static_cast<std::streamsize>(sizeof(bytes))) {
-    throw std::runtime_error(
-        "block run file is truncated (u32 at " +
-        std::to_string(static_cast<long long>(in.tellg())) + ")");
+  unsigned char bytes[4];
+  if (!in.read(reinterpret_cast<char*>(bytes), sizeof(bytes))) {
+    throw std::runtime_error("truncated block build temporary file");
   }
-  return static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[0])) |
-         (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[1]))
-          << 8) |
-         (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[2]))
-          << 16) |
-         (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[3]))
-          << 24);
+  return std::uint32_t(bytes[0]) | (std::uint32_t(bytes[1]) << 8) |
+         (std::uint32_t(bytes[2]) << 16) | (std::uint32_t(bytes[3]) << 24);
+}
+
+std::uint64_t getU64(std::istream& in) {
+  const std::uint64_t low = getU32(in);
+  return low | (std::uint64_t(getU32(in)) << 32);
+}
+
+std::uint32_t asU32(std::uint64_t value) {
+  if (value > std::numeric_limits<std::uint32_t>::max()) {
+    throw std::runtime_error("block build exceeds index format's u32 limit");
+  }
+  return static_cast<std::uint32_t>(value);
 }
 
 void putString(std::ostream& out, const std::string& text) {
-  putU32(out, static_cast<std::uint32_t>(text.size()));
+  putU32(out, asU32(text.size()));
   out.write(text.data(), static_cast<std::streamsize>(text.size()));
 }
 
 std::string getString(std::istream& in) {
-  const std::uint32_t length = getU32(in);
-  std::string text(length, '\0');
-  in.read(text.data(), static_cast<std::streamsize>(length));
-  if (!in || in.gcount() != static_cast<std::streamsize>(length)) {
-    throw std::runtime_error("block run file is truncated");
+  std::string text(getU32(in), '\0');
+  if (!in.read(text.data(), static_cast<std::streamsize>(text.size()))) {
+    throw std::runtime_error("truncated block build string");
   }
   return text;
 }
 
-// One term's slice of a block run, as parsed by the merge cursors.
-//
-// A BlockTerm owns its postings and a flat position arena. During parsing,
-// every Posting::posStart is rewritten to an offset into `positions` rather
-// than keeping the absolute token position: the run is self-contained, so the
-// merge phase can copy the slice without consulting the original index.
-struct BlockTerm {
-  std::string term;
-  std::vector<Posting> postings;
-  std::vector<std::uint32_t> positions;
+void finish(std::ofstream& out, const std::string& path) {
+  out.flush();
+  if (!out) throw std::runtime_error("cannot write block build file: " + path);
+  out.close();
+  if (!out) throw std::runtime_error("cannot close block build file: " + path);
+}
+
+// Only files inside this newly created directory are ever cleaned up.
+class Workspace {
+ public:
+  explicit Workspace(const std::string& parent) {
+    std::filesystem::create_directories(parent);
+    const auto stamp =
+        std::chrono::steady_clock::now().time_since_epoch().count();
+    for (std::size_t attempt = 0;; ++attempt) {
+      path = std::filesystem::path(parent) /
+             ("mse-" + std::to_string(stamp) + "-" + std::to_string(attempt));
+      if (std::filesystem::create_directory(path)) break;
+    }
+  }
+
+  std::string file(const std::string& name) const {
+    return (path / name).string();
+  }
+  void clean() const {
+    std::error_code ignored;
+    std::filesystem::remove_all(path, ignored);
+  }
+  std::filesystem::path path;
 };
 
-// Sequential reader over a block run: hands out BlockTerms in the sorted
-// order phase 1 wrote them.
-//
-// Run file layout (all integers little-endian u32):
-//   termCount
-//   repeated termCount times:
-//     stringLength, stringBytes
-//     postingCount
-//     repeated postingCount times:
-//       docID, tf, then tf absolute positions
-//
-// The u32 count prefix lets the cursor detect truncation before allocating a
-// huge vector; getString/getU32 already reject short reads.
+// Run format: u32 term count, then {string term, u32 df,
+// repeated df times {u32 docID, u32 tf, tf * u32 positions}}.
+// Only the term header is buffered: even a corpus-wide frequent term is read
+// position by position, rather than loaded once for each run.
 class RunCursor {
  public:
-  explicit RunCursor(const std::string& path)
-      : path_(path), file_(path, std::ios::binary) {
-    if (!file_) {
-      throw std::runtime_error("cannot reopen block run: " + path);
-    }
-    remaining_ = getU32(file_);
-    advance();  // load the first term (if any)
+  explicit RunCursor(const std::string& path) : file(path, std::ios::binary) {
+    if (!file) throw std::runtime_error("cannot reopen block run: " + path);
+    remaining_ = getU32(file);
+    advance();
   }
 
-  bool done() const { return current_.term.empty() && remaining_ == 0; }
-  const BlockTerm& current() const { return current_; }
-  const std::string& path() const { return path_; }
-
-  // Move to the next term of this run.
-  //
-  // `remaining_` is decremented before reading so a corrupt count cannot
-  // make the loop run forever. Each posting's positions are appended to the
-  // per-term arena in read order; posStart is therefore assigned from the
-  // current arena size, not read from disk (the run stores tf positions).
   void advance() {
-    current_ = BlockTerm{};
-    if (remaining_ == 0) {
-      return;
-    }
+    active = remaining_ != 0;
+    if (!active) return;
     --remaining_;
-    try {
-      current_.term = getString(file_);
-      const std::uint32_t postings = getU32(file_);
-      current_.postings.resize(postings);
-      for (Posting& posting : current_.postings) {
-        posting.docID = getU32(file_);
-        posting.tf = getU32(file_);
-        posting.posStart =
-            static_cast<std::uint32_t>(current_.positions.size());
-        for (std::uint32_t k = 0; k < posting.tf; ++k) {
-          current_.positions.push_back(getU32(file_));
-        }
-      }
-    } catch (const std::runtime_error& error) {
-      throw std::runtime_error("while reading " + path_ + ": " + error.what());
+    const std::string previous = std::move(term);
+    term = getString(file);
+    postings = getU32(file);
+    if (term.empty() || (!previous.empty() && term <= previous) ||
+        postings == 0) {
+      throw std::runtime_error("invalid block run term header");
     }
   }
+
+  std::ifstream file;
+  std::string term;
+  std::uint32_t postings = 0;
+  bool active = false;
 
  private:
-  std::string path_;
-  std::ifstream file_;
-  std::uint32_t remaining_ = 0;  // terms left in this run
-  BlockTerm current_;
+  std::uint32_t remaining_ = 0;
 };
 
-// Write one block run: terms sorted, postings in v1 encoding.
-//
-// `sorted` borrows PostingList pointers from the live dictionary, so the
-// caller must not mutate or clear that dictionary until this returns. We flush
-// explicitly and test the stream afterwards: a full disk must fail the build
-// rather than silently produce a short run that the merge would trust.
-std::uint64_t writeRun(
-    const std::string& path,
-    const std::vector<std::pair<std::string, const PostingList*>>& sorted) {
+using Live = std::unordered_map<std::string, PostingList>;
+
+void writeRun(const std::string& path, const Live& live) {
+  // Borrow keys/lists instead of copying the dictionary's strings.
+  std::vector<const Live::value_type*> sorted;
+  sorted.reserve(live.size());
+  for (const auto& entry : live) sorted.push_back(&entry);
+  std::sort(sorted.begin(), sorted.end(),
+            [](const auto* a, const auto* b) { return a->first < b->first; });
   std::ofstream out(path, std::ios::binary | std::ios::trunc);
-  if (!out) {
-    throw std::runtime_error("cannot write block run: " + path);
-  }
-  putU32(out, static_cast<std::uint32_t>(sorted.size()));
-  for (const auto& [term, list] : sorted) {
-    putString(out, term);
-    putU32(out, static_cast<std::uint32_t>(list->postings().size()));
-    for (const Posting& posting : list->postings()) {
+  putU32(out, asU32(sorted.size()));
+  for (const auto* entry : sorted) {
+    putString(out, entry->first);
+    const PostingList& list = entry->second;
+    putU32(out, asU32(list.df()));
+    for (const Posting& posting : list.postings()) {
       putU32(out, posting.docID);
       putU32(out, posting.tf);
       for (std::uint32_t k = 0; k < posting.tf; ++k) {
-        putU32(out, list->positions()[posting.posStart + k]);
+        putU32(out, list.positions()[posting.posStart + k]);
       }
     }
   }
-  out.flush();
-  if (!out) {
-    throw std::runtime_error("error while writing block run: " + path);
+  finish(out, path);
+}
+
+struct MergeSummary {
+  std::uint32_t terms = 0;
+  std::uint64_t tokens = 0;
+};
+
+// With a term-table stream, emit final postings and metadata with relative
+// offsets. Otherwise emit another sorted run, using seek-back count fields.
+MergeSummary mergeRuns(const std::vector<std::string>& paths, std::ostream& out,
+                       std::ostream* table, bool compressed,
+                       BlockBuildStats& stats) {
+  std::vector<std::unique_ptr<RunCursor>> cursors;
+  for (const auto& path : paths)
+    cursors.push_back(std::make_unique<RunCursor>(path));
+  stats.maxMergeCursors = std::max(stats.maxMergeCursors, cursors.size());
+  const auto later = [&cursors](std::size_t a, std::size_t b) {
+    if (cursors[a]->term != cursors[b]->term)
+      return cursors[a]->term > cursors[b]->term;
+    return a > b;  // run order is document order, including intermediate runs
+  };
+  std::priority_queue<std::size_t, std::vector<std::size_t>, decltype(later)>
+      heap(later);
+  for (std::size_t i = 0; i < cursors.size(); ++i) {
+    if (cursors[i]->active) heap.push(i);
   }
-  return std::filesystem::file_size(path);
+  if (table == nullptr) putU32(out, 0);  // patched once all terms are known
+  MergeSummary summary;
+  while (!heap.empty()) {
+    const std::string term = cursors[heap.top()]->term;
+    std::streampos countAt{};
+    if (table == nullptr) {
+      putString(out, term);
+      countAt = out.tellp();
+      putU32(out, 0);
+    }
+    const auto start = out.tellp();
+    std::uint64_t df = 0, tf = 0;
+    std::uint32_t previousDoc = 0;
+    do {
+      const std::size_t at = heap.top();
+      heap.pop();  // remove before advance() mutates the heap's comparison key
+      RunCursor& cursor = *cursors[at];
+      for (std::uint32_t i = 0; i < cursor.postings; ++i) {
+        const std::uint32_t doc = getU32(cursor.file);
+        const std::uint32_t count = getU32(cursor.file);
+        if (doc <= previousDoc || count == 0)
+          throw std::runtime_error("invalid block run posting order/count");
+        if (compressed) {
+          out << encodeVarint(doc - previousDoc) << encodeVarint(count);
+        } else {
+          putU32(out, doc);
+          putU32(out, count);
+        }
+        previousDoc = doc;
+        std::uint32_t previousPos = 0;
+        for (std::uint32_t k = 0; k < count; ++k) {
+          const std::uint32_t position = getU32(cursor.file);
+          if (k != 0 && position <= previousPos)
+            throw std::runtime_error("invalid block run position order");
+          if (compressed)
+            out << encodeVarint(position - previousPos);
+          else
+            putU32(out, position);
+          previousPos = position;
+        }
+        ++df;
+        tf += count;
+      }
+      cursor.advance();
+      if (cursor.active) heap.push(at);
+    } while (!heap.empty() && cursors[heap.top()]->term == term);
+
+    const auto end = out.tellp();
+    if (!out) throw std::runtime_error("cannot write merged postings");
+    if (table == nullptr) {
+      out.seekp(countAt);
+      putU32(out, asU32(df));
+      out.seekp(end);
+    } else {
+      const std::uint32_t length =
+          asU32(static_cast<std::uint64_t>(end - start));
+      if (compressed && length >= (1u << kDictLenBits))
+        throw std::runtime_error("term '" + term +
+                                 "' has a compressed block over 2 MiB");
+      putString(*table, term);
+      putU32(*table, asU32(df));
+      putU64(*table, tf);
+      putU64(*table,
+             static_cast<std::uint64_t>(static_cast<std::streamoff>(start)));
+      putU32(*table, length);
+    }
+    summary.terms = asU32(std::uint64_t(summary.terms) + 1);
+    summary.tokens += tf;
+  }
+  if (table == nullptr) {
+    const auto end = out.tellp();
+    out.seekp(0);
+    putU32(out, summary.terms);
+    out.seekp(end);
+  }
+  return summary;
+}
+
+// Copy in a fixed buffer; neither file is ever slurped back into memory.
+void copyFile(const std::string& path, std::ostream& out) {
+  std::ifstream in(path, std::ios::binary);
+  if (!in) throw std::runtime_error("cannot reopen temporary file: " + path);
+  std::array<char, 64 * 1024> buffer;
+  while (in.read(buffer.data(), buffer.size()) || in.gcount() != 0) {
+    out.write(buffer.data(), in.gcount());
+  }
+  if (in.bad()) throw std::runtime_error("cannot read temporary file: " + path);
+}
+
+void assembleIndex(const std::string& path, const std::vector<IndexDoc>& docs,
+                   std::uint32_t flags, const BlockBuildStats& stats,
+                   bool compressed, const std::string& tablePath,
+                   const std::string& postingsPath) {
+  std::uint64_t postingsBase = 28 + std::filesystem::file_size(tablePath);
+  for (const auto& doc : docs) postingsBase += 12 + doc.title.size();
+  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  out.write("MSE1", 4);
+  putU32(out, compressed ? kIndexVersionCompressed : kIndexVersion);
+  putU32(out, flags);
+  putU32(out, asU32(docs.size()));
+  putU32(out, asU32(stats.terms));
+  putU64(out, stats.tokenCount);
+  for (const auto& doc : docs) {
+    putU32(out, doc.docID);
+    putU32(out, doc.keptTokens);
+    putString(out, doc.title);
+  }
+  std::ifstream table(tablePath, std::ios::binary);
+  for (std::size_t i = 0; i < stats.terms; ++i) {
+    putString(out, getString(table));
+    putU32(out, getU32(table));
+    putU64(out, getU64(table));
+    putU64(out, postingsBase + getU64(table));
+    putU32(out, getU32(table));
+  }
+  copyFile(postingsPath, out);
+  finish(out, path);
 }
 
 }  // namespace
 
-// SPIMI-style external build.
-//
-// Why this exists: the in-memory builder keeps one dictionary entry per
-// distinct term, so its peak memory grows with the vocabulary, not with the
-// block budget. At 400M distinct terms that is tens of GB. This builder bounds
-// the dictionary to roughly `blockTerms` entries: whenever the live map
-// crosses the budget, it is sorted and spilled to a run file, then cleared.
-//
-// Invariants that make the merge a simple concatenation:
-//   * A spill happens only between documents. Therefore no docID appears in
-//     two runs for the same term, and docIDs in later runs are strictly larger
-//     than docIDs in earlier runs.
-//   * Within a run, terms are unique and sorted (std::sort over the map keys).
-//   * Within a term, postings are appended in document order, so docIDs are
-//     strictly increasing and positions within one posting are increasing.
-// The merge below relies on all three: equal terms are concatenated in run
-// order, and posStart is rebuilt rather than reused.
-//
-// Complexity: phase 1 tokenizes every document once and performs one sort per
-// spill, O(totalTokens + R * B log B) where B is the block budget and R the
-// number of runs. Phase 2 performs a linear scan of the live cursors for each
-// output term: O(T * R) term comparisons and O(totalPostings) copying, with
-// O(R) cursor memory. R grows with vocabulary/B, which is why a larger budget
-// trades memory for fewer merge passes.
-Index buildIndexBlocked(const Corpus& corpus, const BlockBuildOptions& options,
-                        BlockBuildStats& stats) {
-  if (options.blockTerms == 0) {
-    throw std::runtime_error("blockTerms must be at least 1");
-  }
-  std::filesystem::create_directories(options.blockDir);
-  const auto started = std::chrono::steady_clock::now();
-
-  // ------------------------------------------------------------------
-  // phase 1: stream documents, spill sorted runs at document boundaries
-  // ------------------------------------------------------------------
-  const Tokenizer tokenizer(options.build.tokenizer);
-  std::vector<Token> tokens;
-  // Stemming is pure but comparatively expensive, and the same surface form
-  // recurs constantly ("the", "lord", ...). Caching surface -> stem keeps
-  // phase 1 proportional to distinct forms rather than total tokens; the
-  // cache is released when this function returns.
-  std::unordered_map<std::string, std::string> stemCache;  // see count.cpp
-  const auto stemmed =
-      [&stemCache](const std::string& word) -> const std::string& {
-    auto it = stemCache.find(word);
-    if (it == stemCache.end()) {
-      it = stemCache.emplace(word, stem(word)).first;
-    }
-    return it->second;
-  };
-
-  Index index;  // docs + tokenCount are corpus properties, blocks don't change
-                // them
-  index.flags =
-      (options.build.stopWords != nullptr ? kIndexFlagStopWords : 0u) |
-      (options.build.stem ? kIndexFlagStemmed : 0u);
-
-  // The bounded dictionary. `live.size()` is the memory knob: each entry
-  // owns a PostingList whose vectors grow with occurrences in this block.
-  std::unordered_map<std::string, PostingList> live;  // the bounded dictionary
-  std::vector<std::string> runPaths;
-  const auto spill = [&]() {
-    if (live.empty()) {
-      return;
-    }
-    // Copy pointers into a sortable vector; the map itself stays untouched
-    // until writeRun has consumed every pointer.
-    std::vector<std::pair<std::string, const PostingList*>> sorted;
-    sorted.reserve(live.size());
-    for (const auto& entry : live) {
-      sorted.emplace_back(entry.first, &entry.second);
-    }
-    std::sort(sorted.begin(), sorted.end(),
-              [](const auto& a, const auto& b) { return a.first < b.first; });
-    const std::string path = options.blockDir + "/" + options.blockPrefix +
-                             std::to_string(runPaths.size()) + ".bin";
-    stats.blockBytes += writeRun(path, sorted);
-    runPaths.push_back(path);
-    // clear() keeps the bucket array; that is fine because the next block
-    // reuses the same budget and avoids rehashing from scratch.
-    live.clear();
-  };
-
-  for (std::size_t i = 0; i < corpus.size(); ++i) {
-    const Document& doc = corpus[i];
-    tokens.clear();
-    tokenizer.tokenize(doc, tokens);
-    // Position counts only tokens that survive the stop-word filter, so a
-    // phrase match sees the same numbering as the final index. Filtered
-    // tokens are skipped before `position` is incremented.
-    std::uint32_t position = 0;  // offset in the document's filtered stream
-    for (const Token& token : tokens) {
-      if (options.build.stopWords != nullptr &&
-          options.build.stopWords->contains(token.text)) {
-        continue;
+void buildIndexBlocked(const std::string& manifestPath,
+                       const std::string& indexPath,
+                       const BlockBuildOptions& options,
+                       BlockBuildStats& stats) {
+  if (options.blockTerms == 0 || options.blockBytes == 0 ||
+      options.mergeFanIn < 2)
+    throw std::runtime_error(
+        "blockTerms/blockBytes must be positive; mergeFanIn must be >= 2");
+  if (options.blockPrefix.empty() ||
+      options.blockPrefix.find_first_of("/\\:") != std::string::npos)
+    throw std::runtime_error("blockPrefix must be a plain filename prefix");
+  stats = {};
+  Workspace workspace(options.blockDir);
+  try {
+    const auto started = std::chrono::steady_clock::now();
+    std::vector<IndexDoc> docs;
+    std::vector<std::string> runs;
+    // All scan allocations die before opening any merge cursors.
+    {
+      const Corpus corpus = Corpus::loadManifest(manifestPath);
+      const Tokenizer tokenizer(options.build.tokenizer);
+      std::vector<Token> tokens;
+      Live live;
+      std::size_t liveBytes = 0;
+      std::unordered_map<std::string, std::string> stemCache;
+      std::size_t cacheBytes = 0;
+      const auto spill = [&]() {
+        if (live.empty()) return;
+        const std::string path = workspace.file(
+            options.blockPrefix + std::to_string(runs.size()) + ".bin");
+        writeRun(path, live);
+        stats.blockBytes += std::filesystem::file_size(path);
+        runs.push_back(path);
+        live.clear();
+        stemCache.clear();
+        liveBytes = 0;
+        cacheBytes = 0;
+      };
+      docs.reserve(corpus.size());
+      for (std::size_t i = 0; i < corpus.size(); ++i) {
+        const Document doc = corpus.readDocument(i);
+        tokens.clear();
+        tokenizer.tokenize(doc, tokens);
+        std::uint32_t position = 0;
+        for (const Token& token : tokens) {
+          if (options.build.stopWords &&
+              options.build.stopWords->contains(token.text))
+            continue;
+          const std::string* term = &token.text;
+          if (options.build.stem) {
+            auto cached = stemCache.find(token.text);
+            if (cached == stemCache.end()) {
+              // Many surface forms may stem to one term, so spills alone
+              // cannot bound this cache. Cap it independently as well.
+              if (stemCache.size() >= options.blockTerms ||
+                  cacheBytes >= options.blockBytes) {
+                stemCache.clear();
+                cacheBytes = 0;
+              }
+              cached = stemCache.emplace(token.text, stem(token.text)).first;
+              cacheBytes += sizeof(decltype(stemCache)::value_type) +
+                            cached->first.capacity() +
+                            cached->second.capacity() + 2 * sizeof(void*);
+            }
+            term = &cached->second;
+          }
+          auto entry = live.try_emplace(*term);
+          if (entry.second) {
+            liveBytes += sizeof(Live::value_type) +
+                         entry.first->first.capacity() + 2 * sizeof(void*);
+          }
+          PostingList& list = entry.first->second;
+          const auto oldPostings = list.postings().capacity();
+          const auto oldPositions = list.positions().capacity();
+          list.append(asU32(doc.id), position);
+          liveBytes +=
+              (list.postings().capacity() - oldPostings) * sizeof(Posting) +
+              (list.positions().capacity() - oldPositions) *
+                  sizeof(std::uint32_t);
+          position = asU32(std::uint64_t(position) + 1);
+        }
+        docs.push_back(IndexDoc{asU32(doc.id), doc.title, position});
+        stats.tokenCount += position;
+        stats.maxLiveTerms = std::max(stats.maxLiveTerms, live.size());
+        stats.maxLiveBytes =
+            std::max(stats.maxLiveBytes, liveBytes + cacheBytes);
+        if (live.size() >= options.blockTerms ||
+            liveBytes + cacheBytes >= options.blockBytes)
+          spill();
       }
-      const std::string& term =
-          options.build.stem ? stemmed(token.text) : token.text;
-      live[term].append(static_cast<std::uint32_t>(doc.id), position);
-      ++position;
-    }
-    // IndexDoc::tokenCount records the filtered length. Phrase matching
-    // and future length-normalized scoring use it, so it must agree with
-    // the position counter above rather than with tokens.size().
-    index.docs.push_back(
-        IndexDoc{static_cast<std::uint32_t>(doc.id), doc.title, position});
-    index.tokenCount += position;
-    // Spill only at document boundaries: a term split across blocks must
-    // never carry the same docID twice (docIDs rise with document order).
-    // The check is >= because one document can push the dictionary past
-    // the budget by its own distinct terms; that overshoot is bounded by
-    // the largest document, not by the corpus vocabulary.
-    if (live.size() >= options.blockTerms) {
-      stats.maxLiveTerms = std::max(stats.maxLiveTerms, live.size());
       spill();
     }
-  }
-  spill();  // the final partial block
-  stats.blocks = runPaths.size();
-  if (stats.blocks == 0) {
-    return index;  // empty corpus
-  }
-  stats.scanSeconds =
-      std::chrono::duration<double>(std::chrono::steady_clock::now() - started)
-          .count();
-  const auto mergeStarted = std::chrono::steady_clock::now();
-
-  // ------------------------------------------------------------------
-  // phase 2: k-way merge over the run streams (terms ascend per run, so
-  // repeatedly taking the minimum current term yields global order)
-  //
-  // The merge is O(T * R) where T is the number of distinct terms and R the
-  // number of runs: for each output term we scan all cursors once. A heap
-  // would reduce this to O(T log R), but with R in the hundreds and terms
-  // compared as short strings, the constant-factor difference is small and
-  // the linear scan keeps the code and the failure modes simple.
-  // ------------------------------------------------------------------
-  std::vector<std::unique_ptr<RunCursor>> cursors;
-  cursors.reserve(runPaths.size());
-  for (const std::string& path : runPaths) {
-    cursors.push_back(std::make_unique<RunCursor>(path));
-  }
-  // Track non-empty cursors so the outer loop stops as soon as every run is
-  // exhausted, without rescanning all cursors forever on an empty tail.
-  std::size_t alive = 0;
-  for (const auto& cursor : cursors) {
-    if (!cursor->done()) {
-      ++alive;
+    stats.documents = docs.size();
+    stats.blocks = runs.size();
+    stats.scanSeconds = std::chrono::duration<double>(
+                            std::chrono::steady_clock::now() - started)
+                            .count();
+    const auto mergeStarted = std::chrono::steady_clock::now();
+    std::size_t pass = 0;
+    while (runs.size() > options.mergeFanIn) {
+      std::vector<std::string> next;
+      for (std::size_t begin = 0; begin < runs.size();
+           begin += options.mergeFanIn) {
+        const std::size_t end =
+            std::min(runs.size(), begin + options.mergeFanIn);
+        if (end - begin == 1) {
+          next.push_back(runs[begin]);
+          continue;
+        }
+        const std::vector<std::string> group(runs.begin() + begin,
+                                             runs.begin() + end);
+        const std::string path =
+            workspace.file("merge-" + std::to_string(pass) + "-" +
+                           std::to_string(next.size()) + ".run");
+        std::ofstream out(path, std::ios::binary | std::ios::trunc);
+        mergeRuns(group, out, nullptr, false, stats);
+        finish(out, path);
+        stats.blockBytes += std::filesystem::file_size(path);
+        next.push_back(path);
+        for (const auto& input : group) std::filesystem::remove(input);
+      }
+      runs = std::move(next);
+      ++pass;
     }
+    const std::string tablePath = workspace.file("terms.tmp");
+    const std::string postingsPath = workspace.file("postings.tmp");
+    std::ofstream table(tablePath, std::ios::binary | std::ios::trunc);
+    std::ofstream postings(postingsPath, std::ios::binary | std::ios::trunc);
+    const auto summary =
+        mergeRuns(runs, postings, &table, options.compress, stats);
+    finish(table, tablePath);
+    finish(postings, postingsPath);
+    if (summary.tokens != stats.tokenCount)
+      throw std::runtime_error("block merge token count mismatch");
+    stats.terms = summary.terms;
+    stats.mergePasses = pass + 1;
+    const std::uint32_t flags =
+        (options.build.stopWords ? kIndexFlagStopWords : 0u) |
+        (options.build.stem ? kIndexFlagStemmed : 0u);
+    assembleIndex(indexPath, docs, flags, stats, options.compress, tablePath,
+                  postingsPath);
+    stats.mergeSeconds = std::chrono::duration<double>(
+                             std::chrono::steady_clock::now() - mergeStarted)
+                             .count();
+    workspace.clean();
+  } catch (const std::exception& error) {
+    throw std::runtime_error("block build in " + workspace.path.string() +
+                             ": " + error.what());
   }
-
-  while (alive > 0) {
-    // Find the smallest term across the live cursors. Ties are expected:
-    // that is exactly how a term spread over several runs is detected.
-    std::size_t minAt = cursors.size();
-    for (std::size_t c = 0; c < cursors.size(); ++c) {
-      if (cursors[c]->done()) {
-        continue;
-      }
-      if (minAt == cursors.size() ||
-          cursors[c]->current().term < cursors[minAt]->current().term) {
-        minAt = c;
-      }
-    }
-    // Concatenate this term's postings from every run holding it, in
-    // run order == document order: docIDs stay strictly increasing and
-    // each posting's posStart is rebuilt against the merged arena.
-    // We must copy the Posting: its posStart refers to the run-local
-    // position arena, not to `merged.positions`.
-    IndexTerm merged;
-    merged.term = cursors[minAt]->current().term;
-    for (std::size_t c = 0; c < cursors.size(); ++c) {
-      if (cursors[c]->done() || cursors[c]->current().term != merged.term) {
-        continue;
-      }
-      const BlockTerm& block = cursors[c]->current();
-      for (const Posting& posting : block.postings) {
-        Posting copy = posting;
-        copy.posStart = static_cast<std::uint32_t>(merged.positions.size());
-        merged.positions.insert(
-            merged.positions.end(), block.positions.begin() + posting.posStart,
-            block.positions.begin() + posting.posStart + posting.tf);
-        merged.postings.push_back(copy);
-      }
-      cursors[c]->advance();
-      if (cursors[c]->done()) {
-        --alive;
-      }
-    }
-    index.terms.push_back(std::move(merged));
-  }
-  stats.mergeSeconds = std::chrono::duration<double>(
-                           std::chrono::steady_clock::now() - mergeStarted)
-                           .count();
-
-  // Runs are an implementation detail; remove them once the cursors (and
-  // their open streams) are gone -- Windows refuses to delete open files.
-  // Cleanup failures are deliberately ignored: a leftover temp file is
-  // harmless, while throwing here would discard a fully built index.
-  cursors.clear();
-  for (const std::string& path : runPaths) {
-    std::filesystem::remove(path);
-  }
-  return index;
 }
 
 }  // namespace mse
