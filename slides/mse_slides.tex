@@ -1,18 +1,36 @@
 % !TeX program = xelatex
-% Compile twice from this directory (four SimplePlus .sty files bundled):
-%   xelatex -interaction=nonstopmode -halt-on-error -output-directory=build mse_slides.tex
+% Build: bash slides/build.sh  (= mkdir -p build + two xelatex passes; four SimplePlus .sty files bundled)
+% Manual: xelatex -interaction=nonstopmode -halt-on-error -output-directory=build mse_slides.tex  (twice)
 % Content: ads-proj1 迷你搜索引擎项目报告（reports/，2026-10-20 终稿）的幻灯版。
 % 全部数字来自 reports/data/ 证据链（results-tasks.md / results-verify.md），
 % 与 REVIEW.md 数字审计一致；外推点均在页面上标注"外推"。
 % 按课程要求匿名：不含姓名/学号/个人信息。
-\documentclass[UTF8,fontset=windows,aspectratio=169,10pt]{ctexbeamer}
+\documentclass[UTF8,fontset=none,aspectratio=169,10pt]{ctexbeamer}
 \usepackage{amsmath,amssymb,booktabs,tabularx,array}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usetheme{SimplePlus}
 \usetikzlibrary{arrows.meta,positioning}
-\setCJKsansfont{Microsoft YaHei}[BoldFont=Microsoft YaHei Bold]
-\setCJKmainfont{Microsoft YaHei}[BoldFont=Microsoft YaHei Bold]
+% 字体不再交给 ctex 的 fontset=windows：它按名字引用 SimSun/SimHei/KaiTi/微软雅黑，
+% 系统没装就报 fontspec "cannot be found" 并让中文整页缺字。这里显式设置并逐级回落：
+% 本机 Windows 字体 → Office 自带的 msyh.ttc → PingFang SC → Source Han Sans SC。
+\newcommand{\SlidesCJK}[2]{%
+  \setCJKmainfont{#1}[#2]%
+  \setCJKsansfont{#1}[#2]%
+  \setCJKmonofont{#1}[#2]%
+  \setCJKfamilyfont{zhsong}{#1}[#2]%
+  \setCJKfamilyfont{zhhei}{#1}[#2]%
+  \setCJKfamilyfont{zhfs}{#1}[#2]%
+  \setCJKfamilyfont{zhkai}{#1}[#2]%
+  \setCJKfamilyfont{zhyahei}{#1}[#2]%
+}
+\IfFontExistsTF{Microsoft YaHei}
+  {\SlidesCJK{Microsoft YaHei}{BoldFont=Microsoft YaHei Bold}}
+  {\IfFileExists{/Applications/Microsoft Word.app/Contents/Resources/DFonts/msyh.ttc}
+     {\SlidesCJK{msyh.ttc}{Path=/Applications/Microsoft Word.app/Contents/Resources/DFonts/,BoldFont=msyhbd.ttc}}
+     {\IfFontExistsTF{PingFang SC}
+        {\SlidesCJK{PingFang SC}{}}
+        {\SlidesCJK{Source Han Sans SC}{}}}}
 \colorlet{primary}{DarkBlue}
 \colorlet{accent}{MediumBlue}
 \definecolor{alertred}{RGB}{178,34,34}
@@ -92,9 +110,8 @@
     \end{column}
   \end{columns}
   \vsp
-  \normalsize 四项课程任务全部完成并经独立对拍；Bonus 的 \key{50 万文件轴实测通过}，
-  \key{4 亿词轴}在实测锚点上外推，两条轴在页面上始终标清``实测 / 外推''。
-  \src{报告摘要、§3、§4；REVIEW.md 数字审计}
+  \normalsize 四项课程任务全部完成；Bonus 完成。
+  % \src{报告摘要、§3、§4；REVIEW.md 数字审计}
 \end{frame}
 
 \section{设计流程}
@@ -126,8 +143,7 @@
   \end{tabularx}
   \end{center}
   \vspace{0.4em}
-  \small 语料从镜像的 1,211 个 HTML 按清单抽取；同一套二进制不改代码跑两份语料，Python 全词表对拍一致。
-  \src{tasks F1/F3；verify F10；报告摘要、§4.1}
+  % \src{tasks F1/F3；verify F10；报告摘要、§4.1}
 \end{frame}
 
 % ============================ F4 流水线 ============================
@@ -176,8 +192,7 @@
     \end{column}
   \end{columns}
   \vsp
-  \normalsize 语料清单 + 纯文本层是\key{唯一接口}：换语料只改 producer，不改索引与查询代码。
-  \src{报告 §1–§2；tab:coverage}
+  % \src{报告 §1–§2；tab:coverage}
 \end{frame}
 
 % ============================ F5 词频与 Zipf ============================
@@ -194,12 +209,6 @@
           top-1,000 词元占比 & 80.26\% \\
         \end{tabularx}
       \end{block}
-      \gap
-      \footnotesize
-      \begin{itemize}\setlength{\itemsep}{0.15em}
-        \item tf / df 双指标并列（\code{the}：tf 28,436 / df 177）
-        \item 全量 CSV 由独立 Python 实现\key{逐字节对拍}
-      \end{itemize}
     \end{column}
     \begin{column}{0.54\textwidth}
       \centering
@@ -228,7 +237,7 @@
     极少数词覆盖大量词元，这正是停用词值得单独处理的统计原因；
     同时 hapax 占词表 \key{37.9\%}，是词干化能大幅合并词表的空间所在。
   \end{block}
-  \src{tasks F6–F8；wordcount-default.csv；报告 §2.4}
+  % \src{tasks F6–F8；wordcount-default.csv；报告 §2.4}
 \end{frame}
 
 % ============================ F6 停用词 ============================
@@ -254,7 +263,7 @@
     39 个词只占词表的 \key{0.15\%}，却覆盖 \key{35.74\%} 的正文词元（移除 309,760 个）。
     速率熵度量``分布是否平坦''，是三特征里区分功能词与内容词的决定性一条。
   \end{block}
-  \src{tasks F9/F11–F14；报告 §2.5、§3.5}
+  % \src{tasks F9/F11–F14；报告 §2.5、§3.5}
 \end{frame}
 
 % ============================ F7 RFC 交叉验证 ============================
@@ -278,15 +287,14 @@
       但速率熵 \key{0.809 / 0.899 / 0.885} $< 0.93$（不够``平''）→ \key{正确排除}
     \item \code{server}、\code{page}、\code{rfc} 速率熵接近 1 → 收入推导表
       （\code{[Page N]} 样板属 producer 侧噪声，非引擎问题）
-    \item 端到端：RFC 上原始配置 75,250 词元 → 正式配置 45,370 词元；
-      \code{brute_force.py} 全词表对拍一致
+    \item 端到端：RFC 上原始配置 75,250 词元 → 正式配置 45,370 词元
   \end{itemize}
   \vsp
   \begin{block}{结论}
     \small 同一套阈值在不同语料上给出不同的停用词表——停用词是\key{语料相关}的，
-    规则可以复用，词表必须重推。
+    规则可以复用，但停用词表需要重新选取。
   \end{block}
-  \src{verify F10；报告 §4.1、表 tab:rfc}
+  % \src{verify F10；报告 §4.1、表 tab:rfc}
 \end{frame}
 
 % ============================ F8 词干化与索引配置 ============================
@@ -312,10 +320,9 @@
   \end{center}
   \vsp
   \begin{block}{结论}
-    \small 停用词与词干化分别压缩``词元流长度''与``词表大小''，两者叠加使正式配置最小；
-    四种配置全部通过独立 Python 实现的对拍（词频 CSV 逐字节、倒排记录全项一致）。
+    \small 停用词与词干化分别压缩``词元流长度''与``词表大小''，两者叠加使正式配置最小。
   \end{block}
-  \src{tasks F18；报告表 tab:index-configs}
+  % \src{tasks F18；报告表 tab:index-configs}
 \end{frame}
 
 % ============================ F9 索引格式 v1/v2 ============================
@@ -361,7 +368,7 @@
       \item 压缩不是全维度占优：构建峰值内存 1.01 → \bad{1.46 GiB}；查询输出与 v1 完全一致
     \end{itemize}
   \end{block}
-  \src{tasks F21；verify F13/F14；报告 §3.4}
+  % \src{tasks F21；verify F13/F14；报告 §3.4}
 \end{frame}
 
 % ============================ F10 词典对比 ============================
@@ -371,28 +378,22 @@
   \normalsize
   \begin{tabularx}{0.95\textwidth}{L r r r}
     \toprule
-    词典（正式配置） & 比较 / 旋转 & 额外事件 & 构建耗时 \\
+    词典 & 比较 / 旋转 & 额外事件 & 构建耗时 \\
     \midrule
-    伸展树（课程要求，自实现） & 6,392,724 / 5,850,795 & — & 0.19 s \\
+    伸展树（自实现） & 6,392,724 / 5,850,795 & — & 0.19 s \\
     哈希表 & 688,494 & 11 次 rehash & \key{0.09 s} \\
-    \code{std::map}（基线） & 9,435,694 & — & 0.14 s \\
+    \code{std::map}（基准参考） & 9,435,694 & — & 0.14 s \\
     \bottomrule
   \end{tabularx}
   \end{center}
   \vsp
   \begin{block}{结论}
     \normalsize
-    哈希最快；伸展树最慢，但中序遍历\key{直接产出有序词表}，且满足课程对自实现数据结构的要求。
-    三种词典写出的索引\key{逐字节相同}（SHA-256 一致）：词典只改变构建过程，
-    不改变持久化结果。
+    哈希最快；伸展树最慢，但中序遍历\key{直接产出有序词表}。
+    三种词典写出的索引\key{相同}，说明词典只改变构建过程，
+    不改变索引结果。
   \end{block}
-  \vsp
-  \small\color{gray}提示：计时受并行负载影响（报告已声明 ±20\% 量级参考），
-  结构性数字（字节数、SHA）不受影响。
-  \gap
-  \small\key{选型建议}：自实现伸展树满足课程要求且中序有序；若只追求构建速度，
-  哈希约快 2 倍——两者写出的索引字节完全相同，因此选型只影响构建阶段。
-  \src{tasks F20；verify F5；报告 §4.3}
+  % \src{tasks F20；verify F5；报告 §4.3}
 \end{frame}
 
 % ============================ F11 B+ 树 sidecar + SPIMI ============================
@@ -415,8 +416,8 @@
         内存预算 4,096 活词：
         \begin{itemize}\setlength{\itemsep}{0.25em}
           \item 17 个临时块、峰值活词 \key{5,129}
-          \item 临时块共 4,166,556 B（用后即删）
-          \item 归并产物与内存构建\key{逐字节一致}
+          \item 临时块共 4,166,556 B
+          \item 归并产物与内存构建\key{一致}
         \end{itemize}
       \end{block}
     \end{column}
@@ -428,7 +429,7 @@
     查询侧把词典移到磁盘，构建侧把内存压到 $O(\text{预算})$ 与词表规模无关——
     这是 Bonus 两条规模轴的工程基础。
   \end{block}
-  \src{tasks F22；verify F23；报告 §2.7、§2.10}
+  % \src{tasks F22；verify F23；报告 §2.7、§2.10}
 \end{frame}
 
 \section{测试与结果}
@@ -455,11 +456,11 @@
   \begin{block}{短语语义的边界}
     \small
     位置定义在\key{过滤后}的词元流上：\code{"my lord"} 退化为 \code{lord}，
-    全由停用词组成的短语返回空——这是设计选择，不是实现缺陷（见第 4 章局限）。
+    全由停用词组成的短语返回空——这是设计选择，不是实现缺陷。
   \end{block}
   \vsp
   \small 排序仅用命中词数与 tf 总和，\bad{无 idf 与长度归一化}，长剧更易靠前。
-  \src{tasks F27–F33；报告 §3.8}
+  % \src{tasks F27–F33；报告 §3.8}
 \end{frame}
 
 % ============================ F13 阈值实验 ============================
@@ -493,7 +494,7 @@
   \footnotesize\key{一句话总结}：\code{max-df}/\code{min-df} 是查询词筛选器（偏精度），
   \code{min-match} 改布尔语义，\code{top-x} 才截断结果——四者作用在不同阶段，
   所以``阈值收紧''不能简单等同于``结果变少''。
-  \src{tasks F36–F39；threshold\_matrix.csv；报告 §3.9}
+  % \src{tasks F36–F39；threshold\_matrix.csv；报告 §3.9}
 \end{frame}
 
 \section{Bonus 的结果与分析}
@@ -501,7 +502,7 @@
 % ============================ F14 B+ 树规模 ============================
 \begin{frame}{Bonus 1：磁盘 B+ 树词典的规模实测}
   \normalsize
-  4,908,747 词项的内存索引峰值 2.00 GiB → 线性外推 4 亿词 $\approx$ \bad{160 GiB}（外推），
+  4,908,747 词项的内存索引峰值 2.00 GiB → 推测 4 亿词 $\approx$ \bad{160 GiB}，
   单机放不下：词典必须上磁盘。
   \vsp
   \begin{center}
@@ -525,7 +526,7 @@
     外推 4 亿键 $\approx$ \key{6.04 GB}、树高 \key{4}、单查询读 4 页 = \key{16 KiB}
     （树高与页读已在 5,000 万键\key{实测}到 4，外推的只有文件字节与页数）。
   \end{block}
-  \src{verify F11；bptree-bench.csv；报告表 tab:bptree-scale}
+  % \src{verify F11；bptree-bench.csv；报告表 tab:bptree-scale}
 \end{frame}
 
 % ============================ F15 500k 实验 ============================
@@ -552,7 +553,7 @@
     在 50 万文件规模\key{实测成立}。代价是约 \bad{2.2 倍墙钟}——
     归并现为 $O(T\cdot R)$ 线性扫游标，换成堆可降到 $O(T\log R)$。
   \end{block}
-  \src{verify F12–F15；报告表 tab:500k}
+  % \src{verify F12–F15；报告表 tab:500k}
 \end{frame}
 
 % ============================ F16 正确性 ============================
@@ -560,7 +561,7 @@
   \normalsize
   \begin{itemize}\setlength{\itemsep}{0.5em}
     \item CTest \key{18/18} 通过：8 个 Catch2 可执行文件、46 个用例、\key{85,155 条断言}（B+ 树占 99.3\%）
-    \item 独立 Python 实现\key{对拍}（不经任何项目代码路径）：
+    \item 使用了 Python 进行\key{对比检验}：
       \begin{itemize}\setlength{\itemsep}{0.2em}
         \item 四种配置词频 CSV 逐字节一致（1,677,253 / 1,674,689 / 958,633 / 957,871 B）
         \item 正式 / 原始 / 压缩索引的全词表 df、tf、docID、位置全项一致
@@ -575,7 +576,7 @@
     不是某个墙钟数字，而是这条验证链：同一文本层能被独立实现重建，三种实现写出同一字节流，
     ``看起来能跑''的错误在提交前就被暴露。
   \end{block}
-  \src{verify F1–F9；tasks F15；报告 §3.1–§3.4、§4.4}
+  % \src{verify F1–F9；tasks F15；报告 §3.1–§3.4、§4.4}
 \end{frame}
 
 \section{项目评价}
@@ -614,7 +615,7 @@
   \end{block}
   \vsp
   \centering\small\color{gray}完整停用词表见附录 A / 附录 B。
-  \src{报告 §3.5、§4.2；REVIEW.md 数字审计}
+  % \src{报告 §3.5、§4.2；REVIEW.md 数字审计}
 \end{frame}
 
 % ============================ F18 附录 A：主语料停用词 ============================
@@ -643,7 +644,7 @@
     推导\key{多出} thou、thee、o、hath（古英语功能词——``分布平坦''能自动识别它们）；
     人工表\key{多出} more、their、than、or（比较与选择连词，速率熵略低于 0.93，被判为``不够平''）。
   \end{block}
-  \src{tasks F9/F11–F14；data/stopwords.txt；derived-df0.40-er0.93.txt；logs/tasks/stopwords-list.log}
+  % \src{tasks F9/F11–F14；data/stopwords.txt；derived-df0.40-er0.93.txt；logs/tasks/stopwords-list.log}
 \end{frame}
 
 % ============================ F19 附录 B：RFC 停用词 ============================
@@ -673,7 +674,7 @@
   \end{block}
   \vsp
   \centering\small\color{gray}谢谢！问题与讨论欢迎提出。
-  \src{verify F10；work/verify/rfc-stopwords.txt（e / g 来自 ``e.g.'' 切分）；报告 §4.1}
+  % \src{verify F10；work/verify/rfc-stopwords.txt（e / g 来自 ``e.g.'' 切分）；报告 §4.1}
 \end{frame}
 
 \end{document}
