@@ -11,6 +11,29 @@
 # dependencies" rule is read as applying to the delivered binaries).
 # Provenance and license: vendor/catch2/. To add a test, drop
 # tests/test_xxx.cpp next to this file and append test_xxx to MSE_TESTS below.
+#
+# CTest test-name prefix: when this project is configured from the top-level
+# aggregator, the parent sets MSE_TEST_NAME_PREFIX to "proj1." so that every
+# ctest test name gets that prefix. CMake Tools splits ctest names at
+# cmake.ctest.testSuiteDelimiter ("." in this repository), so all proj1 tests
+# fold under a single "proj1" suite in the Testing view instead of littering
+# the root. Configured standalone (cmake -S . -B build inside proj1) the
+# prefix is empty and the test names are unchanged.
+
+if(NOT DEFINED MSE_TEST_NAME_PREFIX)
+    set(MSE_TEST_NAME_PREFIX "")
+endif()
+
+# Register the ctest test "<prefix><name>"; the remaining arguments are
+# passed through to add_test() (e.g. COMMAND ...).
+function(mse_add_test name)
+    add_test(NAME "${MSE_TEST_NAME_PREFIX}${name}" ${ARGN})
+endfunction()
+
+# set_tests_properties() for "<prefix><name>".
+macro(mse_test_properties name)
+    set_tests_properties("${MSE_TEST_NAME_PREFIX}${name}" ${ARGN})
+endmacro()
 
 # Vendored Catch2, built as one translation unit. It is deliberately NOT
 # linked against mse_warnings: the zero-warning acceptance gate applies to
@@ -33,30 +56,32 @@ set(MSE_TESTS
     test_count
     test_bptree)
 
+set(_mse_test_ids)
 foreach(test IN LISTS MSE_TESTS)
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} PRIVATE mse_core mse_warnings catch2)
-    add_test(NAME ${test} COMMAND ${test})
+    mse_add_test(${test} COMMAND ${test})
+    list(APPEND _mse_test_ids "${MSE_TEST_NAME_PREFIX}${test}")
 endforeach()
 
 # Tests are run from the project root so they can read the corpus with the
 # same relative paths the CLI uses (data/manifest.tsv).
-set_tests_properties(${MSE_TESTS} PROPERTIES WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(${_mse_test_ids} PROPERTIES WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
 # Smoke test: the corpus committed to the repository still loads and reports
 # the 195 documents documented in README.md / plan.md.
-add_test(NAME mse_stats
+mse_add_test(mse_stats
          COMMAND mse stats --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv)
-set_tests_properties(mse_stats PROPERTIES
+mse_test_properties(mse_stats PROPERTIES
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     PASS_REGULAR_EXPRESSION "documents: 195")
 
 # Smoke test: the second corpus (generic plain-format RFC documents,
 # imported with tools/import_corpus.py) loads through the same engine with
 # zero code differences -- the genericity demo of plan.md section G.
-add_test(NAME rfc_stats
+mse_add_test(rfc_stats
          COMMAND mse stats --manifest ${PROJECT_SOURCE_DIR}/data2/data/manifest.tsv)
-set_tests_properties(rfc_stats PROPERTIES
+mse_test_properties(rfc_stats PROPERTIES
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     PASS_REGULAR_EXPRESSION "documents: 3")
 
@@ -68,47 +93,47 @@ set_tests_properties(rfc_stats PROPERTIES
 # it these tests are skipped and the C++ build is unaffected.
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
-    add_test(NAME crosscheck_build
+    mse_add_test(crosscheck_build
              COMMAND mse build
                      --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
                      --dict-file ${PROJECT_BINARY_DIR}/crosscheck-index.bpt
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem)
-    set_tests_properties(crosscheck_build PROPERTIES
+    mse_test_properties(crosscheck_build PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_SETUP CROSSCHECK_INDEX)
-    add_test(NAME crosscheck_brute_force
+    mse_add_test(crosscheck_brute_force
              COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/brute_force.py
                      --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
                      --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem)
-    set_tests_properties(crosscheck_brute_force PROPERTIES
+    mse_test_properties(crosscheck_brute_force PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_INDEX
         TIMEOUT 300)
     # Phrase-level check: sample phrases from the corpus, scan the normalized
     # token stream in Python, and compare the document sets with
     # `mse query --phrase` on the same v1 index.
-    add_test(NAME crosscheck_phrases
+    mse_add_test(crosscheck_phrases
              COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/check_phrases.py
                      --binary $<TARGET_FILE:mse>
                      --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
                      --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem --queries 300)
-    set_tests_properties(crosscheck_phrases PROPERTIES
+    mse_test_properties(crosscheck_phrases PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_INDEX
         TIMEOUT 300)
     # Disk-dictionary cross-check: every term resolved through the B+Tree
     # sidecar must parse identical to a full index load (the B3 gate).
-    add_test(NAME crosscheck_dictfile
+    mse_add_test(crosscheck_dictfile
              COMMAND mse dump
                      --index ${PROJECT_BINARY_DIR}/crosscheck-index.bin
                      --dict-file ${PROJECT_BINARY_DIR}/crosscheck-index.bpt
                      --verify-all)
-    set_tests_properties(crosscheck_dictfile PROPERTIES
+    mse_test_properties(crosscheck_dictfile PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_INDEX
         PASS_REGULAR_EXPRESSION "0 mismatches"
@@ -116,44 +141,44 @@ if(Python3_Interpreter_FOUND)
     # Compression cross-check (plan.md 6.4): the v2 gap+varint index must
     # agree with the independent Python scanner AND with the disk
     # dictionary -- same gates as v1, second encoding.
-    add_test(NAME crosscheck_compress_build
+    mse_add_test(crosscheck_compress_build
              COMMAND mse build
                      --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
                      --dict-file ${PROJECT_BINARY_DIR}/crosscheck-v2.bpt
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem --compress)
-    set_tests_properties(crosscheck_compress_build PROPERTIES
+    mse_test_properties(crosscheck_compress_build PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_SETUP CROSSCHECK_V2)
-    add_test(NAME crosscheck_compress
+    mse_add_test(crosscheck_compress
              COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/brute_force.py
                      --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
                      --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem)
-    set_tests_properties(crosscheck_compress PROPERTIES
+    mse_test_properties(crosscheck_compress PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_V2
         TIMEOUT 300)
-    add_test(NAME crosscheck_compress_dictfile
+    mse_add_test(crosscheck_compress_dictfile
              COMMAND mse dump
                      --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
                      --dict-file ${PROJECT_BINARY_DIR}/crosscheck-v2.bpt
                      --verify-all)
-    set_tests_properties(crosscheck_compress_dictfile PROPERTIES
+    mse_test_properties(crosscheck_compress_dictfile PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_V2
         PASS_REGULAR_EXPRESSION "0 mismatches"
         TIMEOUT 300)
     # Same phrase sweep on the v2 (compressed) index.
-    add_test(NAME crosscheck_compress_phrases
+    mse_add_test(crosscheck_compress_phrases
              COMMAND Python3::Interpreter ${PROJECT_SOURCE_DIR}/tools/check_phrases.py
                      --binary $<TARGET_FILE:mse>
                      --manifest ${PROJECT_SOURCE_DIR}/data/manifest.tsv
                      --index ${PROJECT_BINARY_DIR}/crosscheck-v2.bin
                      --stop-words ${PROJECT_SOURCE_DIR}/data/stopwords.txt
                      --stem --queries 300)
-    set_tests_properties(crosscheck_compress_phrases PROPERTIES
+    mse_test_properties(crosscheck_compress_phrases PROPERTIES
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         FIXTURES_REQUIRED CROSSCHECK_V2
         TIMEOUT 300)
