@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Search Engine</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f2efe6;
+      color: #171712;
+      font: 16px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    main {
+      width: min(820px, calc(100% - 32px));
+      margin: 48px auto;
+    }
+    h1 { margin-bottom: 8px; font-size: 1.8rem; }
+    form {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid #171712;
+      background: #fffdf7;
+    }
+    label { display: grid; gap: 6px; }
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #171712;
+      background: #fffdf7;
+      color: #171712;
+      font: inherit;
+    }
+    button { cursor: pointer; font-weight: 700; }
+    button:active { transform: translateY(1px); }
+    #status { min-height: 1.5em; margin: 16px 0 8px; }
+    #results { display: grid; gap: 12px; }
+    .result-card {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      border: 1px solid #171712;
+      background: #fffdf7;
+    }
+    .rank {
+      display: grid;
+      place-items: center;
+      background: #171712;
+      color: #f5f1e7;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .result-body { min-width: 0; padding: 14px 16px; }
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 14px;
+      align-items: baseline;
+    }
+    .result-card h2 { margin: 0; font-size: 1rem; }
+    .meta { color: #5b584f; font-size: .8rem; }
+    .excerpt-list {
+      display: grid;
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .excerpt {
+      padding: 10px 14px;
+      border-left: 5px solid #b33a2b;
+      background: #f7f1e3;
+    }
+    .excerpt-term {
+      margin: 0 0 4px;
+      color: #5b584f;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .excerpt blockquote {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .result-card dl {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0;
+    }
+    .result-card dt { color: #5b584f; font-size: .8rem; }
+    .result-card dd { margin: 2px 0 0; font-weight: 700; }
+    .source {
+      margin: 12px 0 0;
+      color: #5b584f;
+      font-size: .78rem;
+      overflow-wrap: anywhere;
+    }
+    .source a { color: #171712; }
+    .message {
+      margin: 0;
+      padding: 16px;
+      border: 1px solid #171712;
+      background: #fffdf7;
+    }
+    @media (max-width: 520px) {
+      .result-card { grid-template-columns: 46px 1fr; }
+      .result-card dl { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Mini Search Engine</h1>
+    <p>Search the local index through <code>build/mse</code>.</p>
+
+    <form id="search-form">
+      <label>
+        Corpus
+        <select id="corpus">
+          <option value="shakespeare">Shakespeare</option>
+          <option value="rfc">RFC</option>
+        </select>
+      </label>
+
+      <label>
+        Mode
+        <select id="mode">
+          <option value="word">Word</option>
+          <option value="phrase">Phrase</option>
+          <option value="words-and">Words (AND)</option>
+          <option value="words-or">Words (OR)</option>
+        </select>
+      </label>
+
+      <label>
+        Query
+        <input id="query" value="love" required autofocus>
+      </label>
+
+      <button type="submit">Search</button>
+    </form>
+
+    <p id="status" aria-live="polite">Ready.</p>
+    <section id="results" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const form = document.getElementById("search-form");
+    const corpus = document.getElementById("corpus");
+    const mode = document.getElementById("mode");
+    const query = document.getElementById("query");
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+
+    function showMessage(text) {
+      const message = document.createElement("p");
+      message.className = "message";
+      message.textContent = text;
+      results.replaceChildren(message);
+    }
+
+    function showResult(hit, index, terms) {
+      const card = document.createElement("article");
+      card.className = "result-card";
+
+      const rank = document.createElement("div");
+      rank.className = "rank";
+      rank.textContent = String(index + 1).padStart(2, "0");
+
+      const body = document.createElement("div");
+      body.className = "result-body";
+
+      const head = document.createElement("div");
+      head.className = "card-head";
+
+      const title = document.createElement("h2");
+      title.textContent = hit.title || "Document " + hit.doc;
+
+      const meta = document.createElement("p");
+      meta.className = "meta";
+      meta.textContent = "Doc #" + hit.doc +
+        (hit.category ? " / " + hit.category : "") +
+        (hit.kind ? " / " + hit.kind : "");
+
+      const excerptList = document.createElement("div");
+      excerptList.className = "excerpt-list";
+
+      const excerpts = Array.isArray(hit.excerpts) && hit.excerpts.length
+        ? hit.excerpts
+        : [{term: "", text: hit.excerpt || "No source line available."}];
+
+      excerpts.forEach(function (evidence) {
+        const excerpt = document.createElement("div");
+        excerpt.className = "excerpt";
+
+        const label = document.createElement("p");
+        label.className = "excerpt-term";
+        label.textContent = evidence.term
+          ? "Matched term: " + evidence.term
+          : "First matching line";
+
+        const quote = document.createElement("blockquote");
+        quote.textContent = evidence.text;
+
+        excerpt.append(label, quote);
+        excerptList.append(excerpt);
+      });
+
+      const details = document.createElement("dl");
+
+      const matchedLabel = document.createElement("dt");
+      matchedLabel.textContent = "Matched terms";
+      const matchedValue = document.createElement("dd");
+      matchedValue.textContent = hit.matched + "/" + terms.length;
+
+      const frequencyLabel = document.createElement("dt");
+      frequencyLabel.textContent = "Total frequency";
+      const frequencyValue = document.createElement("dd");
+      frequencyValue.textContent = hit.tf;
+
+      details.append(
+        matchedLabel,
+        matchedValue,
+        frequencyLabel,
+        frequencyValue
+      );
+
+      const source = document.createElement("p");
+      source.className = "source";
+      source.textContent = "Source: " + (hit.source || "unknown");
+
+      if (hit.url && hit.url !== "-") {
+        const link = document.createElement("a");
+        link.href = hit.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.textContent = " Open source";
+        source.append(link);
+      }
+
+      head.append(title, meta);
+      body.append(head, excerptList, details, source);
+      card.append(rank, body);
+      results.append(card);
+    }
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      status.textContent = "Searching...";
+      results.replaceChildren();
+
+      const params = new URLSearchParams({
+        q: query.value,
+        mode: mode.value,
+        corpus: corpus.value
+      });
+
+      try {
+        const response = await fetch("/search?" + params.toString());
+        const data = await response.json();
+
+        if (!response.ok) {
+          status.textContent = "Error.";
+          showMessage(data.error || "Search failed.");
+          return;
+        }
+
+        const hits = Array.isArray(data.hits) ? data.hits : [];
+        if (hits.length === 0) {
+          status.textContent = "No results.";
+          showMessage("No matching documents.");
+          return;
+        }
+
+        const terms = Array.isArray(data.terms) ? data.terms : [];
+        hits.forEach(function (hit, index) {
+          showResult(hit, index, terms);
+        });
+        status.textContent = hits.length + " result" +
+          (hits.length === 1 ? "" : "s") +
+          (terms.length ? " for " + terms.join(", ") : "") + ".";
+      } catch (error) {
+        status.textContent = "Request failed.";
+        showMessage(String(error));
+      }
+    });
+  </script>
+</body>
+</html>
