@@ -1,26 +1,23 @@
-% =====================================================================
-% 附录（owner: writer-analysis）：A 复现命令与关键输出；B 数据格式速查
-%
-% 命令与读数来源：reports/data/results-tasks.md（F1–F42）、
-% reports/data/results-verify.md（F1–F18）、reports/data/results-preprocess.md
-% （P1–P6）与 reports/data/logs/ 下的原始日志；本附录不引入新测量。
-% 代码块内只用 ASCII（STYLE.md §3），中文说明写在代码块外。
-% =====================================================================
+% Appendices B and C: reproduction commands and data formats.
+% Evidence: results-tasks.md (F1-F42), results-verify.md (F1-F18),
+% results-preprocess.md (P1-P6), and the raw logs. No new measurements.
 
-\section{复现命令与关键输出}
+\section{Reproduction Commands and Key Outputs}
 \label{app:reproduce}
 
-全部命令在项目根目录（\code{proj1/}）执行，读数来自本轮（2026-10-20）重新构建后的运行，
-原始输出在 \code{reports/data/logs/} 下，证据编号（F/P）与正文一致。命令中的 \code{.../}
-表示 \code{reports/data/work/} 下的同名路径（\code{tasks/} 或 \code{verify/}），完整
-路径见 results 文件中各 Fact 的命令行。
+All commands run from the project root. The readings come from the rebuild and
+rerun of 2026-10-20; raw outputs are archived in \code{reports.zip} under
+\code{reports/data/logs/}, and the evidence numbers (F/P) match the text. In
+the commands, \code{.../} denotes the same relative path under
+\code{reports/data/work/} (\code{tasks/} or \code{verify/}) in the archive; the
+complete path appears on the command line of each fact in the results files.
 
-\subsection{环境、构建与测试}
+\subsection{Environment, Build, and Tests}
 
-环境：macOS 27.0.1（build 26A434）/ Apple M3 / 16\,GiB；CMake 4.4.3（Unix Makefiles）；
-Apple clang 21.0.0，C++17、\code{-Wall -Wextra}，Release（\code{-O3 -DNDEBUG}）；
-Catch2 v3 仅测试链接；\code{build/mse} 为 329\,136 字节，只链接系统库。
-% src: F5（tasks）、F17（verify）
+Environment: macOS 27.0.1 (build 26A434), Apple M3, 16\,GiB; CMake 4.4.3
+(Unix Makefiles); Apple clang 21.0.0, C++17, \code{-Wall -Wextra}, Release
+(\code{-O3 -DNDEBUG}); Catch2 v3 is linked only into the tests;
+\code{build/mse} is 329,136 bytes and links only system libraries.
 
 \begin{lstlisting}[style=cli]
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -30,13 +27,16 @@ cmake --build build -j8
 # -> Total Test time (real) =  40.90 sec
 \end{lstlisting}
 
-18 项由 8 个 Catch2 单元测试（46 个 TEST\_CASE、85\,155 条断言）、2 个语料冒烟测试与
-8 个独立实现对拍组成，本轮全部通过。% src: F1、F2、F3（verify）
+The 18 tests comprise 8 Catch2 unit-test executables (46 \code{TEST\_CASE}s and
+85,155 assertions), 2 corpus smoke tests, and 8 independent cross-checks; all
+pass in this run.
 
-\subsection{任务 1 与任务 2}
+\subsection{Tasks 1 and 2}
 
-词频四种配置各跑 3 次取外部墙钟中位数；停用词推导、正式索引、三种词典、块式构建与
-磁盘附属词典文件的命令如下。% src: F6、F13、F18–F24（tasks）
+The four word-count configurations were each run three times and the external
+wall-clock medians are reported. The commands for stop-word derivation, the
+formal index, the three dictionaries, block construction, and the disk sidecar
+are as follows.
 
 \begin{lstlisting}[style=cli]
 ./build/mse count --top 50 --csv .../wordcount-default.csv
@@ -66,14 +66,16 @@ cmake --build build -j8
 # -> dict reads: 114 page reads, 29819 cache hits
 \end{lstlisting}
 
-\code{--verify-all} 只在 \code{--dict-file} 路径实现；冷查询 \code{banquo} 经附属词典
-只发生 2 次页读、从索引只读 8\,308 字节（全量加载的 0.225\%）。% src: F8、F16、F23（verify）
+\code{--verify-all} is implemented only on the \code{--dict-file} path. A cold
+query for \code{banquo} through the sidecar takes 2 page reads and reads 8,308
+bytes from the index, 0.225\% of a full load.
 
-\subsection{任务 3、阈值实验与独立对拍}
+\subsection{Task 3, Threshold Experiments, and Independent Cross-Checks}
 
-查询示例与 201 条阈值测量（正式索引处理标志为 \code{stopwords stemmed}）；随后是独立
-实现与 RFC 副语料的端到端复现（Python 侧自行切词、解析索引、扫描词元流）。
-% src: F27–F38（tasks）、F7、F9、F10（verify）
+The query examples and the 201 threshold measurements use the formal index
+whose processing flags are \code{stopwords stemmed}. The independent
+implementations and the RFC corpus follow; the Python side performs its own
+tokenization, index parsing, and token-stream scan.
 
 \begin{lstlisting}[style=cli]
 ./build/mse query --index .../index-formal.bin --stop-words data/stopwords.txt \
@@ -109,10 +111,10 @@ python3 tools/check_phrases.py --index .../formal-v1.bin \
     --stop-words .../rfc-stopwords.txt --stem --index .../rfc-formal.bin
 \end{lstlisting}
 
-\subsection{附加题：B+ 树 规模实验与 500\,000 文档语料}
+\subsection{Bonus: B+ Tree Scaling and the 500,000-Document Corpus}
 
-B+ 树规模实测（4\,KiB 页、批量装载、1\,000 次随机查询全部校验）：
-% src: F11（verify）
+The B+ tree experiment uses 4\,KiB pages, bulk loading, and 1,000 random
+lookups that are all verified.
 
 \begin{lstlisting}[style=cli]
 for keys in 100000 1000000 10000000 30000000 50000000; do
@@ -123,9 +125,10 @@ done
 # CSV: python3 .../parse_bptree.py -> reports/data/csv/verify/bptree-bench.csv
 \end{lstlisting}
 
-500\,000 文档合成语料：生成 → 统计 → 块式构建第一版/第二版索引 → 内存构建，峰值内存用
-\code{/usr/bin/time -l} 的 \code{maximum resident set size}；采集后语料与临时索引
-已删除。% src: F12–F15（verify）、F18.8（清理记录）
+For the 500,000-document synthetic corpus the sequence is generate, count,
+block-build v1 and v2, and in-memory build; peak memory is the
+\code{maximum resident set size} reported by \code{/usr/bin/time -l}. The
+corpus and temporary indexes were deleted after collection.
 
 \begin{lstlisting}[style=cli]
 python3 tools/gen_synthetic_corpus.py --root /tmp/mse-scale-corpus-500k \
@@ -145,53 +148,69 @@ python3 tools/gen_synthetic_corpus.py --root /tmp/mse-scale-corpus-500k \
 # -> cmp with v1: identical (SHA-256 4fcb45...)
 \end{lstlisting}
 
-\code{reports/data/} 的组织：结果文件三份（\code{results-tasks.md}、\code{results-verify.md}、
-\code{results-preprocess.md}），\code{csv/} 下是图表输入（词频、阈值矩阵、B+ 树 bench），
-\code{logs/} 下按任务分 3 组共 53 个原始日志（30 + 20 + 3），\code{work/} 是临时索引与
-复现脚本、不作为证据。计时口径：本轮两位 analyst 同机并行测量，墙钟时间可能被并行负载
-抬高、只有量级意义；字节数、计数、页数、SHA-256 与对拍结果是确定性的。
-% src: F18.7（verify）、F41.3（tasks）
+\begin{sloppypar}
+The archive \code{reports.zip} organizes the evidence as follows: three result
+files (\code{results-tasks.md}, \code{results-verify.md},
+\code{results-preprocess.md}); \code{csv/} with the plotting inputs (word
+frequency, threshold matrix, B+ tree benchmark); \code{logs/} with 53 raw logs
+in three groups (30 + 20 + 3); and \code{work/} with temporary indexes and
+reproduction scripts, which are not evidence. Timing convention: two analysts
+measured concurrently on the same machine, so wall-clock times may be raised by
+parallel load and are meaningful only in order of magnitude. Byte counts,
+counts, page counts, SHA-256 values, and cross-check results are deterministic.
+\end{sloppypar}
 
-\section{数据格式速查}
+\section{Data Format Reference}
 \label{app:format}
 \enlargethispage{3\baselineskip}
 
-本附录汇总引擎读写的四份数据：语料清单、文本层、索引（第一版/第二版）与磁盘 B+ 树词典
-附属词典文件；格式规格来自实现与第~\ref{sec:persistence}、~\ref{sec:bptree-design}~节。
+This appendix summarizes the four data files the engine reads and writes: the
+corpus manifest, the text layer, the index (v1 and v2), and the disk B+ tree
+sidecar. The format specification follows the implementation and
+Sections~\ref{sec:persistence} and~\ref{sec:bptree-design}.
 
-\subsection{语料清单与文本层}
+\subsection{Corpus Manifest and Text Layer}
 
-\code{manifest.tsv} 是语料清单文件，采用制表符分隔、首行表头，每个文档一行；\code{text} 列相对
-\emph{语料根}解析（引擎取 \code{dirname(dirname(manifest))}）。第 8 列 \code{format}
-可选：\code{marked}（缺省，行标记生效）或 \code{plain}（整行均为正文，RFC 语料用）。
-文本层每行一个单元，行首标记决定行类型；标题与舞台指示要求\emph{首尾同时匹配}，否则
-按正文处理（第~\ref{sec:preprocess-analysis}~节）。
+\code{manifest.tsv} is tab-separated with a header row and one document per
+line; the \code{text} column is resolved relative to the \emph{corpus root}
+(the engine takes \code{dirname(dirname(manifest))}). The optional eighth
+column, \code{format}, is \code{marked} (the default, line markers active) or
+\code{plain} (the whole line is body text, used by the RFC corpus). The text
+layer has one unit per line, and a line-initial marker determines the line
+type; headings and stage directions require a match at both the first and the
+last character, otherwise the line is body text
+(Section~\ref{sec:preprocess-analysis}).
 
 \begin{center}
 \footnotesize
 \begin{tabularx}{\linewidth}{l l X l}
   \toprule
-  列 / 标记 & 类型 & 含义 & 默认行为 \\
+  Column / marker & Type & Meaning & Default behavior \\
   \midrule
-  \code{docid} / \code{kind} / \code{category} & 整数 / 字符串 & 文档编号、作品类型与分类 & --- \\
-  \code{title} & 字符串 & 作品标题，输出与 \code{--pretty} 使用 & --- \\
-  \code{text} / \code{source} / \code{url} & 路径 / 字符串 & 文本层、原始文件路径与来源 URL & --- \\
-  \code{format} & 字符串（可选） & \code{marked} 或 \code{plain} & --- \\
-  \code{# ...} & 文件头注释 & 不参与统计 & 跳过 \\
-  \code{[ACT I]} 等 & 行首 \code{[} 且行尾 \code{]} & 标题 & 不参与切词 \\
-  \code{(Exit Ghost)} & 行首 \code{(} 且行尾 \code{)} & 舞台指示 & 不参与切词 \\
-  \code{@BERNARDO} & 行首 \code{@} & 说话人标签 & 不参与切词 \\
-  其余行 & 台词 / 诗行 / 散文正文 & 正文 & 参与切词 \\
+  \code{docid} / \code{kind} / \code{category} & integer / string &
+    Document ID, work type, and category & --- \\
+  \code{title} & string & Work title, used in output and \code{--pretty} & --- \\
+  \code{text} / \code{source} / \code{url} & path / string &
+    Text layer, source file path, and source URL & --- \\
+  \code{format} & string (optional) & \code{marked} or \code{plain} & --- \\
+  \texttt{\#} comment & file header & Excluded from statistics & skipped \\
+  \code{[ACT I]} etc. & line starts with \code{[} and ends with \code{]} &
+    Heading & not tokenized \\
+  \code{(Exit Ghost)} & line starts with \code{(} and ends with \code{)} &
+    Stage direction & not tokenized \\
+  \code{@BERNARDO} & line starts with \code{@} & Speaker label & not tokenized \\
+  Other lines & dialogue, verse, or prose & Body text & tokenized \\
   \bottomrule
 \end{tabularx}
 \par\smallskip
-\footnotesize 注：三种标记行可用 \code{--keep-headings}/\code{--keep-speakers}/
-\code{--keep-stage} 逐类保留。
+\footnotesize Note: the three marker classes can be retained independently with
+\code{--keep-headings}, \code{--keep-speakers}, and \code{--keep-stage}.
 \end{center}
 
-\subsection{第一版索引布局与第二版索引差异}
+\subsection{Version 1 Index Layout and Version 2 Differences}
 
-所有整数为小端；字符串为 u32 字节长度前缀 + 原始字节。第一版索引（v1）顺序布局如下：
+All integers are little-endian; a string is a u32 byte length followed by the
+raw bytes. The v1 index is laid out sequentially as follows.
 
 \begin{lstlisting}[style=cli]
 header : magic "MSE1" | version u32 | flags u32 | docCount u32 |
@@ -203,20 +222,26 @@ block  : df x (docID u32, tf u32), then sum(tf) x position u32
          blockBytes = 8*df + 4*sum(tf)
 \end{lstlisting}
 
-\code{flags} 第 0 位置停用词过滤、第 1 位置词干化，查询侧据此重放同一规范化管线；
-词项表严格升序，文档编号稠密为 1 到 \(N\)，倒排记录内文档编号严格递增、词频等于其
-位置数，这些
-不变量在加载后由 \code{validateIndex()} 逐条校验。第二版索引（v2）的文件头、
-文档表、词项表与第一版相同，仅 \code{version}$\,=2$，把每个倒排记录块换成
-"差分量 + 字节对齐变长码"：每条倒排记录
-依次写文档编号差（块内从 0 起，$\ge1$）、词频、词频个位置增量（记录内从 0 起，$\ge0$）；
-变长码首字节高 2 位给出总长，载荷 6/14/22/30 位（\code{01}/\code{10}/\code{11}/\code{00}
-分别为 1/2/3/4 字节），小端序。
+Bit 0 of \code{flags} records stop-word filtering and bit 1 records stemming;
+the query side replays the same normalization pipeline from these flags. The
+term table is strictly increasing, document IDs are dense from 1 to \(N\),
+document IDs within a posting block strictly increase, and the term frequency
+equals the number of positions; \code{validateIndex()} checks these invariants
+after loading. The v2 index has the same header, document table, and term table
+as v1 except that \code{version}$\,=2$ and each posting block is replaced by
+``deltas plus byte-aligned variable-length codes.'' For each posting it writes
+the document-ID delta (starting from 0 within the block, $\ge1$), the term
+frequency, and the term-frequency position deltas (starting from 0 within the
+record, $\ge0$). The first byte's top two bits give the total length and the
+payload uses 6/14/22/30 bits (\code{01}/\code{10}/\code{11}/\code{00} for
+1/2/3/4 bytes), little-endian.
 
-\subsection{磁盘 B+ 树附属词典文件}
+\subsection{Disk B+ Tree Sidecar}
 
-附属词典文件是 4\,KiB 页文件（页大小可配置），第 0 页为文件头页、其后每页一个树节点，整数
-小端；键是变长字符串，扇出由字节预算决定，叶页用 \code{nextLeaf} 串成有序链。
+The sidecar is a 4\,KiB-page file (the page size is configurable). Page 0 is the
+header page and each later page is one tree node; integers are little-endian.
+Keys are variable-length strings, the fanout is determined by a byte budget, and
+leaf pages are linked in order by \code{nextLeaf}.
 
 \begin{lstlisting}[style=cli]
 page 0 (header) : magic "BPT1" | version u32 | pageSize u32 |
@@ -229,6 +254,6 @@ blob            : length u8 | bytes
 value           : (posting blockOffset << 21) | blockBytes   (21-bit length)
 \end{lstlisting}
 
-查询时由 B+ 树定位倒排记录块，无需加载完整词项表。I1--I5 由
-\code{validate()} 校验；写文件采用批量装载，索引重建后附属词典同步重建。
-% 格式规格来自 include/bptree.hpp 与 src/bptree.cpp；不涉及测量数字
+A query uses the B+ tree to locate the posting block without loading the full
+term table. \code{validate()} checks invariants I1--I5. The file is written by
+bulk loading, and it is rebuilt whenever the index is rebuilt.

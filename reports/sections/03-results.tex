@@ -1,60 +1,282 @@
 % =====================================================================
-% 第 3 章 测试与结果（owner: writer-results）
+% Chapter 3: Testing results.
 %
-% 数字来源约定（均为本轮 2026-10-20 重新构建/重新运行的结果）：
-%   % src: tasks F##  —— reports/data/results-tasks.md（任务 1–3 实测，F1–F42）
-%   % src: verify F## —— reports/data/results-verify.md（测试/交叉验证/Bonus，F1–F18）
-%   % src: pre P##    —— reports/data/results-preprocess.md（预处理复核，P1–P6）
-% 本章不使用 README.md/notes.md/plan.md 里的历史数字；开发期 bug 只作定性叙述，
-% 修复后的验证结论一律取本轮实测结果。每个表格/段落前标注其证据编号。
+% All figures are from the rebuild and rerun of 2026-10-20:
+%   % src: tasks F##  -- reports/data/results-tasks.md (tasks 1-3, F1-F42)
+%   % src: verify F## -- reports/data/results-verify.md (tests, bonus, F1-F18)
+%   % src: pre P##    -- reports/data/results-preprocess.md (P1-P6)
+% The evidence bundle is archived in reports.zip. No historical number is
+% used as a current measurement; corrected values are labelled as such.
 % =====================================================================
 
 \newpage
-\section{测试与结果分析}
+\section{Testing Results}
 \label{sec:results}
 
-% 本章有 14 张表、3 张图，局部收紧缩放间距，减少浮动体造成的整页空白；
-% 章末恢复 article 默认值，避免影响后续章节。
-\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
-\setlength{\floatsep}{8pt plus 2pt minus 2pt}
-\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\subsection{Test Environment and Method}
+\label{sec:test-method}
 
-\subsection{词频统计与停用词选择}
+All measurements were taken on macOS 27.0.1 (build 26A434), an Apple M3 with
+16\,GiB of memory, CMake 4.4.3 (Unix Makefiles), and Apple clang 21.0.0. The
+code is C++17, compiled with \code{-Wall -Wextra} in Release mode
+(\code{-O3 -DNDEBUG}). Catch2 v3 is linked only into the tests; the
+\code{build/mse} binary (329,136 bytes) links only system libraries.
 
-\subsubsection{词频统计结果}
+CTest runs 18 tests: 8 Catch2 unit-test executables (46 \code{TEST\_CASE}s and
+85,155 assertions), 2 corpus smoke tests, and 8 independent cross-check tests.
+All 18 pass in 40.90 seconds. The cross-checks are not a second run of the same
+code: \code{tools/check\_wordcount.py} re-tokenizes and re-stems the corpus to
+produce the expected CSV, \code{tools/brute\_force.py} scans the text layer and
+independently parses the binary index, and \code{tools/check\_phrases.py}
+brute-forces sampled phrases on the Python token stream. The golden sample is
+the four-document example from the course notes, checked posting by posting.
+
+The test-case table below is a representative subset. It records the purpose,
+expected result, actual behavior, root cause for corrected defects, and current
+status of each case. The status vocabulary is deliberately small: \emph{Pass},
+\emph{Corrected}, and \emph{Pending}.
+
+\subsection{Test Cases}
+\label{sec:test-cases}
+
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.065\linewidth}
+                    >{\raggedright\arraybackslash}p{0.16\linewidth}
+                    >{\raggedright\arraybackslash}p{0.17\linewidth}
+                    >{\raggedright\arraybackslash}p{0.19\linewidth}
+                    >{\raggedright\arraybackslash}p{0.185\linewidth}
+                    >{\raggedright\arraybackslash}p{0.09\linewidth}@{}}
+  \caption{Representative test cases, expected and actual behavior, root
+  causes of corrected defects, and current status.}
+  \label{tab:test-cases} \\
+  \toprule
+  ID & Purpose & Expected result & Actual behavior & Possible cause & Status \\
+  \midrule
+  \endfirsthead
+  \toprule
+  ID & Purpose & Expected result & Actual behavior & Possible cause & Status \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \bottomrule
+  \endlastfoot
+
+  TC-01 &
+  Tokenizer boundary unit tests: apostrophes, hyphen, digits, case, and
+  options (20 cases). &
+  Spec tokens: \code{'Tis} $\to$ \code{tis}, \code{friends'} $\to$
+  \code{friends}, \code{don't} unchanged, \code{to-day} $\to$ \code{to} and
+  \code{day}, \code{1660s} $\to$ \code{s}; all lowercase. &
+  All 20 cases pass. &
+  --- &
+  Pass \\
+
+  TC-02 &
+  Text-layer and token-stream differential: C++ versus an independent Python
+  implementation over 195 documents. &
+  195 text files byte-identical; 866,626 tokens with identical per-document
+  counts. &
+  The Python oracle initially reported 4,340 fewer tokens than C++; after the
+  fix, the two streams are identical. &
+  The oracle's line-marker predicate tested only the first character, so
+  lines such as \code{[To HELENA] The best wishes ...} were mistaken for
+  headings. It now requires the first and last characters to match. &
+  Corrected \\
+
+  TC-03 &
+  HTML preprocessing edge cases: malformed \code{</TITLE}, table-wrapped
+  poem, and bracket stage directions. &
+  Full text extracted; 610 bracket stage directions relocated (57 whole-line
+  and 553 line-start), 8 mid-line forms retained; net change $-849$ tokens. &
+  The first extractor returned zero lines for \code{elegy.html}; bracket
+  fragments polluted body text. After the fixes, the text layer matches and
+  the default count is 866,626. &
+  Malformed \code{</TITLE} kept the parser in the head; line-start
+  \code{[...]} was not relocated; table row numbers were kept. Treat
+  \code{<body>} as the end of the head, relocate line-start brackets, and
+  drop numeric row cells. &
+  Corrected \\
+
+  TC-04 &
+  Word-count CSV differential in the default and filtered configurations. &
+  Byte-identical CSVs; filtered: 556,866 kept and 309,760 removed;
+  \code{tf\_share} uses the kept-token total. &
+  The default CSV matched; the filtered CSV initially differed on every row;
+  after the fix both match. &
+  \code{tokens} counted pre-filter tokens, so \code{tf\_share} used the wrong
+  denominator. Count only kept tokens and accumulate \code{stopwordTokens}
+  separately. &
+  Corrected \\
+
+  TC-05 &
+  Stop-word module and automatic derivation: 39-word list, boundary words,
+  missing file, and \code{derive(0.40,}\allowbreak\code{0.001,}\allowbreak
+  \code{0.93)}. &
+  List accepted; boundary words preserved; missing file errors; derivation
+  yields 39 words with an overlap of 35. &
+  All pass. &
+  --- &
+  Pass \\
+
+  TC-06 &
+  Stemmer unit tests and full-vocabulary differential against NLTK's
+  MARTIN extension mode (25,705 forms). &
+  Paper examples, contractions, and guardrails (about 100 cases) pass; all
+  25,705 forms byte-identical. &
+  Initially 21 expectations were wrong and 41 forms were over-stemmed
+  (\code{agreement} $\to$ \code{agreem}); after the fixes all pass. &
+  The paper's example column is a per-rule local effect, not the final
+  output; suffix matching must stop at the first matching suffix and stop
+  when its condition fails. &
+  Corrected \\
+
+  TC-07 &
+  Splay dictionary operations: 20,000 mixed operations against a hash oracle
+  over 300 terms. &
+  Identical lookup results and no crash. &
+  Initially a segmentation fault during insert; after the fix, identical
+  results. &
+  The insert branch kept a \code{Node*&} reference to a child slot; splay
+  rotations rewired the slot, so the reference dangled. Copy the new node
+  pointer to a local before splaying. &
+  Corrected \\
+
+  TC-08 &
+  Golden sample, serialization round-trip, and three-dictionary determinism. &
+  Golden4: 4 documents, 25 tokens, 11 terms, 24 postings, 750 bytes;
+  round-trip identical; splay, hash, and \code{std::map} byte-identical. &
+  Loading the golden index initially failed with ``index file is truncated'';
+  after the fix, the round-trip passes and all three dictionaries produce
+  identical files. &
+  \code{Reader reader(}\allowbreak\code{readWholeFile}\allowbreak
+  \code{(path))} bound a reference to a temporary
+  vector; store the file contents in a named variable first. &
+  Corrected \\
+
+  TC-09 &
+  Full brute-force index cross-check: independent Python scan and binary
+  parser, formal and raw indexes. &
+  14,937 formal terms and 25,705 raw terms; df, tf, docIDs, and positions all
+  match. &
+  OK. &
+  --- &
+  Pass \\
+
+  TC-10 &
+  Phrase queries: 21 query unit tests plus 305 sampled and 303 checked
+  random phrases. &
+  0 mismatches; specified stop-word phrase behavior. &
+  0 mismatches. &
+  --- &
+  Pass \\
+
+  TC-11 &
+  Query threshold matrix: 15 queries, 201 measurements, four thresholds. &
+  \code{love --max-df 0.7} $\to$ 0; \code{sweet sword moon --min-df 50}
+  $\to$ 90; \code{king queen} min-match 1/2/3 $\to$ 43/33/33; \code{love}
+  top-x $\to$ 5/10/20; \code{the} $\to$ 0. &
+  Matches. &
+  --- &
+  Pass \\
+
+  TC-12 &
+  Disk B+ tree sidecar: \code{dump --verify-all} over 14,937 terms. &
+  All 14,937 terms resolve through the B+ tree to the same postings as a full
+  load; 0 mismatches. &
+  Initially the I2 interval check failed, the 50\% fill invariant was violated
+  for skewed keys, and the lazy header printed ``1 terms''; after the fixes,
+  0 mismatches (114 page reads and 29,819 cache hits). &
+  Separator keys are copies (left-closed intervals); count-based splitting
+  does not guarantee byte fill (use the byte midpoint); the lazy path must
+  take \code{keyCount()} from the sidecar. &
+  Corrected \\
+
+  TC-13 &
+  v2 compression and independent parse. &
+  An independent parser reads v2; 14,937 terms match v1; varint boundary
+  tests pass; the file is smaller. &
+  Initially all posting offsets were shifted; after the fix, all terms match
+  and the formal index is 1,725,694 bytes (46.82\%). &
+  The offset computation omitted the term table's own size; the v1 helper
+  already computes it. &
+  Corrected \\
+
+  TC-14 &
+  RFC second corpus: 3 documents, the same binary, and zero code changes. &
+  Stats, build, query, and cross-check pass; 58 derived stop words;
+  \code{must}, \code{may}, and \code{should} excluded. &
+  Matches; the derived table has 58 words (an earlier draft's 56 was a
+  documentation error, corrected here). &
+  --- &
+  Pass \\
+
+  TC-15 &
+  500,000-document scale: block build versus in-memory build. &
+  Both produce 427,603,247-byte v1 indexes with identical SHA-256; block peak
+  1.01\,GiB versus 2.00\,GiB. &
+  Matches. &
+  --- &
+  Pass \\
+
+  TC-16 &
+  400,000,000-distinct-word end-to-end scale. &
+  Complete build and query for 400,000,000 distinct words within resources. &
+  Not run end-to-end. The B+ tree is measured to 50,000,000 keys and
+  extrapolated to 400,000,000 (height 4, four page reads); block build is
+  measured to 4.9 million terms. &
+  Resource cost; missing direct SPIMI-to-B+ tree integration and distributed
+  sharding. &
+  Pending \\
+\end{longtable}
+\par\smallskip
+\footnotesize Note: \emph{Corrected} means a defect was found and fixed; the
+actual-behavior column records the pre-fix observation, and the expected
+column records the post-fix result. \emph{Pass} means the final run passed
+without a code change. The table is a representative subset of the 18 CTest
+tests and the 201 threshold measurements.
+\end{center}
+
+\subsection{Word Frequency and Stop-Word Results}
+
+\subsubsection{Word-Frequency Results}
 \label{sec:wordcount}
 
-默认配置只统计正文行。195 个文档共切分出 866\,626 个词元，其中不同词项
-25\,705 个，仅出现一次的词项 9\,753 个。核心统计量见表~\ref{tab:wordcount}。
+The default configuration counts body lines only. The 195 documents produce
+866,626 tokens, of which 25,705 are distinct and 9,753 occur exactly once.
+Table~\ref{tab:wordcount} gives the core counts. The ten most frequent terms
+are listed in Table~\ref{tab:top10}; the Zipf plot in Figure~\ref{fig:zipf}
+shows the full distribution.
 
 \begin{table}[!htbp]
   \centering
-  \caption{默认配置下的词频统计结果}
+  \caption{Word-frequency statistics in the default configuration.}
   \label{tab:wordcount}
   \small
   \begin{tabular}{lr}
     \toprule
-    指标 & 数值 \\
+    Metric & Value \\
     \midrule
-    文档数 & 195 \\
-    正文词元数 & 866\,626 \\
-    不同词项数 & 25\,705 \\
-    仅出现一次的词项数 & 9\,753 \\
+    Documents & 195 \\
+    Body tokens & 866\,626 \\
+    Distinct terms & 25\,705 \\
+    Terms occurring once (hapax) & 9\,753 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-默认配置下词频最高的 10 个词项见表~\ref{tab:top10}。
-% src: tasks F7
 \begin{table}[!htbp]
   \centering
-  \caption{默认配置下词频最高的 10 个词项（含文档频率与两种占比）}
+  \caption{The ten most frequent terms in the default configuration, with
+  document frequency and two ratios.}
   \label{tab:top10}
   \footnotesize
   \renewcommand{\arraystretch}{1.0}
   \begin{tabular}{r l r r r r}
     \toprule
-    排名 & 词项 & 词频 & 文档频率 & 文档频率比值 & 词频占比 \\
+    Rank & Term & tf & df & df ratio & tf share \\
     \midrule
     1 & \code{the} & 28\,436 & 177 & 0.9077 & 0.032812 \\
     2 & \code{and} & 25\,553 & 189 & 0.9692 & 0.029486 \\
@@ -69,33 +291,35 @@
     \bottomrule
   \end{tabular}
   \par\smallskip
-  \footnotesize 注：文档频率比值为文档频率/195，词频占比为词频/866\,626；数值取自  % src: tasks F7
-  \code{wordcount-default.csv} 的权威副本。
+  \footnotesize Note: df ratio is df/195 and tf share is tf/866,626; values
+  are taken from the authoritative copy of \code{wordcount-default.csv}.
 \end{table}
 
 \input{figures/zipf}
 
-前十个词几乎全是功能词，合计占 20.41\% 的词元。图~\ref{fig:zipf} 的双对数曲线
-进一步显示，高频词集中在曲线左端，绝大多数词项位于右端的低频长尾。仅出现一次的词
-占到全部词项的 37.94\%，却只覆盖 1.125\% 的词元，说明语料具有明显的“短词表头部、
-长低频尾部”特征。由此不能仅凭词频高低判断停用词，下一步还需要比较文档覆盖范围和
-文档间分布。
+The top ten terms are almost all function words and together cover 20.41\% of
+the tokens. The log-log curve in Figure~\ref{fig:zipf} shows a steep head and
+a long low-frequency tail. Terms occurring once make up 37.94\% of the
+vocabulary but cover only 1.125\% of the tokens. Frequency alone therefore
+cannot define a stop word: the next step compares document coverage and the
+distribution across documents.
 
-\subsubsection{停用词选择结果}
+\subsubsection{Stop-Word Candidate Sensitivity}
 \label{sec:stopword-results}
 
-% src: tasks F10、F11
-表~\ref{tab:candidates} 是候选规则对文档频率阈值的敏感性扫描：固定词频占比
-$\ge 0.001$，把文档频率比值阈值从 0.90 降到 0.40。
+Table~\ref{tab:candidates} scans the document-frequency-ratio threshold from
+0.90 down to 0.40 while holding the term-frequency share at or above 0.001.
+
 \begin{table}[!htbp]
   \centering
-  \caption{停用词候选带对文档频率比值阈值的敏感性（固定词频占比 $\ge 0.001$）}
+  \caption{Sensitivity of the stop-word candidate band to the
+  document-frequency-ratio threshold (tf share fixed at $\ge 0.001$).}
   \label{tab:candidates}
   \footnotesize
   \renewcommand{\arraystretch}{1.0}
   \begin{tabularx}{\linewidth}{c c c X}
     \toprule
-    文档频率比值阈值 $T$ & 候选数 & 相对上一档新增 & 新增词 \\
+    df-ratio threshold $T$ & Candidates & Added over previous & New terms \\
     \midrule
     0.90 & 4  & --- & \code{the and to in} \\
     0.75 & 9  & +5  & \code{i of my that but} \\
@@ -107,29 +331,35 @@ $\ge 0.001$，把文档频率比值阈值从 0.90 降到 0.40。
     \bottomrule
   \end{tabularx}
   \par\smallskip
-  \footnotesize 注：规则为文档频率比值 $\ge T$ 且词频占比 $\ge 0.001$；静态 39 词表就是  % src: tasks F11
-  在 0.40 档 48 词候选带上人工取舍的结果。
+  \footnotesize Note: the rule is df ratio $\ge T$ and tf share $\ge 0.001$;
+  the static 39-word list is the manual selection made from the 48-word band
+  at the 0.40 level.
 \end{table}
 
-0.75 档只有 9 个纯功能词；0.65 档内容词 \code{love} 进入候选（文档频率比值 0.651）；0.40
-档就混入 \code{time}、\code{thou/thee} 等不该删除的词。纯统计规则能可靠框出"最像
-停用词"的一小段，却无法自己决定线的位置——静态表是在 48 词候选带上人工保留结构性
-功能词的结果，下一节用速率熵自动完成同一步。
+At 0.75 the band contains only nine pure function words; at 0.65 the content
+word \code{love} enters (df ratio 0.651); at 0.40 words such as \code{time} and
+\code{thou/thee} would be removed even though they carry meaning. A purely
+statistical rule can reliably frame the ``most stop-word-like'' band but
+cannot decide where the line should be. The static list is the manual choice
+on the 48-word band; the next subsection replaces that manual step with the
+rate entropy.
 
-\subsubsection{自动推导结果}
+\subsubsection{Automatically Derived Stop Words}
 
-两特征候选带把最后一步留给人工审核；加上"平"（速率熵）后，规则能否自动得到与人工表
-几乎相同的停用词？表~\ref{tab:stopword-sweep} 是四组阈值与 39 词静态表的双向差集。
-% src: tasks F13、F14
+Adding the ``flat'' feature tests whether the rule can reproduce the manual
+list automatically. Table~\ref{tab:stopword-sweep} compares four threshold
+settings with the static 39-word list.
+
 \begin{table}[!htbp]
   \centering
-  \caption{三特征停用词推导的阈值扫描：与静态 39 词表的差异}
+  \caption{Threshold sweep of the three-feature derivation: differences from
+  the static 39-word list.}
   \label{tab:stopword-sweep}
   \footnotesize
   \renewcommand{\arraystretch}{1.0}
   \begin{tabularx}{\linewidth}{c c c c X}
     \toprule
-    (文档频率比值, 速率熵) & 推导词数 & 重叠 & 静态表独有 & 推导表独有 \\
+    (df ratio, rate entropy) & Derived & Overlap & Static only & Derived only \\
     \midrule
     (0.75, 0.93) & 9  & 9  & 30 & --- \\
     (0.50, 0.95) & 23 & 23 & 16 & --- \\
@@ -138,236 +368,226 @@ $\ge 0.001$，把文档频率比值阈值从 0.90 降到 0.40。
     \bottomrule
   \end{tabularx}
   \par\smallskip
-  \footnotesize 注：词频占比固定为 $\ge 0.001$，文档频率比值取第一列；  % src: tasks F13
-  (0.75,0.93) 档 9 词与两特征候选带一致，(0.40,0.93) 档复现静态表所在的 39 词带。
+  \footnotesize Note: tf share is fixed at $\ge 0.001$, and the first column
+  gives the df ratio. The (0.75,0.93) setting reproduces the nine-word
+  two-feature band; the (0.40,0.93) setting reproduces the 39-word band that
+  contains the static list.
 \end{table}
 
-(0.40, 0.93) 档推导出 39 词、与静态表重叠 35 个；差异恰好是 4 对可解释的词：自动
-推导多收 \code{hath o thee thou} 四个古体功能词，静态表多收 \code{more or than
-their} 四个兼作比较、并列用的词。前者在原文本中同样"宽而平"，后者是人工按语义判断的
-取舍。也就是说，三特征规则把"是不是停用词"从人工经验变成可复算的判定，结果与人工表
-只差 4 个词且差异可逐词解释；换一档阈值只改变严格度（9/23/39/50 词），不改变规则
-结构。四个输出文件都带出处头且不含时间戳，换参数可以直接重跑比较。
+The (0.40,0.93) setting derives 39 words and overlaps the static list in 35.
+The differences are four explainable pairs: the automatic list adds the archaic
+function words \code{hath}, \code{o}, \code{thee}, and \code{thou}, while the
+static list adds \code{more}, \code{or}, \code{than}, and \code{their}, which
+also serve as comparison and conjunction words. The former are wide and flat in
+the source text; the latter are a semantic judgement by the curators. The
+three-feature rule turns ``is this a stop word?'' from a manual decision into a
+recomputable test, and the result differs from the manual table in only four
+words, each of which can be explained. Changing the threshold changes only the
+strictness (9/23/39/50 words), not the structure of the rule. All four output
+files carry a provenance header and no timestamp, so a parameter change can be
+rerun and compared directly.
 
-图~\ref{fig:entropy} 把功能词、内容词与专名的速率熵画成条形图并标出 0.93 阈值线。
+Figure~\ref{fig:entropy} plots the rate entropy of function words, content
+words, and proper nouns and marks the 0.93 threshold.
 
 \input{figures/entropy}
 
-功能词 the、and、i、to、of、is、it、that 的速率熵都在 0.95 以上（the 0.9748、
-and 0.9789），内容词 love、king、heart、sweet 落在 0.82--0.93（0.9271、0.8260、
-0.8313、0.8925），只出现在一篇文档的专名 osric、banquo 按定义为 0。0.93 的线正好切在
-功能词与内容词之间；\code{man} 的速率熵 0.9388 略高于阈值线，但文档频率比值只有 0.2359，
-被"宽"这一条件挡在候选带外——三个条件是"与"关系，速率熵补上的正是前两个特征缺失的
-"分布是否均匀"这一维。
+The function words \code{the}, \code{and}, \code{i}, \code{to}, \code{of},
+\code{is}, \code{it}, and \code{that} all exceed 0.95 (\code{the} 0.9748,
+\code{and} 0.9789); the content words \code{love}, \code{king}, \code{heart},
+and \code{sweet} fall between 0.82 and 0.93 (0.9271, 0.8260, 0.8313, 0.8925);
+the proper nouns \code{osric} and \code{banquo}, which occur in one document
+each, are zero by definition. The 0.93 line separates function words from
+content words. The word \code{man} has rate entropy 0.9388, slightly above the
+line, but its df ratio is only 0.2359, so the ``wide'' condition keeps it out of
+the band. The three conditions are conjunctive, and rate entropy supplies the
+``is the distribution flat?'' dimension that the other two features lack.
 
-最终停用词的选择是 \code{the and i to of a my that in is not me it for with be his this but have as so what by no all do if are on from or which more then their when than yet}。
+The final stop-word list is:
 
-\subsection{倒排索引与查询结果}
+\begin{quote}
+\raggedright\ttfamily\small
+the and i to of a my that in is not me it for with be his this but have as so
+what by no all do if are on from or which more then their when than yet
+\end{quote}
 
-\subsubsection{倒排索引构建结果}
+\subsection{Inverted Index and Query Results}
+
+\subsubsection{Index Construction Results}
 \label{sec:index-build}
 
-正式倒排索引采用 39 词停用表并执行词干化。构建完成后的结果见
-表~\ref{tab:index-configs}。
-% src: tasks F18、F21
+The formal index uses the 39-word stop-word list and applies stemming. Its
+final build statistics are given in Table~\ref{tab:index-configs}.
+
 \begin{table}[!htbp]
   \centering
-  \caption{正式倒排索引的最终构建结果}
+  \caption{Final build statistics for the formal inverted index.}
   \label{tab:index-configs}
   \small
   \begin{tabular}{lr}
     \toprule
-    指标 & 结果 \\
+    Metric & Result \\
     \midrule
-    文档数 & 195 \\
-    保留词元数 & 556\,866 \\
-    词项数 & 14\,937 \\
-    倒排记录数 & 117\,704 \\
-    位置数 & 556\,866 \\
-    第一版索引大小 & 3\,685\,655 字节 \\
-    第二版索引大小 & 1\,725\,694 字节 \\
-    构建时间 & 0.19\,秒 \\
+    Documents & 195 \\
+    Kept tokens & 556\,866 \\
+    Terms & 14\,937 \\
+    Posting entries & 117\,704 \\
+    Positions & 556\,866 \\
+    v1 index size & 3\,685\,655 bytes \\
+    v2 index size & 1\,725\,694 bytes \\
+    Build time & 0.19\,s \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-表~\ref{tab:dict-compare} 比较三种词典实现构建同一份正式索引时的代价。
-% src: tasks F20
-\begin{table}[!htbp]
-  \centering
-  \caption{三种词典实现的构建代价（正式配置，各构建 3 次）}
-  \label{tab:dict-compare}
-  \footnotesize
-  \renewcommand{\arraystretch}{1.0}
-  \begin{tabular}{l r r r l}
-    \toprule
-    词典 & 比较次数 & 旋转次数 & 再哈希次数 & 构建时间（内建 / 外部中位） \\
-    \midrule
-    伸展树（主） & 6\,392\,724 & 5\,850\,795 & 0 & 0.19\,s / 0.2610\,s \\
-    哈希表 & 688\,494 & 0 & 11 & 0.09\,s / \textbf{0.1603\,s} \\
-    \code{std::map}（对照） & 9\,435\,694 & 0 & 0 & 0.14\,s / 0.2084\,s \\
-    \bottomrule
-  \end{tabular}
-  \par\smallskip
-  \footnotesize 注：比较次数、旋转次数、再哈希次数为 C++ 内建计数；外部墙钟含进程  % src: tasks F20
-  启动与文件读写，受并行负载影响只作量级比较。
-\end{table}
+Splay, hash, and \code{std::map} dictionaries were each used to build the same
+formal index; the three files are byte-identical. The comparison of their build
+costs is deferred to Section~\ref{sec:dict-analysis}, because it is an analysis
+of alternatives rather than a result of the required build. Format v2 reduces
+the formal index to 1,725,694 bytes, about 46.82\% of v1.
 
-从构建速度看，哈希表最快，标准映射次之，伸展树最慢；从字符串比较次数看，哈希表也
-明显少于两种树结构。伸展树的主要代价是 585 万次旋转，但它的中序遍历可以直接得到
-有序词项表。项目因此以伸展树作为主词典，以哈希表作为速度基线，以标准映射作为平衡树
-对照。第二版索引在第一版基础上降至 172 万字节，约为原来的 46.82\%。
-
-\subsubsection{查询结果}
+\subsubsection{Query Results}
 \label{sec:query}
 
-本节使用正式索引测试单词、短语和布尔查询，并检查无结果时能否说明原因。
-代表性查询见表~\ref{tab:query-examples}。
-% src: tasks F27–F33
+The formal index is used to test word, phrase, and Boolean queries and to check
+whether an empty result is explained. Representative queries are listed in
+Table~\ref{tab:query-examples}.
+
 \begin{table}[!htbp]
   \centering
-  \caption{正式索引上的代表性查询结果}
+  \caption{Representative query results on the formal index.}
   \label{tab:query-examples}
   \footnotesize
   \renewcommand{\arraystretch}{1.0}
   \begin{tabularx}{\linewidth}{l l r X}
     \toprule
-    查询 & 类型 & 文档数 & 结果说明 \\
+    Query & Type & Documents & Result \\
     \midrule
-    \code{osric} & 单词 & 1 & 文档 30《Hamlet》，可定位到原句 \\
-    \code{love} & 单词 & 138 & 高频内容词，返回全部包含该词的文档 \\
-    \code{good night} & 短语 & 23 & 两个词必须位置相邻 \\
-    \code{king richard} & 短语 & 7 & 两个词均存在并通过位置验证 \\
-    \code{my lord} & 短语 & 42 & \code{my} 被停用词过滤，实际只查 \code{lord} \\
-    \code{to be or not to be} & 短语 & 0 & 全部由停用词组成 \\
-    \code{king queen} & 布尔 & 33 & 默认要求两个词全部命中 \\
-    \code{the} & 单词 & 0 & 停用词未进入索引 \\
-    \code{notaword} & 单词 & 0 & 索引词典中没有该词 \\
+    \code{osric} & word & 1 & document 30, \emph{Hamlet}; the source line can be located \\
+    \code{love} & word & 138 & high-frequency content word; all containing documents \\
+    \code{good night} & phrase & 23 & the two terms must be adjacent \\
+    \code{king richard} & phrase & 7 & both terms exist and pass the position check \\
+    \code{my lord} & phrase & 42 & \code{my} is filtered as a stop word; only \code{lord} is queried \\
+    \code{to be or not to be} & phrase & 0 & all terms are stop words \\
+    \code{king queen} & Boolean & 33 & both terms are required by default \\
+    \code{the} & word & 0 & stop words never enter the index \\
+    \code{notaword} & word & 0 & the term is not in the dictionary \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-单词查询直接返回包含目标词项的文档编号和标题。结果按命中词数、词频总和和文档编号
-稳定排序。加上 \code{--pretty} 后，程序会重新运行文本处理管线，在结果中附上词语
-所在的原句，便于核对命中位置。
+A word query returns the document IDs and titles that contain the term. Results
+are ordered deterministically by matched-term count, total term frequency, and
+document ID. With \code{--pretty}, the program reruns the text pipeline and
+prints the source line containing the match.
 
-短语查询要验证多个词项在过滤停用词后的词元序列中连续出现，不能只求两个倒排记录表
-的交集。\code{good night} 命中 23 篇，只有两个词完整相邻出现的文档会被保留。由于
-位置定义在过滤后的词元序列上，\code{my lord} 中的 \code{my} 不占位置，系统实际执行
-的是 \code{lord} 的单词查询。全部由停用词组成的短语没有可定位的词项，因此返回空结果。
+A phrase query verifies that the terms occur consecutively in the
+stop-word-filtered token stream; it is not enough to intersect the posting
+lists. \code{good night} returns 23 documents, and only documents in which the
+two terms are adjacent are kept. Because positions are defined on the filtered
+stream, \code{my} in \code{my lord} occupies no position, and the system
+effectively executes a word query for \code{lord}. A phrase made only of stop
+words has no locatable term and returns nothing.
 
-布尔查询默认要求所有查询词都命中。\code{king queen} 因此返回 33 篇；使用
-\code{--min-match 1} 后只需命中任意一个词，结果增加到 43 篇。无结果时，程序会区分
-“停用词未进入索引”和“索引词典中没有该词”，避免把所有空结果混为一类。
+A Boolean query requires all query terms by default, so \code{king queen}
+returns 33 documents. With \code{--min-match 1}, either term is enough and the
+result rises to 43. When a query is empty, the program distinguishes ``stop
+word not in the index'' from ``term not in the dictionary'' instead of
+collapsing both cases into one message.
 
-\subsection{阈值实验与复杂度分析}
-
-\subsubsection{阈值实验结果}
+\subsection{Threshold Experiment Results}
 \label{sec:threshold}
 
-四个参数都只作用于查询。全部关闭时，同一查询的结果作为基线。实验每次只改变一个参数，
-共选 15 条查询，覆盖高频词、中频词、低频词、专名、普通短语、含停用词短语、布尔查询
-和停用词。对全部查询测试 5 档最大文档频率、4 档最小文档频率和 3 档结果截断；最少
-命中词数只适用于 king queen 与 sweet sword moon 两条布尔查询，取 3 档。由此得到
-$15+15\times(5+4+3)+2\times3=201$ 条测量。每条记录返回数、相对基线的 Jaccard
-相似度、说明信息条数和耗时，全部使用同一份正式索引。图~\ref{fig:threshold} 展示了
-四个参数对返回文档数的影响。
+All four parameters act only at query time. With every parameter off, the same
+query gives the baseline. The experiment changes one parameter at a time over
+15 queries that cover high-, medium-, and low-frequency words, proper nouns,
+ordinary phrases, phrases containing stop words, Boolean queries, and stop
+words. Every query is tested with five \code{max-df} levels, four
+\code{min-df} levels, and three \code{top-x} levels; the minimum-match count
+applies only to the Boolean queries \code{king queen} and \code{sweet sword
+moon}, with three levels. This gives
+$15+15\times(5+4+3)+2\times3=201$ measurements. Each record stores the result
+count, the Jaccard similarity to the baseline, the number of explanation
+messages, and the elapsed time, all on the same formal index.
+Figure~\ref{fig:threshold} shows the effect of each parameter on the number of
+returned documents.
 
 \input{figures/threshold}
 
-% src: tasks F37、F38、F39
-表~\ref{tab:threshold-rows} 按参数归并代表性读数。
+Table~\ref{tab:threshold-rows} merges the representative readings by
+parameter.
+
 \begin{table}[!htbp]
   \centering
-  \caption{四个查询阈值对返回结果的影响}
+  \caption{Effect of the four query thresholds on the returned results.}
   \label{tab:threshold-rows}
   \footnotesize
   \renewcommand{\arraystretch}{1.0}
   \begin{tabular}{l l l c}
     \toprule
-    参数 & 代表查询 & 取值：基线 $\to$ 结果 & Jaccard \\
+    Option & Representative query & Value: baseline $\to$ result & Jaccard \\
     \midrule
-    \code{--max-df} & \code{love} & 0.9/0.7：138 $\to$ 138/0 & 1.00/0.00 \\
-    \code{--min-df} & \code{sweet sword moon} & 50：30 $\to$ 90 & 0.3333 \\
+    \code{--max-df} & \code{love} & 0.9/0.7: 138 $\to$ 138/0 & 1.00/0.00 \\
+    \code{--min-df} & \code{sweet sword moon} & 50: 30 $\to$ 90 & 0.3333 \\
     \code{--min-match} &
       \makecell[l]{\code{king queen}\\\code{sweet sword moon}} &
-      \makecell[l]{1/2/3：33 $\to$ 43/33/33\\1/2/3：30 $\to$ 93/39/30} &
+      \makecell[l]{1/2/3: 33 $\to$ 43/33/33\\1/2/3: 30 $\to$ 93/39/30} &
       \makecell[c]{0.7674/1.00/1.00\\0.3226/0.7692/1.00} \\
-    \code{--top-x} & \code{love} & 5/10/20：138 $\to$ 5/10/20 &
+    \code{--top-x} & \code{love} & 5/10/20: 138 $\to$ 5/10/20 &
       0.0362/0.0725/0.1449 \\
     \bottomrule
   \end{tabular}
   \par\smallskip
-  \footnotesize 注：Jaccard 为结果文档集合与基线集合的交并比；两个空集视为相同。  % src: tasks F38、F39
+  \footnotesize Note: Jaccard is the intersection-over-union of the result
+  set with the baseline set; two empty sets are treated as equal.
 \end{table}
 
-最高文档频率和最低文档频率筛选的是查询词，不是命中的文档。单词查询只有一个词项，
-所以词项被删后结果会直接归零。love 的文档频率比值为 0.7077，在 0.7 档返回数从
-138 降到 0；sweet 的比值为 0.4615，在 0.3 档也降到 0。
+The maximum and minimum document-frequency thresholds filter query terms, not
+result documents. A word query has only one term, so removing that term makes
+the result zero. \code{love} has a df ratio of 0.7077, so at the 0.7 level the
+result drops from 138 to 0; \code{sweet} has a ratio of 0.4615 and also drops to
+zero at the 0.3 level.
 
-多词查询会先失去一项约束。sweet sword moon 的基线是 30 篇，使用
-\code{--min-df 50} 后，文档频率为 37 和 35 的 sword、moon 被删，只剩 sweet，
-于是三词全部命中退化为单词查询，结果反而增加到 90 篇。这个变化不能解释为“阈值提高了
-精度”，它说明词项筛选已经改变了查询本身的含义。
+A multi-term query can lose a constraint before it loses results.
+\code{sweet sword moon} has a baseline of 30 documents. With \code{--min-df 50},
+\code{sword} (df 37) and \code{moon} (df 35) are removed, leaving \code{sweet};
+the three-term conjunction degenerates into a word query and the result rises
+to 90. This is not an increase in precision: the term filter has changed the
+meaning of the query.
 
-最少命中词数在结果侧控制布尔条件。$k=1$ 相当于并集，$k=2$ 要求至少命中两词，
-$k=3$ 对应三词全部命中；当 $k$ 超过可用词数时，程序将其限制为词项数。结果截断的
-行为更直接：排序完成后只保留前 $x$ 篇，因此 love 的结果依次变为 5、10、20 篇，
-不会改变返回文档之间的相对顺序。
+The minimum-match count controls the Boolean condition on the result side.
+$k=1$ is a union, $k=2$ requires at least two terms, and $k=3$ requires all
+three; when $k$ exceeds the number of searchable terms, the program clamps it to
+that number. Result truncation is simpler: after ranking, only the first $x$
+documents are kept, so \code{love} returns 5, 10, and 20 documents without
+changing their relative order.
 
-短语和停用词给出了两类边界情况。短语查询绕过最大、最小文档频率阈值，king richard
-在所有档上都保持 7 篇；如果删掉其中任何一个词，原短语就不再成立。停用词没有进入
-索引，所以 the、of 在任何阈值下都返回 0。201 条测量中有 23 条 Jaccard 为 0，
-逐条核对后，它们都发生在所有有效查询词项被删空之后；说明信息也记录了对应词项和
-丢弃原因，没有出现无说明的空结果。
+Phrases and stop words provide the two boundary cases. A phrase query bypasses
+the maximum and minimum df thresholds, so \code{king richard} stays at 7
+documents at every level; removing either term would destroy the phrase. Stop
+words never enter the index, so \code{the} and \code{of} return zero at every
+threshold. Of the 201 measurements, 23 have Jaccard zero; each occurs after all
+effective query terms have been removed, and the explanation records the
+corresponding terms and the reason. No empty result is unexplained.
 
-\paragraph{结论} 四个阈值并不是同一种“收紧”。最大、最小文档频率改变参与匹配的词项，
-最少命中词数改变布尔条件，结果截断只改变输出范围。词项被删后，结果数可能归零，
-也可能因为约束被削弱而上升。
+\finding{The four thresholds are not the same kind of ``tightening.'' The
+maximum and minimum df thresholds change which terms participate,
+\code{min-match} changes the Boolean condition, and \code{top-x} only changes
+the output range. Removing terms can make a result empty or, by weakening a
+conjunction, larger.}
 
-\subsubsection{复杂度分析}
-\label{sec:complexity}
+\input{sections/03-bonus}
 
-表~\ref{tab:complexity} 给出主要操作的时间与空间上界。$N$、$T$、$P$、$D$、$H$ 分别
-表示词元数、词项数、倒排记录数、文档数和命中文档数；$k$ 是查询词数，$R$ 是临时块数，
-$B$ 是块预算，$C$ 是词典比较成本。短语验证中的 $\mathrm{tf}_{\max}$ 表示候选词项
-在单个文档内的最大词频。
+\subsection{Summary of Testing Results}
+\label{sec:results-summary}
 
-\begin{table}[!htbp]
-  \centering
-  \caption{主要操作的时间与空间复杂度上界}
-  \label{tab:complexity}
-  \footnotesize
-  \begin{tabular}{l l l}
-    \toprule
-    操作 & 时间 & 空间 \\
-    \midrule
-    建索引（内存） & $O(N+\sum \mathrm{df}\cdot C)$ & $O(T+P+N)$ \\
-    建索引（块式） & $O(N+RB\log B+TR)$ &
-      $O(B+\text{当前块倒排记录})$ \\
-    单词查询 & $O(\log T+\mathrm{df}+H\log H)$ & $O(D)$ \\
-    短语查询 &
-      $O(\mathrm{df}_{\min}\,\mathrm{tf}_{\max}\,k\log\mathrm{tf}_{\max}+H\log H)$ &
-      $O(D+k)$ \\
-    布尔查询 & $O(\sum \mathrm{df}+H\log H)$ & $O(D)$ \\
-    第二版索引编码 & $O(P+N)$ & $O(\text{单块})$ \\
-    B+ 树查找 & $O(h\log F)$，另需 $O(h)$ 次页读 & $O(h)$ 页缓存 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-内存建索引的时间主要花在每个词元的词典访问上，输出部分则同时保存词项表、倒排记录和
-位置。三种词典写出的索引大小相同，改变的只是比较次数和比较常数。块式构建用 $B$
-限制同时驻留的活词，但不能消掉全部成本：$B$ 越小，临时块越多，排序和归并的代价
-越容易显现。磁盘 B+ 树换了一种取舍，查询只读取根到叶的 $O(h)$ 个页，不再要求完整
-词项表常驻内存。
-
-查询侧的主要成本是遍历相关倒排记录，以及排序命中文档。短语查询先选文档频率最小的
-词项，可以缩小候选集，但仍要对每个候选验证 $k$ 个位置。阈值与复杂度的联系也很直接：
-最大、最小文档频率在遍历倒排记录之前删词，可能减少后续工作；最少命中词数和结果截断
-发生在计分之后，其中 \code{--top-x} 只减少输出数量，不会省掉扫描和排序。对于当前
-实现，阈值首先是改变查询语义的工具，不是统一的性能优化开关。
-
-\setlength{\textfloatsep}{20pt plus 2pt minus 4pt}
-\setlength{\floatsep}{12pt plus 2pt minus 2pt}
-\setlength{\intextsep}{12pt plus 2pt minus 2pt}
+The required tasks pass their correctness checks: the tokenizer, stemmer,
+dictionary, index, and query tests are green, and independent Python
+implementations agree with the C++ output on the word-count CSV, the full
+posting tables, and 303 phrase queries. The four thresholds behave as
+specified, including the counterintuitive case in which filtering query terms
+increases the number of results. The bonus experiments show that the 500,000
+file axis is measured end to end, while the 400,000,000 distinct-word axis is
+covered by measured B+ tree and block-build components plus a clearly labelled
+extrapolation. The defects found during testing are listed in
+Table~\ref{tab:test-cases}; each one was fixed and rerun, not merely described.

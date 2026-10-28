@@ -1,110 +1,109 @@
-% figures/index-layout.tex -- 索引文件顺序布局 + posting 记录结构
-%
-% 纯 TikZ 示意图，无数据依赖：字段与字节宽度来自 include/index.hpp 与
-% src/index.cpp 的 v1 序列化格式（28 B 文件头、doc 表每条 12+len、
-% term 表每条 28+len、postings 块每条 8+4·tf），不引用运行读数。
-% 主文档只写 \input{figures/index-layout}。
+% figures/index-layout.tex -- sequential index layout and posting structure.
+% Pure TikZ diagram: field names and byte widths come from include/index.hpp
+% and the v1 serializer in src/index.cpp (28 B header, 12+len doc entry,
+% 28+len term entry, 8+4*tf posting entry). No measured values.
 \begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}[
   font=\footnotesize,
   >=Stealth,
   x=1cm, y=1cm,
-  % 段名（左侧）
   seglabel/.style={font=\footnotesize, text=mseblue, anchor=east},
-  % 文件段（右侧长条，两行：含义 / 字段）
   strip/.style={draw=black!50, rounded corners=1pt, line width=0.5pt,
                 fill=black!4, anchor=west, align=left, inner sep=2.2pt,
                 font=\scriptsize, text width=12.35cm},
-  % 记录字段单元
   cell/.style={draw=black!55, rounded corners=1pt, line width=0.45pt,
                fill=white, align=center, inner sep=1.5pt,
                minimum height=0.52cm, font=\scriptsize},
   structbox/.style={draw=mseblue!70, rounded corners=3pt, line width=0.6pt,
                     fill=mseblue!4},
-  title/.style={font=\small, text=black!80, anchor=west},
+  title/.style={font=\small, text=black!80, anchor=west, align=left,
+                text width=15.2cm},
   note/.style={font=\scriptsize, text=msegray, anchor=west, align=left},
 ]
 
-% ======================================================= (a) 顺序文件布局
-\node[title] at (0.20,6.72)
-  {（a）\texttt{index.bin} 顺序布局（自上而下为文件字节顺序；段长不按比例）};
-\node[note] at (0.20,6.40)
-  {v2（\texttt{-{}-compress}）只改 postings 段：docID 与位置改存差分 varint，
-   \texttt{version} 置 2，其余布局不变。};
+% ======================================================= (a) sequential layout
+\node[title] at (0.20,7.55)
+  {(a) Sequential layout of \texttt{index.bin} (file order; lengths not to
+   scale)};
+\node[note, text width=15.2cm] at (0.20,7.10)
+  {v2 (\texttt{-{}-compress}) changes only the posting segment: document IDs
+   and positions become delta-coded varints, \texttt{version} is set to 2, and
+   the other segments are unchanged.};
 
 % --- header
-\node[seglabel] at (2.42,5.85) {header（28 B）};
-\node[strip] at (2.55,5.85)
-  {文件头 28 B：magic \texttt{"MSE1"}，后接 5 个计数/标志字段\\
-   \texttt{version} u32 · \texttt{flags} u32 · \texttt{docCount} u32 ·
+\node[seglabel] at (2.42,6.30) {header (28 B)};
+\node[strip] at (2.55,6.30)
+  {Header, 28 B: magic \texttt{"MSE1"}, then five count and flag fields\\
+   \texttt{version} u32 · \texttt{flags} u32 · \texttt{docCount} u32 ·\\
    \texttt{termCount} u32 · \texttt{tokenCount} u64};
-% --- 文档表
-\node[seglabel] at (2.42,4.90) {doc 表};
-\node[strip] at (2.55,4.90)
-  {每条 12 + len(title) B，按 docID 升序存放\\
+% --- document table
+\node[seglabel] at (2.42,5.35) {doc table};
+\node[strip] at (2.55,5.35)
+  {12 + len(title) B each, in increasing docID order\\
    \texttt{docID} u32 · \texttt{keptTokens} u32 · \texttt{titleLen} u32 ·
-   \texttt{title}（变长字节）};
-% --- 词表
-\node[seglabel] at (2.42,3.95) {term 表};
-\node[strip] at (2.55,3.95)
-  {每条 28 + len(term) B，按词字典序存放（\texttt{offset} 指向 postings 块）\\
+   \texttt{title} (variable bytes)};
+% --- term table
+\node[seglabel] at (2.42,4.40) {term table};
+\node[strip] at (2.55,4.40)
+  {28 + len(term) B each, in lexicographic term order
+   (\texttt{offset} points to the posting block)\\
    \texttt{len} u32 · \texttt{term} · \texttt{df} u32 · \texttt{tfTotal} u64 ·
    \texttt{offset} u64 · \texttt{bytes} u32};
 % --- postings
-\node[seglabel] at (2.42,3.00) {postings};
-\node[strip] at (2.55,3.00)
-  {每词一块，块长 8·$\Sigma$df + 4·$\Sigma$tf B，块间无填充\\
-   \texttt{df} × (\texttt{docID} u32 · \texttt{tf} u32) + $\Sigma$tf 个
+\node[seglabel] at (2.42,3.45) {postings};
+\node[strip] at (2.55,3.45)
+  {One block per term, 8·$\Sigma$df + 4·$\Sigma$tf B, no padding between
+   blocks\\
+   \texttt{df} × (\texttt{docID} u32 · \texttt{tf} u32) + $\Sigma$tf
    \texttt{positions} u32};
 
-% ======================================================= (b) 一条 term 记录 → postings 块
-\node[title] at (0.20,2.26)
-  {（b）term 表一条记录 $\rightarrow$ 该词的 postings 块};
+% ======================================================= (b) term -> block
+\node[title] at (0.20,2.95)
+  {(b) One term record $\rightarrow$ its posting block};
 
-% --- term 记录：6 个字段单元（第二行为字节宽度）
-\node[cell, minimum width=0.90cm] (len) at (0.85,1.62) {len\\[-1pt]{\scriptsize u32}};
-\node[cell, minimum width=1.60cm] (term) at (2.15,1.62) {term\\[-1pt]{\scriptsize 变长字节}};
-\node[cell, minimum width=0.90cm] (df) at (3.45,1.62) {df\\[-1pt]{\scriptsize u32}};
-\node[cell, minimum width=1.30cm] (tftotal) at (4.60,1.62) {tfTotal\\[-1pt]{\scriptsize u64}};
-\node[cell, minimum width=1.20cm] (offset) at (5.90,1.62) {offset\\[-1pt]{\scriptsize u64}};
-\node[cell, minimum width=1.10cm] (bytes) at (7.10,1.62) {bytes\\[-1pt]{\scriptsize u32}};
+% --- term record: six field cells, byte width on the second line
+\node[cell, minimum width=0.90cm] (len) at (0.85,2.20) {len\\[-1pt]{\scriptsize u32}};
+\node[cell, minimum width=1.60cm] (term) at (2.15,2.20) {term\\[-1pt]{\scriptsize var. bytes}};
+\node[cell, minimum width=0.90cm] (df) at (3.50,2.20) {df\\[-1pt]{\scriptsize u32}};
+\node[cell, minimum width=1.30cm] (tftotal) at (4.70,2.20) {tfTotal\\[-1pt]{\scriptsize u64}};
+\node[cell, minimum width=1.20cm] (offset) at (6.00,2.20) {offset\\[-1pt]{\scriptsize u64}};
+\node[cell, minimum width=1.10cm] (bytes) at (7.20,2.20) {bytes\\[-1pt]{\scriptsize u32}};
 
-\node[note] at (0.35,0.96)
-  {一条 term 记录 = 28 + len(term) B；\texttt{offset} 指向该词 postings 块的起始字节。};
+\node[note, text width=7.90cm] at (0.35,1.48)
+  {One term record = 28 + len(term) B; \texttt{offset} points to the first byte
+   of that term's posting block.};
 
-% --- postings 块（两条记录对齐摆放；字段均为 u32）
-\draw[structbox] (9.45,-0.10) rectangle (15.42,2.40);
+% --- posting block (two records shown; all fields are u32)
+\draw[structbox] (9.55,0.38) rectangle (15.42,2.80);
 
-% 第 1 条 posting：docID、tf，紧跟该条的 tf 个位置
-\node[cell, minimum width=0.95cm] at (10.12,2.04) {docID};
-\node[cell, minimum width=0.55cm] at (11.08,2.04) {tf};
-\node[cell, minimum width=0.72cm] at (11.90,2.04) {pos$_0$};
-\node[cell, minimum width=0.72cm] at (12.75,2.04) {pos$_1$};
-\node[cell, minimum width=0.55cm] at (13.50,2.04) {$\cdots$};
-\node[cell, minimum width=1.35cm] at (14.58,2.04) {pos$_{\mathrm{tf}-1}$};
-% 中间省略：共 df 条
-\node[font=\scriptsize, text=msegray] at (12.44,1.60) {$\vdots$};
-% 最后一条 posting：与首条同一套字段
-\node[cell, minimum width=0.95cm] at (10.12,1.16) {docID};
-\node[cell, minimum width=0.55cm] at (11.08,1.16) {tf};
-\node[cell, minimum width=0.72cm] at (11.90,1.16) {pos$_0$};
-\node[cell, minimum width=1.15cm] at (13.20,1.16) {$\cdots$};
-\node[cell, minimum width=1.35cm] at (14.58,1.16) {pos$_{\mathrm{tf}-1}$};
+\node[cell, minimum width=0.95cm] at (10.22,2.44) {docID};
+\node[cell, minimum width=0.55cm] at (11.18,2.44) {tf};
+\node[cell, minimum width=0.72cm] at (12.00,2.44) {pos$_0$};
+\node[cell, minimum width=0.72cm] at (12.85,2.44) {pos$_1$};
+\node[cell, minimum width=0.55cm] at (13.60,2.44) {$\cdots$};
+\node[cell, minimum width=1.35cm] at (14.68,2.44) {pos$_{\mathrm{tf}-1}$};
+\node[font=\scriptsize, text=msegray] at (12.54,2.02) {$\vdots$};
+\node[cell, minimum width=0.95cm] at (10.22,1.60) {docID};
+\node[cell, minimum width=0.55cm] at (11.18,1.60) {tf};
+\node[cell, minimum width=0.72cm] at (12.00,1.60) {pos$_0$};
+\node[cell, minimum width=1.15cm] at (13.30,1.60) {$\cdots$};
+\node[cell, minimum width=1.35cm] at (14.68,1.60) {pos$_{\mathrm{tf}-1}$};
 
-\node[note, anchor=north west, text width=5.50cm] at (9.66,0.84)
-  {每条 8+4·tf B：\texttt{docID}、\texttt{tf} 后紧跟 tf 个位置
-   u32（升序）；共 df 条，首尾相接。};
+\node[note, anchor=north west, text width=5.40cm] at (9.76,1.24)
+  {Each entry is 8 + 4·tf B: \texttt{docID}, \texttt{tf},\\
+   then tf ascending u32 positions; df entries, packed.};
 
-% --- term 记录 -> postings 块
+% --- term record -> posting block
 \draw[->, line width=0.6pt, draw=black!65]
-  (bytes.east) -- (9.45,1.62);
-\node[note, anchor=south, inner sep=1pt] at (8.55,1.68) {\texttt{seek(offset)}};
+  (bytes.east) -- (9.55,2.20);
+\node[note, anchor=south, inner sep=1pt] at (8.55,2.26) {\texttt{seek(offset)}};
 
 \end{tikzpicture}
-\caption{索引文件布局：\texttt{index.bin} 依次存放 header、doc 表、term 表与
-postings 段，term 表记录用 \texttt{offset}/\texttt{bytes} 指向该词的 postings
-块；块内每条 posting 先存 docID 与 tf，再紧跟 tf 个升序位置，因此短语查询只需
-顺序比较相邻位置。}%
+\caption{Index layout: \texttt{index.bin} stores the header, document table,
+term table, and posting segment in order. A term record points to its posting
+block with \texttt{offset} and \texttt{bytes}. Within a block, each posting
+stores the document ID and term frequency followed by tf ascending positions,
+so a phrase query only needs to compare adjacent positions.}
 \label{fig:index-layout}
 \end{figure}

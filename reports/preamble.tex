@@ -1,55 +1,63 @@
-% preamble.tex -- 项目报告的共享导言区（由 Lead 维护，章节作者不要修改）
+% preamble.tex -- shared preamble for the English report.
 %
-% 文档主类在 report.tex 中固定为 article + ctex：
+% The document class is fixed in report.tex:
 %   \documentclass[11pt,a4paper]{article}
-%   \usepackage[UTF8,fontset=fandol]{ctex}
-% 因此本文件只放导言区设置，不放 \documentclass。
+% The report is compiled with XeLaTeX; fontspec selects the TeX Gyre fonts.
 
-% ---------- 字体 ----------
-% 按文件名加载 TeX Gyre（TeX Live 自带），不依赖系统字体名。
-\setmainfont{texgyretermes}[
+% ---------- Fonts and language ----------
+\usepackage{fontspec}
+% The document is English; article's defaults already provide English
+% captions, and XeTeX uses the default (English) hyphenation patterns.
+% Babel is omitted: the installed babel 26.14 fails to load its English
+% language definition under this TeX distribution.
+\setmainfont{lmroman10-regular}[
   Extension=.otf,
-  UprightFont=*-regular,
-  BoldFont=*-bold,
-  ItalicFont=*-italic,
-  BoldItalicFont=*-bolditalic]
-\setsansfont{texgyreheros}[
+  UprightFont=*,
+  BoldFont=lmroman10-bold,
+  ItalicFont=lmroman10-italic,
+  BoldItalicFont=lmroman10-bolditalic,
+  Ligatures=TeX]
+\setsansfont{lmsans10-regular}[
   Extension=.otf,
-  UprightFont=*-regular,
-  BoldFont=*-bold,
-  ItalicFont=*-italic,
-  BoldItalicFont=*-bolditalic]
-\setmonofont{texgyrecursor}[
+  UprightFont=*,
+  BoldFont=lmsans10-bold,
+  ItalicFont=lmsans10-oblique,
+  BoldItalicFont=lmsans10-boldoblique,
+  Ligatures=TeX]
+\setmonofont{lmmono10-regular}[
   Extension=.otf,
-  UprightFont=*-regular,
-  BoldFont=*-bold,
-  ItalicFont=*-italic,
-  BoldItalicFont=*-bolditalic,
-  Scale=0.9]
+  UprightFont=*,
+  BoldFont=lmmonolt10-bold,
+  ItalicFont=lmmono10-italic,
+  BoldItalicFont=lmmonolt10-boldoblique,
+  Scale=0.9,
+  Ligatures={NoCommon,NoRequired}]
 
-% ---------- 版面 ----------
+% ---------- Page layout ----------
 \usepackage{geometry}
 \geometry{top=2.4cm,bottom=2.4cm,left=2.6cm,right=2.6cm,headheight=15pt,footskip=1.0cm}
-\setlength{\parindent}{2em}
-\setlength{\parskip}{0.25em}
+\usepackage{indentfirst}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0.2em}
 \setlength{\emergencystretch}{3em}
 \renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
 
-% 章节间距收紧（报告表格/图多，缩短标题前后留白）
+% Tighter heading spacing: the report has many tables and figures.
 \usepackage{titlesec}
 \titlespacing*{\section}{0pt}{2.0ex plus 0.4ex minus 0.2ex}{1.0ex plus 0.2ex}
 \titlespacing*{\subsection}{0pt}{1.5ex plus 0.3ex minus 0.2ex}{0.6ex plus 0.2ex}
 \titlespacing*{\subsubsection}{0pt}{1.2ex plus 0.3ex minus 0.2ex}{0.5ex plus 0.2ex}
 
-% 浮动体与正文的间距（表格密集，统一收紧）
+% Float spacing (many tables in Chapter 3).
 \setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
 \setlength{\floatsep}{9pt plus 2pt minus 2pt}
 \setlength{\intextsep}{9pt plus 2pt minus 2pt}
 \setlength{\abovecaptionskip}{5pt}
 \setlength{\belowcaptionskip}{2pt}
 
-% ---------- 数学与表格 ----------
-\usepackage{amsmath,amssymb}
+% ---------- Mathematics and tables ----------
+\usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{longtable}
@@ -59,7 +67,7 @@
 \usepackage{enumitem}
 \setlist{itemsep=0.2em,topsep=0.3em}
 
-% ---------- 图形 ----------
+% ---------- Figures ----------
 \usepackage{graphicx}
 \graphicspath{{figures/}}
 \usepackage{tikz}
@@ -71,7 +79,7 @@
 \usepackage{subcaption}
 \captionsetup{font=small,labelfont=bf,skip=5pt}
 
-% ---------- 颜色与代码 ----------
+% ---------- Colours and code ----------
 \usepackage{xcolor}
 \definecolor{mseblue}{RGB}{26,74,122}
 \definecolor{msegray}{RGB}{95,99,104}
@@ -104,16 +112,17 @@
   stringstyle=\color{teal},
 }
 
-% 行内代码：\code{./build/mse build --stem}。
-% \detokenize 保留空格与下划线等特殊字符；参数里不要出现字面百分号。
+% Inline code: \code{./build/mse build --stem}.
+% \detokenize keeps spaces and underscores; do not put a literal percent sign
+% in the argument.
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
 
-% ---------- 页眉页脚 ----------
+% ---------- Headers and footers ----------
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\color{msegray}迷你搜索引擎项目报告}
-\fancyhead[R]{\small\color{msegray}2026 年 10 月}
+\fancyhead[L]{\small\color{msegray}Mini Search Engine Project Report}
+\fancyhead[R]{\small\color{msegray}October 2026}
 \fancyfoot[C]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 \fancypagestyle{plain}[fancy]{%
@@ -122,33 +131,24 @@
   \renewcommand{\headrulewidth}{0pt}%
 }
 
-% ---------- 标题名（中文，显式设置以免依赖 ctex 默认值） ----------
-\renewcommand{\figurename}{图}
-\renewcommand{\tablename}{表}
-\renewcommand{\contentsname}{目录}
-\renewcommand{\listfigurename}{插图目录}
-\renewcommand{\listtablename}{表格目录}
-\renewcommand{\refname}{参考文献}
-\renewcommand{\appendixname}{附录}
-
-% ---------- 超链接 ----------
+% ---------- Hyperlinks ----------
 \usepackage[hidelinks,bookmarksnumbered=true]{hyperref}
 \usepackage{url}
 
-% ---------- 报告内约定宏 ----------
-% 结论高亮：\finding{一句话结论}
+% ---------- Report macros ----------
+% Highlighted finding: \finding{one-sentence conclusion}
 \newcommand{\finding}[1]{%
   \par\medskip\noindent
   \begin{minipage}{\linewidth}%
     \colorbox{codebg}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
-      \noindent\textbf{\color{mseblue}结论：}#1}}%
+      \raggedright\noindent\textbf{\color{mseblue}Finding: }#1}}%
   \end{minipage}%
   \par\medskip
 }
 
-% 未完成标记（终稿应为 0 处；用 \TODO{...} 可被 grep 出来）
+% Unfinished marker (the final build must contain none).
 \newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 
-% 表格数字右对齐的简写列类型
+% Right-aligned numeric column types.
 \newcolumntype{N}{>{\raggedleft\arraybackslash}X}
 \newcolumntype{R}{>{\raggedleft\arraybackslash}r}

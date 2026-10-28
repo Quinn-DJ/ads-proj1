@@ -1,35 +1,48 @@
-% 参考文献：课程语料网站 + 四份 Porter 参考资料。
+% References: journal, book, and website entries.
 
-\refstepcounter{section}
-\renewcommand{\refname}{\texorpdfstring{\thesection\quad 参考文献}{\thesection~参考文献}}
-
+\clearpage
+\renewcommand{\refname}{References}
 \begin{thebibliography}{99}
-  \addcontentsline{toc}{section}{\thesection\quad 参考文献}
-
-  \bibitem{shakespeare}
-  MIT Shakespeare.
-  \emph{The Complete Works of William Shakespeare}.
-  \url{http://shakespeare.mit.edu/}；官方 GitHub 镜像
-  \url{https://github.com/TheMITTech/shakespeare}.
+  \addcontentsline{toc}{section}{References}
 
   \bibitem{porter1980}
   M.~F. Porter.
   An algorithm for suffix stripping.
   \emph{Program}, 14(3):130--137, 1980.
 
+  \bibitem{manning2008}
+  C.~D. Manning, P. Raghavan, and H. Sch\"utze.
+  \emph{Introduction to Information Retrieval}.
+  Cambridge University Press, Cambridge, 2008.
+
+  \bibitem{cormen2022}
+  T.~H. Cormen, C.~E. Leiserson, R.~L. Rivest, and C. Stein.
+  \emph{Introduction to Algorithms}, 4th edition.
+  MIT Press, Cambridge, MA, 2022.
+
+  \bibitem{shakespeare}
+  MIT Shakespeare.
+  \emph{The Complete Works of William Shakespeare}.
+  \url{http://shakespeare.mit.edu/};
+  GitHub mirror \url{https://github.com/TheMITTech/shakespeare}.
+  Accessed 2026-10-20.
+
   \bibitem{porter-c}
   M.~F. Porter.
   \emph{The Porter Stemming Algorithm: canonical C implementation}.
   \url{https://tartarus.org/martin/PorterStemmer/c.txt}.
+  Accessed 2026-10-20.
 
   \bibitem{nltk}
   NLTK Project.
   \emph{nltk.stem.PorterStemmer}.
   \url{https://github.com/nltk/nltk/blob/3.9.1/nltk/stem/porter.py}.
+  Accessed 2026-10-20.
 
   \bibitem{snowball}
   Snowball Project.
   \emph{The English (Porter2) stemming algorithm}.
   \url{https://snowballstem.org/algorithms/english/stemmer.html}.
+  Accessed 2026-10-20.
 
 \end{thebibliography}

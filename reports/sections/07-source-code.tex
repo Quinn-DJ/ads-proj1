@@ -1,0 +1,101 @@
+% Appendix A: source-code organization and comment coverage.
+% The full listing is deliberately not embedded; the submitted archive contains
+% the sources. Comment counts are for the working tree at the report revision.
+
+\section{Source Code}
+\label{app:source}
+
+This appendix documents how the source is organized and how densely it is
+commented. The complete listing is not reproduced here: the archive submitted
+with the report contains \code{src/}, \code{include/}, \code{tests/}, and
+\code{tools/} in full, and the module map below identifies what each file
+implements. The code is C++17 and builds with CMake.
+
+\subsection{Module Map}
+
+Table~\ref{tab:source-map} lists the twelve translation units of the C++ core.
+Headers are grouped with the implementation they declare; line counts include
+both files.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Source modules of the C++ core.}
+  \label{tab:source-map}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{@{}l r X@{}}
+    \toprule
+    Module & Lines & Responsibility \\
+    \midrule
+    \code{tokenizer.cpp}, \code{tokenizer.hpp} & 167 &
+      ASCII token classes, apostrophe and hyphen rules, option flags \\
+    \code{corpus.cpp}, \code{corpus.hpp} & 475 &
+      Manifest parsing, text layer, document metadata \\
+    \code{count.cpp}, \code{count.hpp} & 338 &
+      tf/df statistics, kept and removed token counts, CSV output \\
+    \code{stopwords.cpp}, \code{stopwords.hpp} & 84 &
+      Stop-word list loading, three-feature derivation, provenance header \\
+    \code{stemmer.cpp}, \code{stemmer.hpp} & 424 &
+      Porter stemmer, contraction handling, guard rules \\
+    \code{posting.cpp}, \code{posting.hpp} & 80 &
+      Posting entries, document and position lists \\
+    \code{index.cpp}, \code{index.hpp} & 1\,135 &
+      Index build, v1/v2 serialization and parsing, verification \\
+    \code{dict.cpp}, \code{dict.hpp} & 552 &
+      Splay-tree, hash-table, and \code{std::map} dictionary adapters \\
+    \code{bptree.cpp}, \code{bptree.hpp} & 1\,211 &
+      Disk B+ tree, bulk load, point lookup, page cache \\
+    \code{blockbuild.cpp}, \code{blockbuild.hpp} & 504 &
+      SPIMI-style run construction and merge \\
+    \code{query.cpp}, \code{query.hpp} & 414 &
+      Word, phrase, and Boolean queries; thresholds; ranking \\
+    \code{main.cpp} & 1\,267 &
+      Command-line interface and command dispatch \\
+    \midrule
+    Total & 6\,651 & \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The eight Catch2 test files total 1,708 lines, and the nine Python tools total
+1,801 lines. The tools are independent of the C++ implementation: they
+re-tokenize the corpus, rebuild the postings, parse both index formats, and
+check phrase results, so agreement is evidence rather than a tautology.
+
+\subsection{Comment Coverage}
+
+Comment coverage is counted on the twelve core files (6,651 total lines, 6,112
+non-blank lines). A line is \emph{comment-only} if its first non-space
+characters begin a line or block comment; a line is \emph{comment-bearing} if it
+contains a comment, whether or not it also contains code. Table~\ref{tab:comments}
+reports both conventions instead of choosing the more favorable one.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Comment coverage of the C++ core.}
+  \label{tab:comments}
+  \footnotesize
+  \begin{tabular}{l r r r r r}
+    \toprule
+    Scope & Non-blank & Comment-only & Comment-bearing &
+      Comment-only & Comment-bearing \\
+    \midrule
+    \code{src/} & 5\,180 & 1\,304 & 1\,420 & 25.2\% & 27.4\% \\
+    \code{include/} & 932 & 414 & 519 & 44.4\% & 55.7\% \\
+    Combined & 6\,112 & 1\,718 & 1\,941 & 28.1\% & 31.7\% \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize Note: 223 lines contain both code and a comment; they are
+  included in the comment-bearing column and excluded from the comment-only
+  column. Measured against code-carrying lines alone, comment-only lines are
+  39.1\%.
+\end{table}
+
+The combined core is 31.7\% comment-bearing; comment-only lines are 28.1\%.
+Headers are commented more densely than implementation files, which is
+expected: the headers state the invariants and ownership rules that the
+implementation assumes. The requirement that comments make up at least 30\% of
+the code is met under the comment-bearing convention; the comment-only figure
+is reported as well so that the counting convention is visible. Comment
+density is not a substitute for the tests in Chapter~\ref{sec:results}: the
+cross-checks, not the comment ratio, are what establish correctness.

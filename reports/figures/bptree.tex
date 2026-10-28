@@ -46,7 +46,7 @@
     \addlegendentry{400M-key extrapolation}
   \end{axis}
   \end{tikzpicture}
-  \caption{文件字节 $=$ \BptSlope{} B/键 $\times$ 键数，严格线性}
+  \caption{File bytes $=$ \BptSlope{} B/key $\times$ keys; strictly linear.}
 \end{subfigure}\hfill
 % ---------------- (b) page reads ----------------
 \begin{subfigure}{0.49\linewidth}
@@ -88,11 +88,13 @@
        \BptExtrapPages{} page reads $=$ \BptExtrapKiB{} KiB};
   \end{axis}
   \end{tikzpicture}
-  \caption{每次查询只读树高页：4 亿键也只需 4 页 $=$ 16 KiB}
+  \caption{Each lookup reads tree-height pages: even 400M keys need 4 pages
+  $=$ 16 KiB.}
 \end{subfigure}
-\caption{B+ 树 词典的规模实验：文件体积严格线性（\BptSlope{} B/键），而每次
-随机查询的页读等于树高、随高度对数增长；按实测扇外出推，4 亿个不同词只需
-\BptExtrapH{} 层、每次查询 \BptExtrapPages{} 页（\BptExtrapKiB{} KiB），文件约
-\BptExtrapGB{} GB。}%
+\caption{Scaling experiment for the B+ tree dictionary: file size is strictly
+linear (\BptSlope{} B/key), while page reads per random lookup equal the tree
+height and grow logarithmically with height. Extrapolating from the measured
+fanout, 400M distinct words need \BptExtrapH{} levels, \BptExtrapPages{} pages
+per lookup (\BptExtrapKiB{} KiB), and a file of about \BptExtrapGB{} GB.}%
 \label{fig:bptree}
 \end{figure}

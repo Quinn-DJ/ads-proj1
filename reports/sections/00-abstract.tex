@@ -1,42 +1,59 @@
-% 摘要（owner: lead）
-% 数字来源：本轮（2026-10-20）重新构建后现场运行；证据见 reports/data/ 与附录 A。
+% Abstract.
+% All figures are from the rebuild and rerun of 2026-10-20; the evidence
+% bundle is archived in reports.zip and summarized in Appendix B.
 
-本项目用 C++17 实现了一个可对《莎士比亚全集》进行查询的迷你搜索引擎，完成了题目要求的
-词频统计与停用词识别、带词干化的倒排索引、单词/短语（及布尔）查询，以及查询阈值实验，
-并对"50 万文件、4 亿不同词"的附加题给出了实测与可复现的外推。
+This project implements a mini search engine in C++17 for \emph{The Complete
+Works of William Shakespeare}. It covers the four required tasks---word
+frequency statistics and stop-word identification, a stemmed inverted index,
+word and phrase queries (with a Boolean extension), and an experiment on query
+thresholds---and addresses the bonus question of 500,000 files and 400,000,000
+distinct words with measured results and a clearly marked extrapolation.
 
-语料从 MIT Shakespeare 站点镜像的 1\,211 个 HTML 文件中按站点首页清单抽取为 195 个文档
-（37 部剧、154 首十四行诗、4 首长诗），共 152\,632 行、930\,911 个词，默认配置切出
-866\,626 个正文词元；另以 3 篇 IETF RFC 作为第二语料检验引擎的语料无关性。
+The corpus is extracted from 1,211 HTML files mirrored from the MIT Shakespeare
+site and reduced to 195 documents (37 plays, 154 sonnets, and 4 long poems),
+with 152,632 lines and 930,911 words; the default tokenizer produces 866,626
+body tokens. Three IETF RFCs form a second corpus that tests whether the engine
+is independent of the Shakespeare format.
 
-在词频统计部分，我们用 tf/df 双指标与一条可扫描的候选规则划定停用词边界，最终得到
-39 个词；它们只占词表的一小部分，却覆盖 35.74\% 的正文词元。在此基础上引入文档分布熵
-与长度归一化速率熵，把人工审核升级为"宽、重、平"三特征规则：纯统计推导同样得到 39 个词，
-与人工表重叠 35 个；在 RFC 语料上推导出完全不同的一张停用词表（58 个词），而 RFC 2119
-关键词 \code{must/may/should} 因分布不够"平"被正确排除。
+For stop-word selection, a two-feature tf/df rule narrows the candidate band,
+and a length-normalized rate entropy separates words that are spread evenly
+across documents from words that are merely frequent. The resulting
+three-feature rule derives 39 stop words, the same count as the manually
+curated list, with an overlap of 35 words. The rule also adapts to the RFC
+corpus: it derives a different 58-word list there and correctly excludes the
+RFC 2119 keywords \code{must}, \code{may}, and \code{should} because their
+distributions are not flat enough.
 
-在索引部分，Porter 词干化把 25\,705 个词形归并为 14\,947 个词干；正式索引含
-14\,937 个词项、117\,704 条倒排记录和 556\,866 个位置。第一版索引格式（v1，未压缩）
-为 3\,685\,655 字节；第二版索引格式（v2，差分加变长编码）压缩到 1\,725\,694 字节
-（46.82\%）。伸展树、哈希表与
-\code{std::map} 三种词典实现分别构建出逐字节相同的索引；磁盘 B+ 树附属词典文件
-（237\,568 字节）把冷查询 I/O 降到全量加载的 0.225\%；SPIMI 式块式构建在 17 个块内
-完成，产物与内存构建逐字节一致。
+For the index, Porter stemming maps 25,705 word forms to 14,947 stems. The
+formal index contains 14,937 terms, 117,704 postings, and 556,866 positions.
+The first persistence format (v1, uncompressed) occupies 3,685,655 bytes; the
+second format (v2, delta plus variable-length coding) reduces this to
+1,725,694 bytes, or 46.82\% of v1. Splay-tree, hash-table, and \code{std::map}
+dictionaries produce byte-identical indexes. A disk-based B+ tree sidecar
+(237,568 bytes) reduces cold-query I/O to 0.225\% of a full load, and a
+SPIMI-style block build finishes in 17 runs and produces an index identical to
+the in-memory build.
 
-查询程序支持单词、短语与布尔查询，并提供 \code{max-df}、\code{min-df}、\code{min-match}、
-\code{top-x} 四个阈值。在 15 条查询、201 条测量构成的阈值矩阵上，我们观察到阈值改变的是
-查询语义而非单纯精度：丢弃查询词会让全部命中退化为单词查询，结果反而从 30 篇增加到
-90 篇；
-短语查询不受查询词裁剪影响，而停用词查询在过滤索引上恒为空，这些都是可解释的设计行为。
+The query program supports word, phrase, and Boolean queries and exposes four
+thresholds: \code{max-df}, \code{min-df}, \code{min-match}, and \code{top-x}.
+On a matrix of 15 queries and 201 measurements, the thresholds change query
+semantics rather than merely precision: removing a query term can turn a
+three-term conjunction into a single-term query and raise the result count from
+30 to 90, while phrase queries ignore the term-side thresholds.
 
-正确性方面，18 项 CTest 全部通过（8 个 Catch2 可执行文件、46 个用例、85\,155 条断言），
-并以独立 Python 实现完成了词频 CSV 的逐字节对拍、正式/原始/压缩三种索引的全词表
-文档频率、词频、文档编号与位置对拍、303 条短语对拍与磁盘词典双路径校验，讲义四文档黄金样例
-逐项吻合。附加题方面，50 万文档、2\,000 万词元的合成语料用块式构建完成（峰值内存
-1.01\,GiB，内存构建为 2.00\,GiB，产物逐字节相同）；B+ 树 词典从 10 万键实测到 5\,000 万键，
-体积恒定 15.100 字节/键，5\,000 万键时树高已达 4；按此外推 4 亿词约需 6.04\,GB 磁盘、
-树高 4，单次查询只读 4 个页面（约 16\,KB）。
+Correctness is supported by 18 CTest tests (8 Catch2 executables, 46 test
+cases, and 85,155 assertions) and by independent Python implementations that
+reproduce the word-count CSV, rebuild the full index, parse both persistence
+formats, and check 303 phrase queries. The bonus experiments use a synthetic
+corpus of 500,000 documents and 20,000,000 tokens: block construction needs
+1.01\,GiB of peak memory versus 2.00\,GiB for the in-memory build, and both
+produce byte-identical indexes. The B+ tree dictionary is measured from
+100,000 to 50,000,000 keys at a stable 15.100 bytes per key, with height 4 at
+50,000,000 keys; extrapolating the measured fanout to 400,000,000 words gives
+about 6.04\,GB on disk, height 4, and four page reads (about 16\,KiB) per
+lookup.
 
 \vspace{0.8em}
-\noindent\textbf{关键词：}倒排索引；词频统计；停用词；速率熵；Porter 词干化；
-伸展树；B+ 树；查询阈值；可复现性
+\noindent\textbf{Keywords:} inverted index; word frequency; stop words; rate
+entropy; Porter stemming; splay tree; B+ tree; query thresholds;
+reproducibility

@@ -1,31 +1,92 @@
-% 第 1 章（续）：词频、停用词、词干化、索引、词典与查询设计。
-\subsection{词频统计}
+% Chapter 2: Data structure and algorithm specification.
+
+\section{Data Structure and Algorithm Specification}
+\label{sec:design}
+
+This chapter specifies the data structures and algorithms used by the engine.
+The order follows the data flow: tokenization, counting, stop-word selection,
+stemming, index construction, dictionary structures, disk-based storage,
+external construction, and query processing. Pseudo-code is written in a
+language-independent form; identifiers such as \code{lastDoc} and
+\code{posStart} match the implementation.
+
+\subsection{Tokenization and Normalization}
+\label{sec:tokenization}
+
+The corpus is stored as a \emph{text layer}: one semantic unit per line, with a
+line marker that identifies headings, stage directions, and speaker labels.
+\code{manifest.tsv} is the catalog; each row contains the document ID, title,
+text path, and source path, and an optional \code{format} column selects
+\code{marked} (default) or \code{plain} (used by the RFC corpus).
+
+A token is a maximal run of ASCII letters that may contain internal
+apostrophes. All tokens are lowercased. The apostrophe rules are:
+
+\begin{itemize}
+  \item an internal apostrophe is kept: \code{don't} and \code{o'er} are single
+        tokens;
+  \item a leading apostrophe is dropped: \code{'Tis} becomes \code{tis};
+  \item a trailing apostrophe acts as a separator: \code{friends'} becomes
+        \code{friends};
+  \item hyphens, digits, and ordinary punctuation are separators:
+        \code{to-day} becomes \code{to} and \code{day}, and \code{1660s}
+        becomes \code{s}.
+\end{itemize}
+
+Marker lines are skipped by default. A heading such as \code{[ACT I]}, a stage
+direction such as \code{(Exit Ghost)}, or a speaker label such as
+\code{@BERNARDO} is recognized only when the first and last characters match
+the expected pair. A line that begins with \code{[} but continues as dialogue
+is body text. The optional flags \code{--keep-headings}, \code{--keep-speakers},
+and \code{--keep-stage} retain each class for experiments that need a different
+counting convention.
+
+\begin{lstlisting}[style=cli]
+for each line L in the text layer:
+    if L is a marker line and the marker class is not kept:
+        continue
+    for each maximal run T of ASCII letters and internal apostrophes:
+        T = drop leading apostrophe; T = lowercase(T)
+        emit T
+\end{lstlisting}
+
+Normalization is the composition of three stages: tokenize, optionally remove
+stop words, and optionally apply the Porter stemmer. The index header stores
+two flags for the latter two stages, and the query program reads these flags
+and replays the same composition. This is the mechanism that keeps a query
+from using a different definition of a term than the index.
+
+\subsection{Word Frequency Statistics}
 \label{sec:count-design}
 
-\subsubsection{设计原理}
+\subsubsection{Design Principles}
 
-统计程序回答两个基础量：词频 tf（词项在语料中的总出现次数）与
-文档频率 df（包含该词项的文档数）。对词项 $t$：
+For a term $t$, the engine reports its term frequency and document frequency:
 \begin{equation}
   \mathrm{tf}(t)=\sum_{d}\mathrm{tf}(t,d),\qquad
   \mathrm{df}(t)=|\{d:\mathrm{tf}(t,d)>0\}|.
 \end{equation}
-同时计算 $df\_ratio(t)=\mathrm{df}(t)/195$ 与
-$tf\_share(t)=\mathrm{tf}(t)/866\,626$。前一个指标描述“覆盖面”，后一个描述
-“词元质量”；只看其中一个，很容易把短诗稀释的对话词误判为稀有词。
+It also computes the document-frequency ratio
+$\mathrm{df\_ratio}(t)=\mathrm{df}(t)/195$ and the term-frequency share
+$\mathrm{tf\_share}(t)=\mathrm{tf}(t)/866\,626$. The first measures coverage;
+the second measures volume. Looking at only one of them makes a dialogue word
+diluted by the 154 short poems look rare when it is actually common.
 
-统计程序复用正式规范化管线：切词后可选停用词过滤，再可选 Porter 词干化。
-默认、仅停用词、仅词干化和正式配置分别对应四种统计数据，后续索引与查询均使用
-同一组处理顺序。% src: F6、F7
+The counter reuses the formal normalization pipeline. Four configurations are
+supported: the default (no stop words, no stemming), stop words only, stemming
+only, and the formal configuration (both). The same order---tokenize, filter,
+stem---is used by the index and query programs.
 
-\subsubsection{算法设计}
+\subsubsection{Algorithm}
 
-程序按语料清单顺序逐文档扫描。每个词项除累计词频外，还保存最近一次出现的文档编号；
-只有当前文档编号与 \code{lastDoc} 不同时，文档频率才加一。这样同一篇作品内的重复出现不会重复
-计算文档频率：
+Documents are scanned in manifest order. Each term row stores its accumulated
+frequency and the ID of the last document in which it was seen. The document
+frequency is incremented only when the current document ID differs from
+\code{lastDoc}; repeated occurrences inside one document therefore contribute
+once to df.
 
 \begin{lstlisting}[style=cli]
-for each document d:
+for each document d in manifest order:
     for each token t in tokenize(d):
         row = table[t]
         row.tf += 1
@@ -33,88 +94,154 @@ for each document d:
             row.df += 1
             row.lastDoc = d.id
 \end{lstlisting}
-% src: F6、F15
 
-\subsection{停用词选择}
+With a hash table the expected time is $O(N)$ for $N$ tokens, plus $O(T\log T)$
+for sorting the output rows; with a splay dictionary it is $O(N\log T)$
+amortized. The memory bound is $O(T)$ rows. The four CSV outputs are
+deterministic: the same input and flags produce the same bytes, and the files
+contain no timestamps.
+
+\subsection{Stop-Word Selection}
 \label{sec:stopwords}
 
-\paragraph{统计学手段进行选择}
+\subsubsection{The tf/df Candidate Rule}
+
+The simplest candidate rule asks a word to be both widespread and frequent:
+\begin{equation}
+  \mathrm{df\_ratio}(t)\ge 0.75
+  \quad\land\quad
+  \mathrm{tf\_share}(t)\ge 0.001.
+\end{equation}
+It returns only nine words. The reason is the corpus composition: 154 short
+poems account for 79\% of the documents, and many function words do not appear
+in every poem, so their document-frequency ratios are diluted. For example,
+\code{a} has a ratio of 0.7077, just below 0.75. Lowering the threshold to 0.40
+produces 48 candidates, but content words such as \code{love} and \code{time}
+enter the band as well.
+
+\subsubsection{Length-Normalized Rate Entropy}
 \label{sec:entropy}
 
-一般的候选规则只要求“广”和“重”：
-\begin{equation}
-  df\_ratio(t)\ge 0.75
-  \quad\land\quad
-  tf\_share(t)\ge 0.001.
-\end{equation}
-它只得到 9 个词。考虑到 154 首的短诗占文档总数 79\%，
-很多对话功能词不会出现在每一首诗里，df 比值被稀释。例如 \code{a} 只有 70.77\%，
-刚好落在 0.75 线下；如果将阈值放宽到 0.40 后则得到 48 个候选，但 \code{love}、\code{time} 等有内容
-的词也进入候选带。% src: F7、F10、F11
-
-为了把“均匀分布在很多文档中”与“只是总次数高”分开，我们计算文档长度归一化
-速率熵。设 $L_d$ 为文档 $d$ 的保留词元数，
+To separate ``spread evenly across many documents'' from ``merely frequent,''
+the engine computes a length-normalized rate entropy. Let $L_d$ be the number
+of kept tokens in document $d$:
 \begin{equation}
   r_{t,d}=\frac{\mathrm{tf}(t,d)}{L_d},\qquad
   q_{t,d}=\frac{r_{t,d}}{\sum_{d'}r_{t,d'}},\qquad
   \widehat H(t)=\frac{-\sum_{d}q_{t,d}\log_2 q_{t,d}}{\log_2\mathrm{df}(t)}.
   \label{eq:rate-entropy}
 \end{equation}
-长度归一化后，功能词稳定在 0.95 以上，
-\code{love}、\code{king}、\code{heart} 等内容词明显更低，df$=$1 的专名定义为 0。% src: F9
+After length normalization, function words sit above 0.95, content words such
+as \code{love}, \code{king}, and \code{heart} are visibly lower, and a proper
+noun with $\mathrm{df}=1$ has entropy zero by definition. The denominator
+$\log_2\mathrm{df}(t)$ makes the statistic comparable across words that occur
+in different numbers of documents.
 
-最终规则同时要求“宽、重、平”：
+\subsubsection{The Three-Feature Rule}
+
+The final rule requires a word to be wide, heavy, and flat:
 \begin{equation}
-  df\_ratio\ge r
+  \mathrm{df\_ratio}\ge r
   \quad\land\quad
-  tf\_share\ge s
+  \mathrm{tf\_share}\ge s
   \quad\land\quad
   \widehat H\ge h.
 \end{equation}
-默认 $(r,s,h)=(0.75,0.001,0.93)$ 只产生 9 词；实验参数
-$(0.40,0.001,0.93)$ 产生 39 词，与人工表重叠 35 个。自动表多收
-\code{hath/o/thee/thou}，少收 \code{more/or/than/their}，差异可以由速率熵逐词解释。
-% src: F13
-
-\subsection{词干化}
-\label{sec:stemmer}
-
-\subsubsection{网上方案选择与分析}
-
-我们参考并比较了四份词干化方案：Porter 1980 论文、作者官网的 canonical C 实现、
-NLTK 的 \code{PorterStemmer} 三种兼容模式，以及 Snowball 的 Porter2 算法
-~\cite{porter1980,porter-c,nltk,snowball}。
-
-最终选择采用 Porter 1980 论文和 canonical C 的三处 \code{--DEPARTURE--}。三处差异是：
-两字母及以下的词不改，\code{bli} 改为 \code{ble}，\code{logi} 改为 \code{log}。% src: F6、F15
-
-\subsubsection{算法设计}
-
-进入 Porter 规则前先处理收缩词：按最长匹配剥掉 \code{n't/'s/'d/'ll/'re/'ve/'t/'m}，
-再删除剩余撇号。因此 \code{o'er} 变为 \code{oer}，\code{marry'd} 变为 \code{marryd}。不规则拼写
-保留其规则结果，例如 \code{can't}$\to$\code{ca}、\code{won't}$\to$\code{wo}。
-
-Porter 主流程依次执行 step 1a、1b、1c、2、3、4、5a、5b。核心条件是 measure $m$
-（V-C 序列数）以及 \code{*v*}、\code{*d}、\code{*o} 谓词。实现遵循“首个匹配后缀说了算”：
-某个后缀匹配后，只检查该条规则的条件；条件失败就停止，不再退回尝试更短后缀。
-% src: F6、F15
-
-\subsection{倒排索引}
-\label{sec:posting}
-
-每个词项对应一条按文档编号升序的倒排记录表。记录项保存
-$(\text{文档编号},\text{位置起点},\text{词频})$，其中 \code{posStart} 是倒排记录项
-在独立位置数组中的起点，\code{tf} 是本文档内的出现次数。位置采用停用词过滤后的
-词元偏移，因此短语查询可以在不回到原文的情况下验证相邻关系。
-
-索引加载时检查四类结构不变量：文档编号稠密为 1 到 \(N\)，同一倒排记录表内严格递增；
-每条倒排记录项的词频等于其位置个数；位置总数等于词元总数；词项表严格按字典序排列。
-构建过程按文档流增量追加，最后将词典冻结为有序词项表：
+The default $(r,s,h)=(0.75,0.001,0.93)$ yields nine words. The experimental
+configuration $(0.40,0.001,0.93)$ yields 39 words and overlaps the manually
+curated list in 35 words. The automatic list adds \code{hath}, \code{o},
+\code{thee}, and \code{thou}, and omits \code{more}, \code{or}, \code{than},
+and \code{their}; each difference can be explained by the rate entropy.
 
 \begin{lstlisting}[style=cli]
-for each document D:
+for each term t in the vocabulary:
+    if df_ratio[t] >= r and tf_share[t] >= s
+       and rate_entropy[t] >= h:
+        emit t
+\end{lstlisting}
+
+The rule is deterministic and uses no external stop-word list. Changing a
+threshold changes only the strictness of the band, not the structure of the
+rule.
+
+\subsection{Porter Stemming}
+\label{sec:stemmer}
+
+\subsubsection{Comparison of Public Stemmers}
+
+Four public descriptions were compared: the original Porter (1980) paper, the
+canonical C implementation on the author's site, the NLTK
+\code{PorterStemmer} in its three compatibility modes, and the Snowball Porter2
+algorithm \cite{porter1980,porter-c,nltk,snowball}. The implementation follows
+the 1980 paper plus the three marked \code{--DEPARTURE--} changes in the
+canonical C code: words of two letters or fewer are left unchanged, \code{bli}
+is changed to \code{ble}, and \code{logi} is changed to \code{log}. This is the
+same behavior as NLTK's \code{MARTIN_EXTENSIONS} mode, which the full-vocabulary
+cross-check uses as an oracle.
+
+\subsubsection{Algorithm}
+
+Before the Porter rules, contractions are reduced: the longest matching suffix
+among \code{n't}, \code{'s}, \code{'d}, \code{'ll}, \code{'re}, \code{'ve},
+\code{'t}, and \code{'m} is removed, and remaining apostrophes are deleted.
+Thus \code{o'er} becomes \code{oer}, \code{marry'd} becomes \code{marryd}, and
+the irregular forms keep their rule result, for example \code{can't} becomes
+\code{ca} and \code{won't} becomes \code{wo}.
+
+The main flow executes steps 1a, 1b, 1c, 2, 3, 4, 5a, and 5b. The core
+condition is the measure $m$ (the number of vowel-consonant sequences) and the
+predicates \code{*v*}, \code{*d}, and \code{*o}. The implementation follows
+``the first matching suffix decides'': once a suffix matches, only that rule's
+condition is checked; if the condition fails, the step stops and does not fall
+back to a shorter suffix. This detail matters: an earlier version continued to
+shorter suffixes after a failed condition, over-stemmed 41 word forms (for
+example, \code{agreement} became \code{agreem}), and was caught by the
+full-vocabulary differential test.
+
+\begin{lstlisting}[style=cli]
+stem(word):
+    word = strip_longest_contraction(word)
+    for step in (1a, 1b, 1c, 2, 3, 4, 5a, 5b):
+        for suffix in step.suffixes_by_length:
+            if word ends with suffix:
+                if step.condition(word, suffix):
+                    word = step.replace(word, suffix)
+                break          # first match wins; do not try shorter suffixes
+    return word
+\end{lstlisting}
+
+The worst-case cost is $O(L^2)$ for a word of length $L$ because suffix
+matching and condition checks rescan the word; in practice $L$ is small and the
+observed throughput is dominated by the dictionary, not by the stemmer.
+
+\subsection{Inverted Index}
+\label{sec:posting}
+
+\subsubsection{Posting Lists and Invariants}
+
+Each term has a posting list ordered by document ID. A posting entry stores
+$(\mathrm{docID},\mathrm{posStart},\mathrm{tf})$, where \code{posStart} is the
+start of the entry's positions in a separate position array and \code{tf} is
+the number of occurrences in that document. Positions are offsets in the
+stop-word-filtered token stream, so a phrase query can verify adjacency without
+returning to the original text.
+
+The loader checks five structural invariants: document IDs are dense from 1 to
+$N$; document IDs within one posting list are strictly increasing; the
+\code{tf} of each entry equals its number of positions; the total number of
+positions equals the total number of kept tokens; and the term table is in
+strict lexicographic order. The same invariants are enforced by
+\code{validateIndex()} after loading.
+
+\subsubsection{Build Algorithm}
+
+The builder scans the document stream and appends postings incrementally; at
+the end, the dictionary is frozen into a sorted term table.
+
+\begin{lstlisting}[style=cli]
+for each document D in manifest order:
     pos = 0
-    for token t in tokenize(D):
+    for each token t in tokenize(D):
         if stop_words.contains(t): continue
         term = stem(t) if stem_flag else t
         dict.upsert(term).append(D.id, pos)
@@ -123,85 +250,254 @@ for each document D:
 index.terms = dict.sorted_entries()
 \end{lstlisting}
 
-正式配置得到 14,937 个词项、117,704 条倒排记录、556,866 个位置和 3,685,655 字节
-的第一版索引格式，文件布局如图~\ref{fig:index-layout}。% src: F18
+The formal configuration produces 14,937 terms, 117,704 posting entries,
+556,866 positions, and a 3,685,655-byte v1 index. The file layout is shown in
+Figure~\ref{fig:index-layout}.
 
 \input{figures/index-layout}
 
-持久化格式也属于倒排索引设计的一部分。第一版索引格式（代码中记为 v1，未压缩）
-顺序写出文件头、文档表、词项表和倒排记录块，写入前预计算所有偏移；读取端按同一规格
-解析并校验不变量。这样同一索引对象总能写出同一字节序列。
-
-第二版索引格式（代码中记为 v2，差分压缩）只替换倒排记录区：文档编号存差分，
-位置存差分，词频与差分值使用 1--4 字节的字节对齐变长码；文件头、文档表和词项表
-保持不变。正式索引由 3,685,655 字节降到 1,725,694 字节，为第一版格式的 46.82\%，
-查询输出不变。% src: F21
-
-\subsection{词典结构}
-\label{sec:dict}
+\subsubsection{Persistence Formats v1 and v2}
 \label{sec:persistence}
 
-构建期词典接口只有三个操作：\code{upsert}、\code{find}、\code{sortedEntries}。主实现是自实现的伸展树。% src: F19、F20
+Persistence is part of the index specification, not an afterthought. Format v1
+writes the header, document table, term table, and posting blocks in order. All
+offsets are computed before writing, and the reader parses the same layout and
+replays the invariant checks. The same index object therefore always produces
+the same byte sequence.
 
-主结构选伸展树的原因是本题操作序列比较特殊。索引只插不删，红黑树最复杂的删除情形
-不存在；词流呈 Zipf 分布，访问后把节点旋到根，可以让高频词长期靠近树顶；构建结束时
-中序遍历直接得到字典序词项表，正好用于冻结有序词典。
+Format v2 changes only the posting region: document IDs are stored as deltas,
+positions as deltas, and frequencies and deltas use a 1--4 byte byte-aligned
+variable-length code. The header, document table, and term table are unchanged,
+except that \code{version} is set to 2. On the formal index, v2 reduces
+3,685,655 bytes to 1,725,694 bytes, or 46.82\% of v1, with identical query
+output.
 
-\subsection{磁盘 B+ 树和块式构建}
+The variable-length code uses the top two bits of the first byte for the total
+length and stores 6, 14, 22, or 30 payload bits in 1, 2, 3, or 4 bytes,
+respectively. Values are little-endian. A document-ID delta is at least 1; a
+position delta is at least 0.
+
+\subsection{Dictionary Structures}
+\label{sec:dict}
+
+The build-time dictionary exposes three operations: \code{upsert},
+\code{find}, and \code{sortedEntries}. The primary implementation is a
+self-implemented splay tree; a hash table and \code{std::map} are alternative
+implementations used for comparison.
+
+\subsubsection{Splay Tree}
+
+The workload explains the choice. The index is insert-only, so the expensive
+deletion cases of a red-black tree never occur. The token stream is
+Zipf-distributed, and splaying an accessed node to the root keeps frequent terms
+near the top. At the end of the build, an in-order traversal produces the sorted
+term table directly, which is exactly the frozen dictionary the serializer
+needs. The amortized cost of an operation is $O(\log T)$ for $T$ terms; the
+worst case is $O(T)$ for a single operation.
+
+\subsubsection{Hash Table and \texttt{std::map}}
+
+The hash dictionary provides expected $O(1)$ lookup and no ordered traversal;
+it is the speed baseline. The \code{std::map} dictionary is a red-black tree
+with worst-case $O(\log T)$ lookup and stable behavior; it is the balanced-tree
+control. Both implement the same three-operation interface, and all three
+produce byte-identical index files. The comparison of their build costs is
+reported in Section~\ref{sec:dict-analysis}.
+
+\subsubsection{Comparison}
+
+The splay tree pays for its ordered traversal with rotations and a higher
+comparison count; the hash table is faster but cannot produce a sorted term
+list without an extra sort; \code{std::map} sits between them with predictable
+costs. None of these differences changes the persisted index, because the
+dictionary is frozen before serialization.
+
+\subsection{Disk-Based B+ Tree}
 \label{sec:bptree-design}
+
+For a vocabulary that does not fit in memory, the query side can use a disk B+
+tree \emph{sidecar} that maps each term to its posting offset and block length.
+The tree is a 4\,KiB page file: page 0 is the header, and each later page is a
+leaf or an inner node. Leaves are linked by \code{nextLeaf} in key order. Keys
+are variable-length strings; the fanout is determined by the byte budget.
+
+The value of a leaf entry is a 64-bit integer that packs the posting block
+offset and the block length:
+\begin{equation}
+  \mathrm{value}=(\mathrm{offset}\ll 21)\;|\;\mathrm{blockBytes}.
+\end{equation}
+The length field is 21 bits, which is ample for the block sizes in this
+project.
+
+The tree maintains five invariants, checked by \code{validate()}. The routing
+interval is left-closed, $[\mathrm{key}_{i-1},\mathrm{key}_i)$, because a
+separator key is a real copy of the smallest key in the right subtree. With
+variable-length keys, a count-based split does not guarantee a 50\% byte fill;
+the implementation splits at the byte midpoint of a legal window and uses the
+provable lower bound \code{pageSize/2 - maxEntry} for the fill check. A lookup
+reads the root-to-leaf path and then seeks to the posting block:
+
+\begin{lstlisting}[style=cli]
+page = readPage(root)
+while page is an inner node:
+    i = upper_bound(page.keys, key)   # left-closed intervals
+    page = readPage(page.child[i])
+binary search page.keys for key
+if found: return page.value
+else: return not_found
+\end{lstlisting}
+
+A lookup costs $O(h)$ page reads and $O(h\log F)$ comparisons for height $h$
+and fanout $F$; it does not load the full term table. The sidecar is built by
+bulk-loading the sorted terms and is rebuilt whenever the index is rebuilt.
+
+\subsection{Block-Based External Construction}
 \label{sec:spimi}
 
-一万五千词以内，词项表与倒排记录可以整体放入内存；但是在四亿词的规模下，这是很难实现的。
-项目为此实现两条扩展路径：查询侧使用磁盘 B+ 树附属词典文件，构建侧使用 SPIMI 式块式
-外部构建。
+The in-memory builder keeps the whole dictionary and all postings in memory.
+For a large corpus this is the wrong bound, so the project also implements a
+SPIMI-style block builder. Documents are streamed one at a time; the buffer is
+spilled to a sorted temporary \emph{run} when it reaches a term budget
+(\code{--block-terms}) or an estimated byte budget (\code{--block-bytes}). Runs
+are then merged in passes with at most \code{--merge-fan-in} inputs per pass.
+The term metadata and postings are streamed to temporary files and assembled
+into the final index, so the process does not rebuild the full index or all
+compressed blocks in memory.
 
-磁盘附属词典文件把每个词项映射到倒排记录偏移和块长。B+ 树节点按 4 KiB 页预算序列化，
-叶子用 \code{nextLeaf} 串成有序链。一次点查只读取树根到叶子的 $O(h)$ 个页，再 seek 到
-主索引中的倒排记录块，不加载完整词项表。内部路由使用左闭区间
-$[\text{key}_{i-1},\text{key}_i)$，因为分隔键是右子树最小键的真实副本。变长键下
-按字节中点分裂，并用 \code{pageSize/2 - maxEntry} 作为可证的填充下界。
+\begin{lstlisting}[style=cli]
+for each document D in manifest order:
+    add tokens of D to buffer
+    if buffer.terms >= term_budget or buffer.bytes >= byte_budget:
+        sort buffer; write run; clear buffer
+if buffer is non-empty: sort buffer; write run
+merge runs in passes of at most fan_in runs
+\end{lstlisting}
 
-块式构建逐文档加载正文，达到 \code{--block-terms} 或估算字节预算 \code{--block-bytes}
-后排序写临时块，再按 \code{--merge-fan-in} 限制输入数量、分轮按词归并。
-词表元数据和倒排记录分别流式写临时文件后组装索引，不在内存中重建完整索引或全部压缩块。
-内存仍包含文档元数据、临时块路径、文件缓冲和一个文档；预算在文档边界检查，
-因此可超出一个文档的大小。块边界只落在文档之间，所以后一块中同一词的
-文档编号一定更大，归并时可以直接拼接倒排记录。正式语料预算 4,096 时产生 17 个临时块，
-峰值活词 5,129，产物与全内存构建逐字节一致。% src: F22
+The memory bound is the block budget plus document metadata, run paths, file
+buffers, and one document. The budget is checked at document boundaries, so a
+single document can exceed it. Because every run boundary falls between
+documents, document IDs increase across runs, and the postings of the same term
+can be concatenated during the merge without reordering.
 
-\subsection{查询设计与阈值设计}
+On the Shakespeare corpus with a budget of 4,096, the builder produces 17 runs,
+peaks at 5,129 live terms, writes 4,166,556 bytes of temporary run data, and
+produces an index byte-identical to the in-memory build. The merge cost is
+$O(T\cdot R)$ with a linear scan of all run cursors, or $O(T\log R)$ with a heap;
+the implementation uses the simpler scan and reports the cost in
+Section~\ref{sec:compression}.
+
+\subsection{Query Processing and Threshold Design}
 \label{sec:query-design}
 
-查询文本先执行与建索引相同的分词器、停用词和词干化步骤。索引头标志决定是否
-过滤停用词、是否调用词干化器；被过滤、未登录或被阈值丢弃的词项都会写入说明信息。
+\subsubsection{Normalization Pipeline}
 
-单词查询要求归一后恰好剩一个词项；多词查询使用 \code{--words}，短语查询使用
-\code{--phrase}。短语先选文档频率最小的词作为候选文档，再对候选文档验证后续词是否位于
-\code{start+1, start+2, ...}。位置数组按升序保存，所以每一步使用二分查找。
+The query text is tokenized, filtered, and stemmed by the same functions used at
+build time. The index header flags decide whether stop-word filtering and
+stemming are applied. Every term that is filtered, missing from the dictionary,
+or dropped by a threshold is reported in an explanatory message, so an empty
+result is not silent.
 
-布尔查询默认要求全部可检索词命中。评分向量为
-\code{(matched, tfSum, docID)}，依次按降序、降序、升序排序，保证同一查询结果确定。
-\code{--min-match k} 表示至少命中 $k$ 个词，超过可用词数时钳制到词项数。
+\subsubsection{Word, Phrase, and Boolean Queries}
 
-四个阈值全部在查询期生效，索引只构建一次：
+A word query must normalize to exactly one term. A multi-word query uses
+\code{--words}; a phrase query uses \code{--phrase}. For a phrase, the engine
+starts from the term with the smallest document frequency, takes its documents
+as candidates, and verifies that the remaining terms occur at
+\code{start+1}, \code{start+2}, and so on. Positions are sorted, so each check
+is a binary search.
+
+\begin{lstlisting}[style=cli]
+phrase_query(terms):
+    choose t0 with the smallest df
+    for each document d in postings(t0):
+        for each start position p of t0 in d:
+            if for every i in 1..k-1: p+i is in positions(t_i, d):
+                emit d; break
+\end{lstlisting}
+
+A Boolean query requires all searchable terms by default. The score vector is
+\code{(matched, tfSum, docID)}, sorted by descending matched count, descending
+term-frequency sum, and ascending document ID, which makes the result order
+deterministic. \code{--min-match k} requires at least $k$ matching terms; if
+$k$ exceeds the number of searchable terms, it is clamped to that number.
+
+\subsubsection{Thresholds}
+
+All four thresholds act at query time; the index is built once. Their positions
+and defaults are listed in Table~\ref{tab:threshold-params}.
 
 \begin{table}[!ht]
   \centering
-  \caption{查询阈值的作用位置与默认值}
+  \caption{Query thresholds: where they act and their defaults.}
   \label{tab:threshold-params}
   \small
   \begin{tabularx}{\linewidth}{l l l X}
     \toprule
-    参数 & 默认值 & 作用位置 & 含义 \\
+    Option & Default & Stage & Meaning \\
     \midrule
-    \code{--max-df} & 1.0 & 查询词筛选 & 丢弃 df 比值超过阈值的词 \\
-    \code{--min-df} & 1 & 查询词筛选 & 丢弃 df 低于阈值的词 \\
-    \code{--min-match} & 0 & 布尔条件 & 至少命中的词数；0 等价于全部命中 \\
-    \code{--top-x} & 0 & 结果截断 & 排序后只保留前 $x$ 篇 \\
+    \code{--max-df} & 1.0 & query-term filter & drop a term whose df ratio exceeds the threshold \\
+    \code{--min-df} & 1 & query-term filter & drop a term whose df is below the threshold \\
+    \code{--min-match} & 0 & Boolean condition & require at least $k$ matching terms; 0 means all \\
+    \code{--top-x} & 0 & result truncation & keep only the first $x$ documents after ranking \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-短语查询有意绕过 \code{--max-df} 和 \code{--min-df}：短语必须整段匹配，删除任何一个词都会
-改变语义。停用词查询同样始终为空，因为停用词从一开始就没有进入索引；程序用说明信息
-区分“停用词”和“词典中不存在”两种情况。
+Phrase queries deliberately bypass \code{--max-df} and \code{--min-df}: a phrase
+must match as a whole, and dropping any term changes its meaning. A query whose
+terms are all stop words always returns nothing, because stop words never enter
+the index; the program distinguishes ``stop word'' from ``not in the
+dictionary'' in its explanation.
+
+\subsection{Summary of Main Data Structures}
+\label{sec:data-structures}
+
+Table~\ref{tab:data-structures} summarizes the structures that carry the
+invariants and costs discussed above. The table is a specification reference;
+measured numbers appear in Chapter~\ref{sec:results}.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Main data structures, invariants, and operation costs.}
+  \label{tab:data-structures}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.05}
+  \begin{tabularx}{\linewidth}{@{}l X X X@{}}
+    \toprule
+    Structure & Key fields / layout & Invariants & Operations and cost \\
+    \midrule
+    Posting entry &
+      \code{docID} u32, \code{posStart} u32, \code{tf} u32 &
+      document IDs strictly increasing; \code{tf} equals the number of
+      positions &
+      append $O(1)$; phrase check $O(\log \mathrm{tf})$ per position \\
+    Document table &
+      \code{docID}, \code{keptTokens}, \code{title} &
+      IDs dense from 1 to $N$; \code{keptTokens} sums to the total positions &
+      lookup by ID $O(1)$ \\
+    Splay dictionary &
+      term, posting block, left/right child &
+      binary-search-tree order; splay moves the accessed node to the root &
+      \code{upsert}/\code{find} $O(\log T)$ amortized, $O(T)$ worst;
+      \code{sortedEntries} $O(T)$ \\
+    Hash dictionary &
+      term, posting block, bucket array &
+      load factor bounded; rehash preserves entries &
+      expected $O(1)$ lookup; no ordered traversal \\
+    B+ tree node &
+      leaf flag, \code{keyCount}, \code{nextLeaf}, keys, values/children &
+      left-closed routing intervals; byte fill lower bound; leaf chain in key
+      order &
+      lookup $O(h)$ page reads and $O(h\log F)$ comparisons \\
+    Index header &
+      \code{magic}, \code{version}, \code{flags}, \code{docCount},
+      \code{termCount}, \code{tokenCount} &
+      flags replay the build-time normalization; counts match the tables &
+      read once $O(1)$ \\
+    Block run &
+      sorted sequence of (term, partial postings) &
+      runs are disjoint by document range; document IDs increase across runs &
+      merge $O(T\log R)$ with a heap, $O(TR)$ with a linear scan \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

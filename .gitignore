@@ -30,3 +30,6 @@ __pycache__/
 .cache/
 
 reports/data/
+
+# local working documents
+report_fix.md

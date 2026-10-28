@@ -43,9 +43,10 @@
   \addlegendentry{0.93 threshold}
 \end{axis}
 \end{tikzpicture}
-\caption{速率熵判别：功能词全部贴近 1（均在 0.96 以上），专名（df${}=1$）
-按定义为 0，内容词落在 0.83–0.94 的低区间；0.93 一条横线即可把功能词与其余
-词分开，个别越线的内容词再被 df 比例门（$\ge 0.4$）挡住，说明该特征能替代
-人工逐个审核。}%
+\caption{Rate entropy as a stop-word test: function words cluster near 1 (all
+above 0.95), proper nouns with df${}=1$ are zero by definition, and content
+words fall in the lower band 0.83--0.94. A single 0.93 line separates function
+words from the rest; the few content words above the line are still blocked by
+the df-ratio gate ($\ge 0.4$), so the feature can replace manual review.}%
 \label{fig:entropy}
 \end{figure}

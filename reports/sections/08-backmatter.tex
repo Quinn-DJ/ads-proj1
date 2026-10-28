@@ -1,0 +1,60 @@
+% Back matter: Author List, Declaration, Signatures.
+
+\clearpage
+\section*{Author List}
+\addcontentsline{toc}{section}{Author List}
+
+\noindent\begin{tabular}{@{}p{2.6cm} >{\raggedright\arraybackslash}p{12.8cm}@{}}
+  \toprule
+  Author & Contributions \\
+  \midrule
+  \authorA &
+    Independent correctness reports; the cross-check tools
+    (\code{check\_wordcount.py}, \code{brute\_force.py}, and
+    \code{check\_phrases.py}); the synthetic-corpus generator; plotting
+    scripts; fixes found by the cross-checks; and the revision of this report. \\
+  \authorB &
+    Project plan and corpus pipeline; tokenizer; word-count statistics;
+    stop-word list; Porter stemmer; dictionary layer; inverted-index format;
+    query program; threshold experiments; and the original report and
+    presentation. \\
+  \authorC &
+    CMake and Catch2 test infrastructure; entropy-based stop-word derivation;
+    corpus-agnostic importer and the RFC corpus; disk B+ tree; block-based
+    construction; v2 compression; streaming index merge; and code formatting. \\
+  \bottomrule
+\end{tabular}
+
+\vspace{1.0em}
+\noindent All authors contributed to the integration, testing, and revision of
+the report.
+
+\clearpage
+\section*{Declaration}
+\addcontentsline{toc}{section}{Declaration}
+
+\noindent We hereby declare that all the work done in this project titled
+``\reporttitle'' is of our independent effort as a group.
+
+\vspace{3.0em}
+\noindent Date: \rule{4cm}{0.4pt}
+
+\clearpage
+\section*{Signatures}
+\addcontentsline{toc}{section}{Signatures}
+
+\noindent Each author signs below.
+
+\vspace{1.5em}
+\begin{center}
+  \renewcommand{\arraystretch}{2.4}
+  \begin{tabular}{@{}l p{5.2cm} p{3.0cm}@{}}
+    \toprule
+    Name & Signature & Date \\
+    \midrule
+    \authorA & \rule{5.0cm}{0.4pt} & \rule{2.8cm}{0.4pt} \\
+    \authorB & \rule{5.0cm}{0.4pt} & \rule{2.8cm}{0.4pt} \\
+    \authorC & \rule{5.0cm}{0.4pt} & \rule{2.8cm}{0.4pt} \\
+    \bottomrule
+  \end{tabular}
+\end{center}

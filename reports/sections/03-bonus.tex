@@ -1,127 +1,148 @@
-% 第 3 章：Bonus 的结果与分析。
-% 证据来自 reports/data/results-verify.md 与 results-tasks.md 的本轮实测。
+% 3.6 Bonus: scalability experiments.
+% Evidence: results-verify.md and results-tasks.md (F11-F15, F21-F22).
 
-\section{Bonus 的结果与分析}
+\subsection{Bonus: Scalability Experiments}
 \label{sec:bonus}
 
-附加题有两条相互独立的规模轴：500,000 个文件主要压测构建侧和文档表，400,000,000 个
-不同词主要压测词典与倒排记录。项目分别实现了 SPIMI 式块式构建、磁盘 B+ 树词典和
-第二版索引格式的差分压缩，并完成了能够实际运行的规模实验。% src: F11–F15
+The bonus question has two independent scale axes: 500,000 files stress the
+build side and the document table, while 400,000,000 distinct words stress the
+dictionary and the posting lists. The project implements three mechanisms for
+these axes---SPIMI-style block construction, a disk-based B+ tree dictionary,
+and the delta-coded v2 index format---and runs the scale experiments that fit
+on one machine.
 
-\subsection{规模边界与实测范围}
+\subsubsection{Scale Boundaries and Measured Range}
+\label{sec:scale-range}
 
-按本轮 500,000 文档合成语料的实测锚点，4,908,747 个词项的整份内存索引峰值内存为
-2.00 GiB。若只按词项数线性放大到 4 亿词，峰值将达到约 160 GiB，普通单机无法容纳。
-因此全内存构建不能直接回答附加题。% src: F15；160 GiB 为线性外推
+The 500,000-document synthetic corpus contains 4,908,747 distinct terms. Its
+full in-memory index peaks at 2.00\,GiB. Scaling that figure linearly by term
+count to 400,000,000 distinct words would require about 160\,GiB, which a
+single machine of this class cannot provide. An in-memory build therefore
+cannot answer the second axis directly.
 
-500,000 文件这一轴已经实测完成：统计、块式构建和内存构建都在 16 GiB 机器上运行，
-没有出现文件数导致的地址空间或文档表问题。400,000,000 个不同词没有端到端跑完，
-查询侧用 B+ 树实测到 50,000,000 个键后外推，构建侧用块式构建的 490 万词实测和
-$O(\text{预算})$ 内存上界说明扩展路径。报告会明确区分实测点与外推点。
+The file axis is measured end to end: statistics, block construction, and the
+in-memory build all run on the same 16\,GiB machine, and no address-space or
+document-table problem appears at 500,000 files. The distinct-word axis is not
+run end to end. The query side is measured up to 50,000,000 B+ tree keys and
+extrapolated from the measured trend; the build side is measured to 4.9
+million terms and bounded by the $O(\text{budget})$ memory argument. Measured
+points and extrapolated points are labelled as such throughout this section.
 
-\subsection{磁盘 B+ 树词典}
+\subsubsection{Disk B+ Tree Dictionary}
+\label{sec:bptree-results}
 
-查询侧的问题不是如何查得更快，而是如何避免把完整词项表读入内存。B+ 树附属词典文件
-把每个词项映射到倒排记录偏移和块长，查询一次只经过根到叶的若干页。本轮从 10 万
-键实测到 5,000 万键，结果见表~\ref{tab:bptree-scale}。
+The query-side problem is not how to search faster but how to avoid loading
+the complete term table. The B+ tree sidecar maps each term to a posting
+offset and block length, so a lookup touches only a few pages on the root-to-
+leaf path. The experiment measures 100,000 to 50,000,000 keys; results are in
+Table~\ref{tab:bptree-scale}.
 
-\begin{table}[H]
+\begin{table}[!htbp]
   \centering
-  \caption{B+ 树词典的规模实测（4 KiB 页，批量装载，1,000 次随机查询全部校验）}
+  \caption{Measured scaling of the B+ tree dictionary (4\,KiB pages, bulk
+  load, 1,000 random lookups all verified).}
   \label{tab:bptree-scale}
-  \footnotesize
+  \small
   \begin{tabular}{r r r r r r}
     \toprule
-    键数 & 树高 & 总页数 & 文件字节 & 字节/键 & 每查询页读 \\
+    Keys & Height & Pages & File bytes & Bytes/key & Page reads/query \\
     \midrule
-    100\,000 & 2 & 369 & 1\,515\,520 & 15.1552 & 2.00 \\
-    1\,000\,000 & 3 & 3\,688 & 15\,110\,144 & 15.1101 & 3.00 \\
-    10\,000\,000 & 3 & 36\,865 & 151\,003\,136 & 15.1003 & 3.00 \\
-    30\,000\,000 & 3 & 110\,593 & 452\,993\,024 & 15.0998 & 3.00 \\
-    50\,000\,000 & 4 & 184\,322 & 754\,987\,008 & 15.0997 & 4.00 \\
+    100\,000     & 2 & 369     & 1\,515\,520   & 15.1552 & 2.00 \\
+    1\,000\,000   & 3 & 3\,688   & 15\,110\,144  & 15.1101 & 3.00 \\
+    10\,000\,000  & 3 & 36\,865  & 151\,003\,136 & 15.1003 & 3.00 \\
+    30\,000\,000  & 3 & 110\,593 & 452\,993\,024 & 15.0998 & 3.00 \\
+    50\,000\,000  & 4 & 184\,322 & 754\,987\,008 & 15.0997 & 4.00 \\
     \bottomrule
   \end{tabular}
   \par\smallskip
-  \footnotesize 注：页读为缓存 1 页时的实际读页数，等于树高。  % src: F11
+  \footnotesize Note: page reads are the actual number of pages read with a
+  one-page cache; they equal the tree height.
 \end{table}
 
 \input{figures/bptree}
 
-五个实测点的字节/键保持在 15.10--15.16 之间，体积近似严格线性。扇出约 330--370，
-平均每叶约 272 个键，因此 4 层已经覆盖 $10^8$ 级键。按实测趋势外推 4 亿键，文件约
-6.04 GB，树高仍为 4，每次查询读 4 页，即 16 KiB。树高与页读在 5,000 万键时已经实测
-到 4 层，外推的只有文件字节和页数。% src: F11
+Across the five measured points, bytes per key stays between 15.10 and 15.16,
+so file size is almost exactly linear in the key count. The fanout is about
+330--370 and a leaf holds about 272 keys on average, so four levels already
+cover $10^8$-scale keys. Extrapolating the measured trend to 400,000,000 keys
+gives a file of about 6.04\,GB, still height 4, and four page reads per lookup,
+about 16\,KiB. Height and page reads are already measured at 50,000,000 keys;
+only the file size and page count are extrapolated.
 
-\subsection{块式构建与 500,000 文档}
+\subsubsection{Block-Based Construction with 500,000 Documents}
+\label{sec:block-results}
 
-正式莎士比亚语料上，预算 4,096 的块式构建产生 17 个临时块、峰值活词 5,129，临时块
-共 4,166,556 字节，产物与内存构建逐字节一致。% src: F22
+On the formal Shakespeare corpus, block construction with a 4,096-term budget
+produces 17 temporary runs, a peak of 5,129 live terms, and 4,166,556 bytes of
+temporary data; its output is byte-identical to the in-memory build.
 
-500,000 文档实验把这条路径放大到实际小文件规模。合成语料包含 500,000 个文件、
-20,000,000 个词元和 4,908,747 个不同词。块式构建产生 4,855 个临时块，扫描
-5.47 秒、归并 125.08 秒，总墙钟 168.16 秒，峰值内存 1.01 GiB；全内存构建耗时
-76.75 秒、峰值内存 2.00 GiB。两种方式生成的第一版索引都是 427,603,247 字节，
-SHA-256 相同。% src: F13、F15
+The 500,000-document experiment scales this path to realistic small-file size.
+The synthetic corpus has 500,000 files, 20,000,000 tokens, and 4,908,747
+distinct terms. Block construction produces 4,855 runs; scanning takes 5.47\,s,
+merging 125.08\,s, for a total wall-clock time of 168.16\,s and a peak memory
+of 1.01\,GiB. The in-memory build takes 76.75\,s and peaks at 2.00\,GiB. Both
+produce a v1 index of 427,603,247 bytes with the same SHA-256.
 
-\begin{table}[H]
+\begin{table}[!htbp]
   \centering
-  \caption{500,000 文档 / 2,000 万词元的构建结果}
+  \caption{Build results for 500,000 documents and 20,000,000 tokens.}
   \label{tab:500k}
-  \footnotesize
-  \begin{tabularx}{\linewidth}{X r r r r}
+  \small
+  \begin{tabularx}{\linewidth}{X r r r l}
     \toprule
-    构建方式 & 索引字节 & 构建阶段 & 峰值内存 & 产物 \\
+    Build & Index bytes & Build phase & Peak memory & Output \\
     \midrule
-    块式第一版 & 427\,603\,247 & 扫描 5.47 + 归并 125.08 s & 1.01 GiB & SHA-256 相同 \\
-    块式第二版 & 284\,560\,009 & 扫描 5.42 + 归并 123.31 s & 1.46 GiB & 差分压缩 \\
-    内存第一版 & 427\,603\,247 & 内建 44.93 s，总 76.75 s & 2.00 GiB & 基准 \\
+    Block, v1 & 427\,603\,247 & scan 5.47 + merge 125.08\,s & 1.01\,GiB & SHA-256 identical \\
+    Block, v2 & 284\,560\,009 & scan 5.42 + merge 123.31\,s & 1.46\,GiB & delta-coded \\
+    In-memory, v1 & 427\,603\,247 & build 44.93\,s, total 76.75\,s & 2.00\,GiB & baseline \\
     \bottomrule
   \end{tabularx}
   \par\smallskip
-  \footnotesize 注：块式与内存第一版索引的 \code{cmp} 和 SHA-256 均一致。  % src: F13–F15
+  \footnotesize Note: the block-built and in-memory v1 indexes are identical
+  under \code{cmp} and SHA-256.
 \end{table}
 
-块式构建把峰值内存几乎减少一半，但归并耗时明显增加。4,855 个临时块当前通过线性扫描
-所有游标找最小词，成本约为 $O(T\cdot R)$；换成堆做 $k$ 路归并可以降到
-$O(T\log R)$。这部分时间与临时空间是大规模构建必须付出的工程代价。
+Block construction almost halves peak memory, at the cost of a longer merge.
+The current merge finds the smallest term by scanning all 4,855 cursors, about
+$O(T\cdot R)$; a heap-based $k$-way merge would reduce this to
+$O(T\log R)$. The merge time and the temporary space are the engineering price
+of the memory bound.
 
-\subsection{第二版索引格式的压缩结果}
+\subsubsection{Compression Results of the v2 Index Format}
 \label{sec:compression}
 
-第二版索引格式只改变倒排记录区：文档编号和位置存差分，词频与差分值使用
-字节对齐变长码。主语料索引从 3,685,655 字节降到 1,725,694 字节，为第一版格式的
-46.82\%；构建耗时仍为 0.19 秒，查询输出不变。% src: F21
+The v2 format changes only the posting region: document IDs and positions are
+delta-coded, and term frequencies and deltas use byte-aligned variable-length
+codes. On the main corpus the index drops from 3,685,655 to 1,725,694 bytes,
+46.82\% of v1, while build time stays at 0.19\,s and query output is unchanged.
 
-500,000 文档语料上，倒排记录区在总文件中占比只有 56.1\%，词项表成为主要体积来源，
-所以整体压缩率不如主语料：第一版 427,603,247 字节降到第二版 284,560,009 字节，
-为第一版的 66.55\%。倒排记录区自身的压缩率约为 59.6\%，与主语料的 61.8\% 接近。
-% src: F13、F14
+On the 500,000-document corpus the posting region is only 56.1\% of the total
+file, so the term table becomes the main contributor to size and the overall
+ratio is worse: 427,603,247 bytes fall to 284,560,009 bytes, 66.55\% of v1.
+The posting region itself compresses to about 59.6\%, close to the 61.8\% on the
+main corpus.
 
-\begin{table}[H]
+\begin{table}[!htbp]
   \centering
-  \caption{第二版索引格式的压缩结果与主要成本}
+  \caption{v2 compression results and the main cost.}
   \label{tab:compression}
-  \footnotesize
-  \begin{tabularx}{\linewidth}{X r r r r r}
+  \small
+  \begin{tabularx}{\linewidth}{X r r r r l}
     \toprule
-    语料 & 第一版字节 & 第二版字节 & 第二版/第一版 & 节省 & 压缩构建峰值内存 \\
+    Corpus & v1 bytes & v2 bytes & v2/v1 & Saving & Cost \\
     \midrule
-    莎士比亚 & 3\,685\,655 & 1\,725\,694 & 46.82\% & 53.18\% & 0.19 s（内建） \\
-    500k 合成 & 427\,603\,247 & 284\,560\,009 & 66.55\% & 33.45\% & 1.46 GiB（第一版为 1.01） \\
+    Shakespeare & 3\,685\,655 & 1\,725\,694 & 46.82\% & 53.18\% & 0.19\,s build \\
+    500k synthetic & 427\,603\,247 & 284\,560\,009 & 66.55\% & 33.45\% & 1.46\,GiB peak (v1: 1.01) \\
     \bottomrule
   \end{tabularx}
   \par\smallskip
-  \footnotesize 注：500k 语料的压缩率受词项表占比影响；第二版格式不压缩词项表。  % src: F13、F14
+  \footnotesize Note: the 500k ratio is dominated by the term table, which v2
+  does not compress.
 \end{table}
 
-压缩适合存储受限、CPU 与构建内存相对充裕的场景。主语的 3.7 MB 索引可以整体缓存，
-第二版索引的收益主要在磁盘和传输；500k 语料压缩构建的峰值内存从 1.01 GiB 升到
-1.46 GiB，
-说明压缩并非在所有资源维度上都占优。
-
-\subsection{Bonus 结论}
-
-500,000 个文件这一轴已经实测通过；400,000,000 个不同词没有端到端运行。查询侧已经
-把词典移到磁盘并把单次查询控制在常数页读，构建侧已经用块式构建去掉“内存随全词表
-增长”的假设。完整的大规模系统还缺 SPIMI 归并与 B+ 树的直接集成、分布式分片与故障
-恢复。现有结果支持“关键部件可扩展”的结论，但不支持“完整 4 亿词系统已经跑通”的说法。
+Compression suits storage-constrained settings where CPU time and build memory
+are relatively abundant. The 3.7\,MB main index fits in memory entirely, so the
+v2 benefit is mainly on disk and in transfer; on the 500k corpus the compressed
+build raises peak memory from 1.01 to 1.46\,GiB, so compression does not win on
+every resource dimension. These trade-offs are analyzed further in
+Section~\ref{sec:bonus-analysis}.

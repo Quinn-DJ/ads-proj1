@@ -1,114 +1,320 @@
-% 第 4 章：项目评价（推广、局限与改进）。
+% Chapter 4: Analysis and comments.
 
-\section{项目评价}
+\newpage
+\section{Analysis and Comments}
 \label{sec:analysis}
 
-前面的结果证明了当前实现能完成课程任务，也给出了规模扩展的两条路径。项目评价主要
-回答两个问题：同一套引擎能否换一份语料工作，以及当前实现距离更通用的搜索引擎还差
-什么。
+The results show that the implementation completes the course tasks and that
+two scale paths are available. This chapter asks two further questions: what do
+the measured costs mean asymptotically, and how far is the current engine from
+a more general search system?
 
-\subsection{推广：第二语料 RFC}
-\label{sec:rfc}
-\label{sec:granularity}
+\subsection{Time and Space Complexity}
+\label{sec:complexity}
 
-项目另备第二语料：IETF RFC 1035（DNS）、5321（SMTP）、7231（HTTP 语义）。
-三篇文档通过通用导入器转成纯文本格式，语料清单
-与文本层是唯一接口；同一套 C++ 二进制没有修改任何代码，即可完成统计、建索引、
-查询和独立对拍。% src: verify F10、tasks F2
+Table~\ref{tab:complexity} gives upper bounds for the main operations. $N$,
+$T$, $P$, $D$, and $H$ denote the number of tokens, terms, postings,
+documents, and matching documents; $k$ is the number of query terms, $R$ the
+number of temporary runs, $B$ the block budget, and $C$ the cost of one
+dictionary comparison. In phrase verification, $\mathrm{tf}_{\max}$ is the
+largest frequency of a candidate term within one document.
 
 \begin{table}[!htbp]
   \centering
-  \caption{第二语料 RFC 的端到端实测}
-  \label{tab:rfc}
-  \footnotesize
-  \begin{tabular}{l r r}
+  \caption{Time and space upper bounds for the main operations.}
+  \label{tab:complexity}
+  \small
+  \begin{tabular}{l l l}
     \toprule
-    指标 & 原始配置（无过滤、无词干） & 正式配置（58 词停用词 + 词干化） \\
+    Operation & Time & Space \\
     \midrule
-    文档数 & 3 & 3 \\
-    词元数 & 75\,250 & 45\,370 \\
-    词项数 & 4\,328 & 2\,660 \\
-    倒排记录数 & 7\,006 & 4\,594 \\
-    索引字节 & 510\,181 & 308\,164 \\
-    \code{brute_force.py} 对拍 & 4\,328 词全项一致 & 2\,660 词全项一致 \\
+    Index build (in memory) & $O(N+\sum \mathrm{df}\cdot C)$ & $O(T+P+N)$ \\
+    Index build (block) & $O(N+RB\log B+TR)$ &
+      $O(B+\text{postings of the current run})$ \\
+    Word query & $O(\log T+\mathrm{df}+H\log H)$ & $O(D)$ \\
+    Phrase query &
+      $O(\mathrm{df}_{\min}\,\mathrm{tf}_{\max}\,k\log\mathrm{tf}_{\max}+H\log H)$ &
+      $O(D+k)$ \\
+    Boolean query & $O(\sum \mathrm{df}+H\log H)$ & $O(D)$ \\
+    v2 encoding & $O(P+N)$ & $O(\text{one block})$ \\
+    B+ tree lookup & $O(h\log F)$, plus $O(h)$ page reads & $O(h)$ page cache \\
     \bottomrule
   \end{tabular}
   \par\smallskip
-  \footnotesize 注：RFC 语料共 9\,946 行、81\,848 个空白切分词。  % src: verify F10、tasks F2
+  \footnotesize Note: $F$ is the B+ tree fanout and $h$ its height.
 \end{table}
 
-RFC 语料最能说明停用词没有万能表。用与莎士比亚相同的三特征规则
-$(0.40,0.001,0.93)$，RFC 本轮推导出 58 个停用词，与莎士比亚 39 词表只重叠 26 个。
-RFC 2119 的 \code{must}、\code{may}、\code{should} 覆盖三篇文档，df 比值都是 1，
-但速率熵只有 0.809、0.899、0.885，低于 0.93，因此没有被误判为停用词；
-\code{server}、\code{page}、\code{rfc} 的速率熵接近 1，反而被收入推导表。
-% src: F10
+In-memory index construction spends most of its time on one dictionary access per
+token, and its output keeps the term table, the postings, and the positions at
+the same time. The three dictionaries produce indexes of the same size; only
+the comparison count and the comparison constant change. Block construction uses
+$B$ to bound the live terms at any moment, but it does not remove the cost: a
+smaller $B$ means more runs, and sorting and merging become visible. The disk
+B+ tree makes a different trade: a query reads the $O(h)$ pages on the
+root-to-leaf path and no longer requires the full term table in memory.
 
-查询侧也按预期工作：\code{zone} 命中 3 篇，\code{postmaster} 命中 SMTP 一篇并归一为
-\code{postmast}；\code{name server} 中 \code{server} 被 58 词表过滤，程序用说明信息
-解释后只查 \code{name}。这说明概念上“引擎部分”和“制作语料部分”已经分开，换语料
-需要新的 producer 规则和停用词阈值，但不需要改索引与查询代码。
+On the query side, the main cost is scanning the relevant postings and sorting
+the matching documents. A phrase query starts from the term with the smallest
+document frequency, which shrinks the candidate set, but it still verifies $k$
+positions in every candidate. The thresholds relate to complexity directly:
+\code{max-df} and \code{min-df} remove terms before the posting scan and can
+reduce later work, whereas \code{min-match} and \code{top-x} act after scoring;
+\code{top-x} only reduces the output and does not save the scan or the sort. In
+this implementation the thresholds are first a tool for changing query
+semantics, not a uniform performance switch.
 
-推广也有边界。RFC 的纯文本导入没有做分页脚注清洗，\code{[Page N]} 中的
-\code{page} 进入词表并成为停用词；这个噪声属于 producer 侧，而不是引擎侧。换语料时
-仍要重新检查分词、文档粒度和停用词分布，不能认为“同一二进制可运行”等于“无需任何
-数据工程”。
-
-\subsection{局限与改进}
+\subsection{Comparison with Alternative Data Structures and Algorithms}
 \label{sec:dict-analysis}
+
+Table~\ref{tab:dict-compare} compares the three dictionary implementations on
+the same formal index.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Build cost of three dictionary implementations (formal
+  configuration, three builds each).}
+  \label{tab:dict-compare}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{l r r r l}
+    \toprule
+    Dictionary & Comparisons & Rotations & Rehashes &
+      Build time (in-process / external median) \\
+    \midrule
+    Splay tree (main) & 6\,392\,724 & 5\,850\,795 & 0 & 0.19\,s / 0.2610\,s \\
+    Hash table & 688\,494 & 0 & 11 & 0.09\,s / \textbf{0.1603\,s} \\
+    \code{std::map} (control) & 9\,435\,694 & 0 & 0 & 0.14\,s / 0.2084\,s \\
+    \bottomrule
+  \end{tabular}
+  \par\smallskip
+  \footnotesize Note: comparison, rotation, and rehash counts are in-process
+  counters; external wall-clock time includes process start and file I/O, so it
+  is comparable only in order of magnitude.
+\end{table}
+
+The hash table is fastest, \code{std::map} is second, and the splay tree is
+slowest. The splay tree pays for 5.85 million rotations, but its in-order
+traversal directly yields a sorted term table. The project therefore uses the
+splay tree as the main dictionary, the hash table as the speed baseline, and
+\code{std::map} as the balanced-tree control. The second format reduces the
+index to 1.73 million bytes, about 46.82\% of v1.
+
+The v1 and v2 formats represent a different trade-off. Version 1 stores fixed-
+width integers and is simple to parse; version 2 delta-codes document IDs and
+positions and uses byte-aligned variable-length codes, cutting the formal index
+by 53.18\% with no change in query output. On the 500,000-document corpus,
+however, the term table dominates and the overall ratio is only 66.55\%. The
+right choice therefore depends on whether storage or build memory is the
+binding constraint.
+
+The in-memory tree and the disk B+ tree answer different questions. The splay
+tree is appropriate when the whole term table fits in memory and the build
+order is unknown; the B+ tree sidecar is appropriate when the table does not
+fit and a cold query must avoid loading it. The sidecar is 237,568 bytes for
+14,937 terms, and a cold lookup reads 0.225\% of the bytes of a full load
+(114 page reads versus 29,819 cache hits during the verification pass). The
+B+ tree is not a replacement for the in-memory dictionary; it is the boundary
+mechanism for the next scale.
+
+The stemmer comparison is also informative. The implementation follows the
+original Porter algorithm \cite{porter1980} and is checked against NLTK's
+\code{MARTIN\_EXTENSIONS} variant over all 25,705 forms. The original paper's
+examples describe local rule effects, not necessarily the final stem; the
+canonical C implementation and Snowball add fixes and extensions. The 41
+over-stemmed forms found during testing came from reading the paper's example
+column as final output. The corrected implementation matches the extended
+variant, which is the appropriate target for a reproducible pipeline: the
+choice of variant matters less than stating which one is used.
+
+\subsection{Generalization: A Second Corpus}
+\label{sec:rfc}
+\label{sec:granularity}
+
+The second corpus contains IETF RFC 1035 (DNS), 5321 (SMTP), and 7231 (HTTP
+semantics). A generic importer converts the three documents to plain text; the
+manifest and the text layer are the only interface. The same C++ binary,
+without any code change, performs statistics, indexing, querying, and the
+independent cross-check.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{End-to-end measurements on the RFC corpus.}
+  \label{tab:rfc}
+  \footnotesize
+  \begin{tabularx}{\linewidth}{l X X}
+    \toprule
+    Metric & Raw configuration (no filter, no stemming) &
+      Formal configuration (58 stop words + stemming) \\
+    \midrule
+    Documents & 3 & 3 \\
+    Tokens & 75\,250 & 45\,370 \\
+    Terms & 4\,328 & 2\,660 \\
+    Postings & 7\,006 & 4\,594 \\
+    Index bytes & 510\,181 & 308\,164 \\
+    \code{brute_force.py} cross-check & all 4\,328 terms match &
+      all 2\,660 terms match \\
+    \bottomrule
+  \end{tabularx}
+  \par\smallskip
+  \footnotesize Note: the RFC corpus has 9,946 lines and 81,848
+  whitespace-separated words.
+\end{table}
+
+The RFC corpus is the clearest demonstration that there is no universal
+stop-word list. Applying the same three-feature rule $(0.40, 0.001, 0.93)$
+derives 58 stop words for the RFCs, overlapping the 39-word Shakespeare list in
+only 26. The RFC 2119 keywords \code{must}, \code{may}, and \code{should} occur
+in all three documents (df ratio 1), but their rate entropies are 0.809, 0.899,
+and 0.885, below 0.93, so they are not mistaken for stop words. Conversely,
+\code{server}, \code{page}, and \code{rfc} have rate entropy close to 1 and are
+included in the derived list.
+
+Queries behave as expected: \code{zone} matches all three documents,
+\code{postmaster} matches the SMTP document and normalizes to \code{postmast},
+and in \code{name server} the term \code{server} is filtered by the 58-word
+list; the program explains this and queries only \code{name}. Conceptually, the
+engine and the corpus-production stage are separate: a new corpus needs new
+producer rules and stop-word thresholds, but not changes to the index or query
+code.
+
+Generalization has limits. The RFC plain-text import does not clean page
+footers, so \code{page} from \code{[Page N]} enters the vocabulary and becomes
+a stop word. This noise belongs to the producer side, not the engine side. A
+new corpus still requires rechecking tokenization, document granularity, and
+the stop-word distribution; ``the same binary runs'' does not mean ``no data
+engineering is needed.''
+
+\subsection{Limitations and Possible Improvements}
 \label{sec:threshold-semantics}
 
-索引与查询部分的主要边界见表~\ref{tab:limits}。其中短语语义和排序模型影响最大：
-位置定义在过滤后的词元流上，因此 \code{my lord} 会退化为只查 \code{lord}；
-全由停用词组成的短语返回空。排序只使用命中词数和 tf 总和，没有 idf 或长度归一化，
-长剧更容易占据靠前位置。
+Table~\ref{tab:limits} lists the main boundaries of the current implementation.
+Phrase semantics and the ranking model have the largest effect: positions are
+defined on the filtered token stream, so \code{my lord} degenerates to a query
+for \code{lord}, and a phrase made entirely of stop words returns nothing.
+Ranking uses only the matched-term count and the total term frequency, without
+idf or length normalization, so long plays tend to occupy the top positions.
 
-\begin{table}[H]
+\begin{table}[!htbp]
   \centering
-  \caption{系统局限、影响与改进方向}
+  \caption{System limitations, impact, and improvement directions.}
   \label{tab:limits}
   \footnotesize
   \begin{tabularx}{\linewidth}{l X X}
     \toprule
-    局限 & 影响 & 改进方向 \\
+    Limitation & Impact & Improvement \\
     \midrule
-    短语在过滤后词元流上匹配 & 含停用词的短语退化；全停用词短语返回空 &
-      保留停用词位置，或为短语另建有停用词的索引 \\
-    切词器仅支持 ASCII & Unicode 语料不能直接使用 &
-      UTF-8 解码与 Unicode 类别切词，并重跑全部对拍 \\
-    纯文本导入无清洗 & RFC 页码等样板文字进入词表 &
-      清洗放在 producer 侧，保持可审计、可关闭 \\
-    排序只用命中词数与词频总和 & 没有逆文档频率与长度归一化 &
-      实现 TF-IDF/BM25，并重新设计相关性实验 \\
-    查询与构建为单线程 & 201 次阈值实验串行约 4.05 s &
-      倒排记录并行扫描；构建端按块并行 \\
-    文档粒度固定为整篇作品 & scene 级粒度没有正式接入选型实验 &
-      粒度参数化，比较 scene 与合并短诗的停用词分布 \\
-    无增量索引 & 更新一篇文档需要重建整份索引 &
-      段式索引与定期合并 \\
-    单机、无分布式 & 4 亿词的真实部署仍受构建时间和磁盘限制 &
-      按词范围分片构建与查询 \\
+    Phrases match on the filtered token stream &
+      Phrases containing stop words degenerate; all-stop-word phrases return
+      nothing &
+      Keep stop-word positions, or build a second phrase index without stop-word
+      removal \\
+    ASCII-only tokenizer & Unicode corpora cannot be used directly &
+      UTF-8 decoding and Unicode-category tokenization, followed by a full
+      cross-check rerun \\
+    Unclean plain-text import & Boilerplate such as RFC page numbers enters the
+      vocabulary &
+      Clean on the producer side, keeping the step auditable and optional \\
+    Ranking uses only matched-term count and total tf & No inverse document
+      frequency or length normalization &
+      Implement TF-IDF/BM25 and redesign the relevance experiment \\
+    Single-threaded build and query & The 201 threshold measurements take about
+      4.05\,s serially &
+      Parallel posting scans; parallel block construction \\
+    Fixed document granularity (whole work) & Scene-level granularity is not
+      part of the formal selection experiment &
+      Parameterize granularity and compare scene-level with merged-short-poem
+      stop-word distributions \\
+    No incremental index & Updating one document requires a full rebuild &
+      Segment-based indexing with periodic merging \\
+    Single machine, no distribution & A real 400M-word deployment is still
+      bounded by build time and disk &
+      Shard by term range for build and query \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-词典选择的结论也应当如实表述。哈希在纯构建速度上明显快于伸展树；正式配置下
-伸展树约 0.19 s、哈希约 0.09 s，但伸展树中序遍历直接得到有序词项表，并且符合
-课程对自实现数据结构的要求。三种实现写出的索引逐字节相同，说明词典结构改变的是
-构建过程，不改变持久化结果。% src: F19、F20、F5
+The dictionary comparison should be stated honestly. Hashing is clearly faster
+than the splay tree for pure construction: about 0.19\,s for the splay tree and
+0.09\,s for the hash table in-process, but the splay tree's in-order traversal
+directly yields a sorted term table and satisfies the course requirement for a
+self-implemented data structure. All three implementations write byte-identical
+indexes, which shows that the dictionary changes the construction process, not
+the persisted result.
 
-阈值部分最容易被误解的是“参数收紧会使结果减少”。实际上 \code{--max-df} 与
-\code{--min-df} 先筛选查询词，可能让单词查询归零，也可能使多词全部命中条件退化后
-结果变多。
-\code{--min-match} 改变布尔条件，\code{--top-x} 才是结果截断。短语查询不受词侧
-阈值影响，这是短语必须整段匹配的语义结果。% src: F36–F39
+The threshold result most easily misunderstood is that ``tightening'' a
+parameter can reduce the result set. In fact \code{--max-df} and
+\code{--min-df} filter query terms first: this can make a single-term query
+empty, or it can weaken a multi-term conjunction and increase the result.
+\code{--min-match} changes the Boolean condition, and \code{--top-x} is the only
+true result truncation. Phrase queries are unaffected by term-side thresholds,
+which follows from the requirement that the whole phrase match.
 
-从项目本身看，最有价值的不是某一个墙钟数字，而是可复现的验证链：同一份文本层能由
-独立 Python 实现重建倒排记录，三种词典能写出完全相同字节，块式构建与内存构建一致，
-第二版索引格式能由独立解析器还原，磁盘词典与全量加载逐词一致。这些约束把很多“最后看起来能跑”
-的实现错误提前暴露出来。% src: F5–F15
+\subsection{Bonus Analysis: Scalability and Boundaries}
+\label{sec:bonus-analysis}
 
-后续工作按收益排序：先补 scene 级和合并十四行诗的粒度实验，再补 BM25/TF-IDF 与
-相关性评价，然后把 SPIMI 的归并输出直接写成 B+ 树，跑一次真正的 500k/400M 端到端
-构建。分布式分片、增量索引和 Unicode 切词属于下一阶段，不应与当前已经验证的
-单机范围混在一起表述。
+The bonus results separate cleanly into measured components and extrapolated
+ones. On the query side, the B+ tree is measured from 100,000 to 50,000,000
+keys at 15.10 bytes per key and height 4; the extrapolation to 400,000,000 keys
+adds only file size and page count, not a new structural assumption. On the
+build side, block construction is measured on 500,000 documents and 4,908,747
+terms, with peak memory of 1.01\,GiB versus 2.00\,GiB for the in-memory build.
+The measured peak for the full in-memory index implies about 160\,GiB at
+400,000,000 distinct words if scaled linearly by term count, which is why the
+in-memory path cannot answer the second axis.
+
+The block build trades memory for merge time. Of the 168.16\,s total, 125.08\,s
+(74.4\%) is merging, because the current merge scans all 4,855 run cursors to
+find the smallest term, about $O(T\cdot R)$. A heap-based $k$-way merge would
+reduce this to $O(T\log R)$ and is the first implementation improvement to
+make. The temporary space is the other cost: 4,166,556 bytes on the
+Shakespeare corpus and a much larger run set at 500,000 documents.
+
+Compression and the disk dictionary optimize different resources. Version 2
+cuts the formal index to 46.82\% of v1 but raises the 500k build peak from 1.01
+to 1.46\,GiB; the B+ tree sidecar reduces cold-query I/O to 0.225\% of a full
+load but adds a separate file and a page cache. None of these mechanisms is
+universally better; each is appropriate when its constrained resource is the
+one that binds.
+
+The honest conclusion is therefore narrower than ``a 400,000,000-word system
+runs.'' The key components scale: the dictionary is measured to 50,000,000
+keys and structurally covers 400,000,000, and the block builder removes the
+assumption that the whole term table must fit in memory. A complete large-scale
+system still lacks direct SPIMI-to-B+ tree integration, distributed sharding,
+and fault recovery. Those are the next engineering steps, and they should be
+reported separately from the measured single-machine range.
+
+\subsection{Conclusions}
+\label{sec:conclusions}
+
+The project implements the four required tasks on a 195-document Shakespeare
+corpus. Word-frequency statistics produce 866,626 body tokens and 25,705
+distinct terms; a three-feature rule derives 39 stop words with an overlap of
+35 against the manual list; the stemmed inverted index contains 14,937 terms,
+117,704 postings, and 556,866 positions; word, phrase, and Boolean queries
+return document IDs, and the four thresholds are exercised over 201
+measurements. The results are consistent with the specification in
+Chapter~\ref{sec:design} and with the test cases in Chapter~\ref{sec:results}.
+
+The most valuable outcome is not a single wall-clock number but the
+reproducibility chain. An independent Python implementation rebuilds the
+postings from the same text layer; three dictionaries write identical bytes;
+block construction and in-memory construction agree; the second index format is
+restored by an independent parser; and the disk dictionary matches a full load
+term by term. Each of these constraints exposed implementation errors that a
+``the output looks plausible'' check would have missed, including the dangling
+\code{Node*&} in the splay insert, the temporary-reference bug in the index
+reader, and the shifted offsets in the v2 format.
+
+The engine is not a general search system. Its tokenizer is ASCII-only, its
+phrase semantics inherit stop-word removal, its ranking has no idf or length
+normalization, and it has no incremental or distributed mode. These are stated
+as limitations in Table~\ref{tab:limits}, not hidden behind the measured
+numbers. Within the single-machine, batch-built scope, however, the behavior is
+specified, measured, and reproducible.
+
+The bonus work supports a component-level claim rather than an end-to-end one.
+The B+ tree dictionary and the block builder each address one resource limit,
+and both are measured well beyond the formal corpus. Integrating them directly,
+adding a heap merge, and sharding by term range are the concrete next steps
+toward the 400,000,000-word target.

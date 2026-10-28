@@ -1,48 +1,168 @@
-% 第 1 章：设计流程（语料收集部分）
-% 数字来自 2026-10-20 本轮重跑；证据见 reports/data/。
+% Chapter 1: Introduction.
 
-\section{设计流程}
+\section{Introduction}
 \label{sec:intro}
 
-题目要求完成词频统计、带词干化的倒排索引、单词与短语查询，以及查询阈值实验。
-这些工作不能彼此分离：停用词改变位置编号，词干化改变词项，查询又必须复用建索引时的
-规范化规则。项目因此按“语料收集、词频统计、停用词选择、词干化、倒排索引、词典结构、
-外部构建、查询”的顺序展开，每一阶段都留下可重跑的命令和输出。% src: 本轮任务复跑
+\subsection{Problem Description}
 
-系统的总数据流如图~\ref{fig:pipeline}：预处理阶段使用 Python 把 HTML 转成文本层，再交由
-C++ 进行处理；切词后的词元同时进入统计与索引两条路径；查询侧按索引头
-记录的处理标志重放停用词与词干化步骤。这样可以把网页解析错误、统计口径错误和索引错误
-分开定位。% src: F1、F3、P1
+A search engine answers a simple question---which documents contain this word
+or phrase?---but the answer is only useful if it is cheap to obtain and
+trustworthy when checked. This project builds such an engine for \emph{The
+Complete Works of William Shakespeare}. The course asks for four pieces of
+work: (1) count words and identify stop words; (2) build an inverted index with
+stemming that excludes the stop words from part (1); (3) implement a query
+program that accepts a word or phrase and returns document IDs; and (4) run
+experiments that show how thresholds on a query affect the result. The bonus
+question asks whether the design still works at the scale of 500,000 files and
+400,000,000 distinct words.
+
+The main difficulty is not any single algorithm but the coupling between the
+stages. Stop-word removal changes position numbering; stemming changes the term
+vocabulary; the query program must replay exactly the normalization used at
+build time. A stop word that is left out of the index cannot be found later,
+and a phrase that contains a stop word changes its meaning when that word is
+dropped. The report therefore treats the pipeline as one specification rather
+than four independent exercises.
+
+\subsection{Purpose and Scope}
+
+The purpose of this report is to document what was built, how it was tested,
+and where the design stops working. Chapter~\ref{sec:design} specifies the
+data structures and algorithms, Chapter~\ref{sec:results} reports the test
+cases and measured results, and Chapter~\ref{sec:analysis} analyzes complexity,
+compares the chosen structures with alternatives, and lists the limitations.
+The report is deliberately evidence-oriented: every measured number comes from
+a rerun on 2026-10-20, and the commands that reproduce the runs are collected
+in Appendix~\ref{app:reproduce}. No measurement in this report was invented for
+the write-up, and no number was recomputed from a different corpus or
+configuration.
+
+The scope is the single-machine, batch-built engine described here. Distributed
+indexing, incremental updates, and Unicode tokenization are discussed as
+future work but are not claimed as implemented features.
+
+\subsection{Background}
+\label{sec:background}
+
+An \emph{inverted index} maps each term to a posting list that records the
+documents containing the term and, in this project, the positions at which the
+term occurs \cite{manning2008}. A word query intersects the posting lists of
+its terms; a phrase query additionally checks that the positions are
+consecutive. The two basic statistics are the term frequency $\mathrm{tf}(t)$,
+the number of occurrences of term $t$ in the corpus, and the document frequency
+$\mathrm{df}(t)$, the number of documents containing $t$. Their ratio separates
+a word that is frequent because it occurs many times in one document from a
+word that is spread across the collection.
+
+\emph{Stop words} are terms with little discriminative value, such as function
+words. There is no universal list: a word that is noise in one corpus can be
+content in another. This project derives the list from the corpus itself and
+checks the derivation on a second corpus. \emph{Stemming} reduces inflected
+forms to a common stem so that, for example, \code{agree}, \code{agreed}, and
+\code{agreement} share an index entry \cite{porter1980}. Stemming improves
+recall but can over-conflate unrelated words, so the implementation is checked
+against an independent implementation on the full vocabulary.
+
+The dictionary that maps terms to posting lists is itself a data structure
+problem. A balanced search tree, a hash table, a splay tree, and a disk-based
+B+ tree offer different trade-offs between lookup time, ordered traversal, and
+memory \cite{cormen2022}. The query thresholds are a separate design axis:
+\code{max-df} and \code{min-df} filter query terms, \code{min-match} changes the
+Boolean condition, and \code{top-x} truncates the ranked output. The experiment
+in Chapter~\ref{sec:results} shows that these controls are not interchangeable.
+
+\subsection{Corpus Collection}
+
+\subsubsection{Corpus Source}
+\label{sec:corpus}
+
+The main corpus is \emph{The Complete Works of William Shakespeare} from the
+MIT Shakespeare site \cite{shakespeare} and its official GitHub mirror. The
+mirror contains three overlapping copies of the works: the current lowercase
+play directories, an older uppercase classification directory, and Moby plain
+text files. To avoid mixing editions, the site's own index page is used as the
+authoritative table of contents. This yields 195 documents: 37 plays, 154
+sonnets, and 4 long poems, totaling 152,632 lines and 930,911 words in
+4,919,371 bytes of source text.
+
+A second corpus checks that the engine is not tied to Shakespeare. It contains
+three IETF RFCs---1035 (DNS), 5321 (SMTP), and 7231 (HTTP semantics)---stored
+as plain text: 3 documents, 9,946 lines, and 81,848 whitespace-separated words.
+The same C++ binary processes both corpora; only the manifest and the text
+layer change.
+
+\subsubsection{Preprocessing Overview}
+\label{sec:preprocess}
+
+\code{tools/extract.py} converts each HTML page into a text layer with one
+semantic unit per line, and writes \code{manifest.tsv} as the document catalog
+and path map. Line markers identify headings such as \code{[ACT I]}, stage
+directions such as \code{(Exit Ghost)}, and speaker labels such as
+\code{@BERNARDO}; the tokenizer ignores these lines by default. The marker
+must match at both the first and the last character. A line that only starts
+with \code{[} but continues as dialogue is body text, not a heading. This rule
+is essential for the corpus counts: an earlier comparison script tested only
+the first character, treated lines such as \code{[To HELENA] The best wishes
+...} as headings, and undercounted the token stream by 4,340 tokens.
+
+The detailed token rules are part of the specification in
+Section~\ref{sec:tokenization}; the corpus-level view is enough here. All
+tokens are lowercased. The default configuration counts body lines only and
+produces 866,626 tokens. The flags \code{--keep-headings},
+\code{--keep-speakers}, and \code{--keep-stage} can retain each marker class
+when a different counting convention is needed.
+
+\subsubsection{Special Cases}
+\label{sec:preprocess-analysis}
+
+Three corpus defects required explicit handling. First, the Moby edition writes
+610 bracketed stage directions; 57 are whole-line forms such as
+\code{[Sings]}, and 553 are line-start fragments followed by dialogue, such as
+\code{[To HELENA] The best wishes ...}. The extractor relocates these to
+parenthesized stage lines. Eight mid-line bracketed forms are editorial
+insertions or missing-text markers and are left in place. The net effect is a
+reduction of 849 tokens, which matches the fragment counts exactly. Second,
+\code{Poetry/elegy.html} contains the malformed tag \code{</TITLE} without a
+closing angle bracket; the HTML parser never leaves the head and extracts no
+text. Treating the start of \code{<body>} as the end of the head fixes the
+file. Third, \code{2henryiv.html} contains a source artifact,
+\code{<h3>None</h3>}, which is discarded rather than turned into a word.
+
+The text layer and the token stream are checked against an independent Python
+implementation, so a preprocessing error is visible as a per-document
+difference rather than as a plausible but wrong total. The individual test
+cases are listed in Section~\ref{sec:test-cases}.
+
+\subsection{System Overview}
 \label{sec:architecture}
+
+Figure~\ref{fig:pipeline} shows the data flow. On the offline side, the HTML
+corpus becomes a text layer, the tokenizer produces a token stream, and the
+stream feeds two branches. The counting branch writes \code{wordcount.csv} and
+derives the stop-word list. The indexing branch applies the same stop-word
+filter and the optional Porter stemmer, inserts each term into the dictionary,
+and serializes the postings to \code{index.bin}; an optional B+ tree sidecar
+stores the term-to-posting mapping for lazy lookup. On the online side, the
+query text goes through the same tokenizer, stop-word filter, and stemmer, then
+looks up the dictionary, intersects posting lists, verifies positions for
+phrases, applies the thresholds, and returns document IDs and titles.
 
 \input{figures/pipeline}
 
-\subsection{语料收集}
+Keeping the two branches on one tokenizer is a deliberate constraint. It makes
+the stop-word list, the stemmer, and the query program share a single
+definition of a term, and it lets the index header record the processing flags
+so that a query cannot silently use a different normalization.
 
-\subsubsection{语料来源}
-\label{sec:corpus}
+\subsection{Report Organization}
 
-主语料取自 MIT Shakespeare 站点~\cite{shakespeare} 及其官方 GitHub 镜像。
-仓库中同时存在现行小写作品目录、旧版大写分类目录和
-Moby 纯文本版本，我们以 MIT Shakespeare 站点首页的目录作为作品清单。% src: F1、F3、F41
-
-\subsubsection{预处理与切词}
-\label{sec:preprocess}
-
-\code{tools/extract.py} 把每个 HTML 页面转换成“一行一个语义单元”的文本文件，
-同时生成 \code{manifest.tsv} 作为整个语料的文档目录和映射表。% src: P1
-
-考虑到语料为英文，因此切词器把“连续 ASCII 字母并允许内部撇号”的极大串定义为词元。\code{don't} 与
-\code{o'er} 保持为一个词，行首撇号被丢弃（例如\code{'Tis}$\to$\code{tis}），行尾撇号
-作为分隔（例如\code{friends'}$\to$\code{friends}）；连字符、数字和普通标点均为分隔符（例如\code{to-day}$\to$\code{to,day}，\code{1660s}$\to$\code{s}）。所有词元
-均进行小写化。
-
-\subsubsection{特殊情况处理}
-\label{sec:preprocess-analysis}
-
-处理过程中经过检验发现，莎士比亚语料中存在一些特殊情况：
-\paragraph{舞台提示格式不统一} 例如 Moby 版把内嵌舞台提示写成方括号。
-
-\paragraph{HTML 文件本身标签残缺} 例如 \code{Poetry/elegy.html} 中 \code{</TITLE\n</HEAD>} 由于缺少闭合尖括号而导致读取失败。
-
-我们都进行了额外的判定。
+Chapter~\ref{sec:design} gives the data-structure and algorithm specification,
+including pseudo-code for the main operations. Chapter~\ref{sec:results}
+presents the test environment, the required test-case table, and the measured
+results for the four tasks and the bonus experiments.
+Chapter~\ref{sec:analysis} analyzes time and space complexity, compares the
+chosen structures with alternatives, generalizes to the RFC corpus, and lists
+limitations and improvements. Appendix~\ref{app:source} records the source-code
+organization and comment coverage, Appendix~\ref{app:reproduce} gives the
+reproduction commands, and Appendix~\ref{app:format} documents the data
+formats. The Author List, Declaration, and Signatures follow the appendices.
